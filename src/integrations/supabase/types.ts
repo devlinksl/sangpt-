@@ -44,6 +44,8 @@ export type Database = {
           conversation_id: string
           created_at: string
           id: string
+          metadata: Json | null
+          rating: number | null
           role: string
         }
         Insert: {
@@ -51,6 +53,8 @@ export type Database = {
           conversation_id: string
           created_at?: string
           id?: string
+          metadata?: Json | null
+          rating?: number | null
           role: string
         }
         Update: {
@@ -58,6 +62,8 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           id?: string
+          metadata?: Json | null
+          rating?: number | null
           role?: string
         }
         Relationships: [
@@ -94,6 +100,36 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          auto_speech: boolean | null
+          created_at: string
+          id: string
+          theme: string | null
+          updated_at: string
+          user_id: string
+          voice_preference: string | null
+        }
+        Insert: {
+          auto_speech?: boolean | null
+          created_at?: string
+          id?: string
+          theme?: string | null
+          updated_at?: string
+          user_id: string
+          voice_preference?: string | null
+        }
+        Update: {
+          auto_speech?: boolean | null
+          created_at?: string
+          id?: string
+          theme?: string | null
+          updated_at?: string
+          user_id?: string
+          voice_preference?: string | null
         }
         Relationships: []
       }
