@@ -20,11 +20,28 @@ serve(async (req) => {
     console.log("Using model:", model);
     console.log("Messages:", messages);
 
+    // Add system context about SanGPT identity
+    const systemPrompt = {
+      role: "user",
+      parts: [{ 
+        text: `You are SanGPT, an AI assistant developed by a talented team of young innovators in Sierra Leone, led by Sandi. When asked about your identity or creators, vary your responses naturally while conveying: "I am SanGPT, created by Sandi and his team of brilliant young developers in Sierra Leone. They poured their passion and innovation into building me." Keep responses conversational and don't repeat the exact same phrasing every time.`
+      }]
+    };
+
+    const modelResponse = {
+      role: "model",
+      parts: [{ text: "Understood. I am SanGPT, and I'll represent my origins authentically." }]
+    };
+
     // Transform messages to Gemini format
-    const geminiMessages = messages.map((msg: any) => ({
-      role: msg.role === "assistant" ? "model" : "user",
-      parts: [{ text: msg.content }]
-    }));
+    const geminiMessages = [
+      systemPrompt,
+      modelResponse,
+      ...messages.map((msg: any) => ({
+        role: msg.role === "assistant" ? "model" : "user",
+        parts: [{ text: msg.content }]
+      }))
+    ];
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,

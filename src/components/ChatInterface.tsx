@@ -6,6 +6,7 @@ import { useAuth } from '@/components/AuthContext';
 import { AuthModal } from '@/components/AuthModal';
 import { MessageActions } from '@/components/MessageActions';
 import { MessageFormatter } from '@/components/MessageFormatter';
+import { ShimmerLoading } from '@/components/ShimmerLoading';
 import { SpeechToText } from '@/components/SpeechToText';
 import { ModelSelectorModal } from '@/components/ModelSelectorModal';
 import { LongPressModal } from '@/components/LongPressModal';
@@ -13,15 +14,17 @@ import { AttachmentModal } from '@/components/AttachmentModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { useRipple } from '@/hooks/useRipple';
 import { 
   Menu, 
   Edit3, 
   Send, 
-  Paperclip, 
-  Plus,
+  Paperclip,
   Loader2,
   Settings,
-  Compass
+  Compass,
+  Sparkles,
+  Plus
 } from 'lucide-react';
 
 interface Message {
@@ -38,15 +41,17 @@ interface ChatInterfaceProps {
 }
 
 const EXAMPLE_PROMPTS = [
-  "Write a first draft",
-  "Get advice", 
-  "Learn something new"
+  "Help me write something",
+  "Brainstorm ideas", 
+  "Learn something new",
+  "Get advice"
 ];
 
 export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const createRipple = useRipple();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -57,6 +62,7 @@ export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState('gemini-2.0-flash-exp');
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {

@@ -103,6 +103,14 @@ export default {
           "0%": { transform: "translateY(100%)", opacity: "0" },
           "100%": { transform: "translateY(0)", opacity: "1" }
         },
+        "shimmer": {
+          "0%": { backgroundPosition: "-1000px 0" },
+          "100%": { backgroundPosition: "1000px 0" },
+        },
+        "waveform": {
+          "0%, 100%": { transform: "scaleY(0.5)" },
+          "50%": { transform: "scaleY(1)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -111,6 +119,8 @@ export default {
         "scale-in": "scale-in 0.2s ease-out",
         "slide-in-left": "slide-in-left 0.3s ease-out",
         "slide-in-bottom": "slide-in-bottom 0.3s ease-out",
+        "shimmer": "shimmer 2s linear infinite",
+        "waveform": "waveform 1s ease-in-out infinite",
       },
     },
   },
