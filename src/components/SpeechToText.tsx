@@ -15,9 +15,10 @@ declare global {
 interface SpeechToTextProps {
   onTranscription: (text: string) => void;
   disabled?: boolean;
+  onRecordingChange?: (isRecording: boolean) => void;
 }
 
-export const SpeechToText = ({ onTranscription, disabled }: SpeechToTextProps) => {
+export const SpeechToText = ({ onTranscription, disabled, onRecordingChange }: SpeechToTextProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -58,6 +59,7 @@ export const SpeechToText = ({ onTranscription, disabled }: SpeechToTextProps) =
 
       mediaRecorder.start(1000); // Collect data every second
       setIsRecording(true);
+      onRecordingChange?.(true);
 
       toast({
         title: "Recording started",
@@ -78,9 +80,10 @@ export const SpeechToText = ({ onTranscription, disabled }: SpeechToTextProps) =
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      onRecordingChange?.(false);
       setIsProcessing(true);
     }
-  }, [isRecording]);
+  }, [isRecording, onRecordingChange]);
 
   const processAudio = async (audioBlob: Blob) => {
     try {

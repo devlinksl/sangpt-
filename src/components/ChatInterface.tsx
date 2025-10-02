@@ -5,9 +5,10 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/components/AuthContext';
 import { AuthModal } from '@/components/AuthModal';
 import { MessageActions } from '@/components/MessageActions';
-import { MessageFormatter } from '@/components/MessageFormatter';
+import { TypingText } from '@/components/TypingText';
 import { ShimmerLoading } from '@/components/ShimmerLoading';
 import { SpeechToText } from '@/components/SpeechToText';
+import { WaveformAnimation } from '@/components/WaveformAnimation';
 import { ModelSelectorModal } from '@/components/ModelSelectorModal';
 import { LongPressModal } from '@/components/LongPressModal';
 import { AttachmentModal } from '@/components/AttachmentModal';
@@ -21,10 +22,11 @@ import {
   Send, 
   Paperclip,
   Loader2,
-  Settings,
   Compass,
   Sparkles,
-  Plus
+  Lightbulb,
+  Code,
+  Wand2
 } from 'lucide-react';
 
 interface Message {
@@ -40,11 +42,11 @@ interface ChatInterfaceProps {
   onOpenSidebar: () => void;
 }
 
-const EXAMPLE_PROMPTS = [
-  "Help me write something",
-  "Brainstorm ideas", 
-  "Learn something new",
-  "Get advice"
+const STARTER_PROMPTS = [
+  { icon: Lightbulb, text: "Explain quantum computing like I'm 5", category: "Learn" },
+  { icon: Code, text: "Write a Python script to analyze CSV data", category: "Code" },
+  { icon: Wand2, text: "Help me brainstorm creative project ideas", category: "Create" },
+  { icon: Sparkles, text: "Suggest ways to improve my productivity", category: "Advice" }
 ];
 
 export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
@@ -62,7 +64,8 @@ export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState('gemini-2.0-flash-exp');
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-  const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -73,13 +76,31 @@ export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
     scrollToBottom();
   }, [messages]);
 
-  const createNewConversation = async (): Promise<string | null> => {
+  const generateConversationTitle = async (firstMessage: string): Promise<string> => {
+    try {
+      const { data } = await supabase.functions.invoke('gemini-chat', {
+        body: { 
+          messages: [{ 
+            role: 'user', 
+            content: `Generate a short, creative 3-5 word title for a conversation that starts with: "${firstMessage.substring(0, 100)}". Reply with ONLY the title, no quotes or extra text.` 
+          }],
+          model: selectedModel
+        }
+      });
+      return data?.response?.substring(0, 50) || 'New conversation';
+    } catch {
+      return 'New conversation';
+    }
+  };
+
+  const createNewConversation = async (firstMessage?: string): Promise<string | null> => {
     if (!user) return null;
     
     try {
+      const title = firstMessage ? await generateConversationTitle(firstMessage) : 'New conversation';
       const { data, error } = await supabase
         .from('conversations')
-        .insert([{ user_id: user.id, title: 'New conversation' }])
+        .insert([{ user_id: user.id, title }])
         .select()
         .single();
 
@@ -91,6 +112,21 @@ export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
     }
   };
 
+  const handleImageGeneration = async (prompt: string) => {
+    try {
+      const response = await fetch(`https://api.siputzx.my.id/api/ai/flux?prompt=${encodeURIComponent(prompt)}`);
+      const data = await response.json();
+      
+      if (data.status && data.result?.images?.[0]) {
+        return `![Generated Image](${data.result.images[0]})`;
+      }
+      return "Sorry, I couldn't generate that image.";
+    } catch (error) {
+      console.error('Image generation error:', error);
+      return "Sorry, image generation failed.";
+    }
+  };
+
   const sendMessage = async (messageText: string, isRegeneration = false) => {
     if (!messageText.trim() && !isRegeneration) return;
 
@@ -99,12 +135,16 @@ export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
       return;
     }
 
+    // Check for "Imagine" keyword
+    const imagineMatch = messageText.match(/^imagine\s+(.+)/i);
+    
     setIsLoading(true);
+    setIsTyping(true);
 
     try {
       let conversationId = currentConversationId;
       if (!conversationId) {
-        conversationId = await createNewConversation();
+        conversationId = await createNewConversation(messageText);
         if (!conversationId) throw new Error('Failed to create conversation');
         setCurrentConversationId(conversationId);
       }
@@ -129,22 +169,27 @@ export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
         }]);
       }
 
-      const messagesToSend = isRegeneration 
-        ? messages.filter(m => m.role === 'user')
-        : [...messages.filter(m => m.role === 'user'), ...(userMessage ? [userMessage] : [])];
+      let aiResponse: string;
 
-      const { data, error } = await supabase.functions.invoke('gemini-chat', {
-        body: { 
-          messages: messagesToSend.map(m => ({ role: m.role, content: m.content })),
-          conversationId,
-          model: selectedModel
-        }
-      });
+      if (imagineMatch) {
+        aiResponse = await handleImageGeneration(imagineMatch[1]);
+      } else {
+        const messagesToSend = isRegeneration 
+          ? messages.filter(m => m.role === 'user')
+          : [...messages.filter(m => m.role === 'user'), ...(userMessage ? [userMessage] : [])];
 
-      if (error || data.error) throw new Error(data?.error || error?.message || 'Failed to get AI response');
+        const { data, error } = await supabase.functions.invoke('gemini-chat', {
+          body: { 
+            messages: messagesToSend.map(m => ({ role: m.role, content: m.content })),
+            conversationId,
+            model: selectedModel
+          }
+        });
 
-      const aiResponse = data.response;
-      if (!aiResponse) throw new Error('No response from AI');
+        if (error || data.error) throw new Error(data?.error || error?.message || 'Failed to get AI response');
+        aiResponse = data.response;
+        if (!aiResponse) throw new Error('No response from AI');
+      }
 
       const assistantMessage: Message = {
         id: `ai-${Date.now()}`,
@@ -187,6 +232,7 @@ export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
       }
     } finally {
       setIsLoading(false);
+      setIsTyping(false);
     }
   };
 
@@ -241,62 +287,101 @@ export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
       <div className="flex-1 overflow-y-auto">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full px-4 text-center">
-            <div className="max-w-3xl mx-auto space-y-8">
-              <h2 className="text-3xl font-bold">
-                {user ? `Hi ${user.user_metadata?.display_name || user.email?.split('@')[0]}, what's new?` : "What can I help with?"}
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {EXAMPLE_PROMPTS.map((prompt, i) => (
-                  <Button key={i} variant="outline" onClick={() => setInput(prompt)} className="p-4 h-auto rounded-xl hover:scale-105 transition-all">
-                    {prompt}
-                  </Button>
-                ))}
+            <div className="max-w-4xl mx-auto space-y-10 py-12">
+              <div className="space-y-3">
+                <h1 className="text-5xl font-bold bg-gradient-to-r from-ai-blue to-ai-purple bg-clip-text text-transparent">
+                  SanGPT
+                </h1>
+                <p className="text-xl text-muted-foreground">
+                  {user ? `Hi ${user.user_metadata?.display_name || user.email?.split('@')[0]}, what's new?` : "How can I help you today?"}
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+                {STARTER_PROMPTS.map((prompt, i) => {
+                  const Icon = prompt.icon;
+                  return (
+                    <Button
+                      key={i}
+                      variant="outline"
+                      onClick={(e) => { createRipple(e); setInput(prompt.text); }}
+                      className="p-6 h-auto rounded-2xl hover:scale-105 transition-all flex flex-col items-start gap-3 text-left border-2 hover:border-primary relative overflow-hidden"
+                    >
+                      <div className="flex items-center gap-3 w-full">
+                        <Icon className="h-5 w-5 text-primary" />
+                        <span className="text-xs font-semibold text-primary">{prompt.category}</span>
+                      </div>
+                      <p className="text-sm font-medium">{prompt.text}</p>
+                    </Button>
+                  );
+                })}
               </div>
             </div>
           </div>
         ) : (
-          <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-            {messages.map((message) => (
-              <div key={message.id} className={`group flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
-                {message.role === 'assistant' && (
-                  <Avatar className="h-8 w-8 bg-gradient-to-br from-ai-blue to-ai-purple">
-                    <AvatarFallback className="bg-gradient-to-br from-ai-blue to-ai-purple text-white">AI</AvatarFallback>
-                  </Avatar>
-                )}
-                
-                <div className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'} max-w-[80%]`}>
-                  <div
-                    onContextMenu={(e) => { if (message.role === 'assistant') { e.preventDefault(); handleLongPress(message.id); }}}
-                    className={`p-4 rounded-2xl ${message.role === 'user' ? 'bg-ai-blue dark:bg-blue-600 text-gray-900 dark:text-white' : 'bg-white dark:bg-gray-800 border'} shadow-sm`}
-                  >
-                    {message.role === 'assistant' ? <MessageFormatter content={message.content} /> : message.content}
-                  </div>
-                  
-                  {message.role === 'assistant' && (
-                    <div className="mt-2">
-                      <MessageActions messageId={message.id} content={message.content} role={message.role} rating={message.rating} onRegenerate={handleRegenerate} onRatingChange={(r) => setMessages(p => p.map(m => m.id === message.id ? {...m, rating: r} : m))} />
+          <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+            {messages.map((message, idx) => (
+              <div key={message.id} className="w-full animate-fade-in">
+                {message.role === 'user' ? (
+                  <div className="flex items-start gap-4 justify-end">
+                    <div className="flex-1 flex justify-end">
+                      <div className="bg-primary/10 px-6 py-3 rounded-2xl max-w-[85%]">
+                        <p className="text-foreground">{message.content}</p>
+                      </div>
                     </div>
-                  )}
-                </div>
-
-                {message.role === 'user' && user && (
-                  <Avatar className="h-8 w-8 bg-gradient-to-br from-ai-blue to-ai-purple">
-                    <AvatarFallback className="bg-gradient-to-br from-ai-blue to-ai-purple text-white">{user.user_metadata?.display_name?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
-                  </Avatar>
+                    {user && (
+                      <Avatar className="h-8 w-8 bg-gradient-to-br from-ai-blue to-ai-purple flex-shrink-0">
+                        <AvatarFallback className="bg-gradient-to-br from-ai-blue to-ai-purple text-white font-semibold">
+                          {user.user_metadata?.display_name?.charAt(0).toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-4">
+                    <Avatar className="h-8 w-8 bg-gradient-to-br from-ai-blue to-ai-purple flex-shrink-0">
+                      <AvatarFallback className="bg-gradient-to-br from-ai-blue to-ai-purple text-white font-bold">S</AvatarFallback>
+                    </Avatar>
+                    <div 
+                      className="flex-1 py-2 select-none"
+                      onContextMenu={(e) => { e.preventDefault(); handleLongPress(message.id); }}
+                      onTouchStart={(e) => {
+                        const timer = setTimeout(() => handleLongPress(message.id), 500);
+                        e.currentTarget.dataset.timer = String(timer);
+                      }}
+                      onTouchEnd={(e) => {
+                        const timer = e.currentTarget.dataset.timer;
+                        if (timer) clearTimeout(Number(timer));
+                      }}
+                    >
+                      {idx === messages.length - 1 && isTyping ? (
+                        <TypingText text={message.content} onComplete={() => setIsTyping(false)} speed={20} />
+                      ) : (
+                        <TypingText text={message.content} speed={0} />
+                      )}
+                      <div className="mt-3">
+                        <MessageActions 
+                          messageId={message.id} 
+                          content={message.content} 
+                          role={message.role} 
+                          rating={message.rating} 
+                          onRegenerate={handleRegenerate} 
+                          onRatingChange={(r) => setMessages(p => p.map(m => m.id === message.id ? {...m, rating: r} : m))} 
+                        />
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             ))}
             
-            {isLoading && (
-              <div className="flex gap-4 justify-start animate-fade-in">
+            {isLoading && !isTyping && (
+              <div className="flex items-start gap-4 animate-fade-in">
                 <Avatar className="h-8 w-8 bg-gradient-to-br from-ai-blue to-ai-purple">
-                  <AvatarFallback className="bg-gradient-to-br from-ai-blue to-ai-purple text-white">AI</AvatarFallback>
+                  <AvatarFallback className="bg-gradient-to-br from-ai-blue to-ai-purple text-white font-bold">S</AvatarFallback>
                 </Avatar>
-                <div className="p-4 rounded-2xl bg-white dark:bg-gray-800 border">
-                  <div className="flex items-center space-x-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm">Thinking...</span>
-                  </div>
+                <div className="flex-1 py-2">
+                  <ShimmerLoading />
                 </div>
               </div>
             )}
@@ -307,20 +392,46 @@ export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
 
       <div className="p-4 border-t bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto">
+          {isRecording && (
+            <div className="mb-4 flex items-center justify-center">
+              <WaveformAnimation />
+            </div>
+          )}
           <div className="flex items-end gap-2">
             <div className="flex-1 relative">
-              <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Message Copilot" className="pr-20 py-3 rounded-2xl" onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage(input))} disabled={isLoading} />
+              <Input 
+                value={input} 
+                onChange={(e) => setInput(e.target.value)} 
+                placeholder="Message SanGPT..." 
+                className="pr-20 py-3 rounded-2xl" 
+                onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage(input))} 
+                disabled={isLoading || isRecording} 
+              />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowAttachment(true)}><Paperclip className="h-4 w-4" /></Button>
-                <SpeechToText onTranscription={(t) => setInput(t)} disabled={isLoading} />
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { createRipple(e); setShowAttachment(true); }}>
+                  <Paperclip className="h-4 w-4" />
+                </Button>
+                <SpeechToText 
+                  onTranscription={(t) => { setInput(t); setIsRecording(false); }} 
+                  disabled={isLoading} 
+                  onRecordingChange={setIsRecording}
+                />
               </div>
             </div>
-            <Button onClick={() => sendMessage(input)} disabled={!input.trim() || isLoading} size="icon" className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl h-12 w-12">
+            <Button 
+              onClick={(e) => { createRipple(e); sendMessage(input); }} 
+              disabled={!input.trim() || isLoading} 
+              size="icon" 
+              className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl h-12 w-12 relative overflow-hidden"
+            >
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </div>
           <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-            <button onClick={() => setShowModelSelector(true)} className="flex items-center gap-1 hover:text-foreground"><Plus className="h-4 w-4" />Quick response</button>
+            <button onClick={(e) => { createRipple(e); setShowModelSelector(true); }} className="flex items-center gap-1 hover:text-foreground transition-colors">
+              <Sparkles className="h-3 w-3" />
+              {selectedModel}
+            </button>
           </div>
         </div>
       </div>

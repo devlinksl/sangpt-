@@ -22,12 +22,16 @@ export const MessageFormatter = ({ content }: MessageFormatterProps) => {
 
         // Format regular text with markdown-like features
         const formatted = part
+          // Highlight "Imagine" keyword in blue
+          .replace(/\b(imagine)\b/gi, '<span class="text-blue-500 font-semibold">$1</span>')
           // Bold text with **
-          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
           // Italic text with *
           .replace(/(?<!\*)\*(?!\*)([^*]+)\*(?!\*)/g, '<em>$1</em>')
           // Headings with *
-          .replace(/^\*\s+(.+)$/gm, '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>')
+          .replace(/^\*\s+(.+)$/gm, '<h3 class="text-lg font-bold mt-4 mb-2">$1</h3>')
+          // Images
+          .replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1" class="rounded-lg max-w-full h-auto my-4" />')
           // Line breaks
           .replace(/\n/g, '<br/>');
 
