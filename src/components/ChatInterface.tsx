@@ -68,15 +68,34 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (smooth = true) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (isTyping || isLoading) {
+      scrollToBottom();
+    }
+  }, [messages, isTyping, isLoading]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      setShowScrollButton(!isNearBottom);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Load conversation when conversationId changes
   useEffect(() => {
@@ -121,13 +140,16 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
   const generateConversationTitle = async (firstMessage: string): Promise<string> => {
     try {
-      const { data } = await supabase.functions.invoke('gemini-chat', {
+      const functionName = selectedModel === 'gemini' ? 'gemini-chat' : 'ai-chat';
+      const modelParam = selectedModel === 'gemini' ? 'gemini-2.0-flash-exp' : 'google/gemini-2.5-flash';
+      
+      const { data } = await supabase.functions.invoke(functionName, {
         body: { 
           messages: [{ 
             role: 'user', 
             content: `Generate a short, creative 3-5 word title for a conversation that starts with: "${firstMessage.substring(0, 100)}". Reply with ONLY the title, no quotes or extra text.` 
           }],
-          model: selectedModel
+          model: modelParam
         }
       });
       return data?.response?.substring(0, 50) || 'New conversation';
@@ -170,8 +192,29 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     }
   };
 
+  const processAttachedFiles = async (): Promise<string> => {
+    if (attachedFiles.length === 0) return '';
+
+    let fileContext = '\n\n[Attached Files]:\n';
+    
+    for (const file of attachedFiles) {
+      fileContext += `\nFile: ${file.name} (${(file.size / 1024).toFixed(2)} KB, ${file.type})\n`;
+      
+      if (file.type.startsWith('text/') || file.type.includes('json')) {
+        const text = await file.text();
+        fileContext += `Content:\n${text}\n`;
+      } else if (file.type === 'application/pdf' || file.type.includes('document')) {
+        fileContext += `[Document file - content extraction would require backend processing]\n`;
+      } else if (file.type.startsWith('image/')) {
+        fileContext += `[Image file - visual analysis would require vision model]\n`;
+      }
+    }
+    
+    return fileContext;
+  };
+
   const sendMessage = async (messageText: string, isRegeneration = false) => {
-    if (!messageText.trim() && !isRegeneration) return;
+    if (!messageText.trim() && !isRegeneration && attachedFiles.length === 0) return;
 
     if (!user) {
       setShowAuthModal(true);
@@ -181,8 +224,12 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     // Check for "Imagine" keyword
     const imagineMatch = messageText.match(/^imagine\s+(.+)/i);
     
+    const fileContext = await processAttachedFiles();
+    const fullMessage = messageText + fileContext;
+    
     setIsLoading(true);
     setIsTyping(true);
+    setAttachedFiles([]);
 
     try {
       let conversationId = currentConversationId;
@@ -198,9 +245,10 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         userMessage = {
           id: `temp-user-${Date.now()}`,
           role: 'user',
-          content: messageText,
+          content: fullMessage,
           created_at: new Date().toISOString(),
           rating: 0,
+          metadata: attachedFiles.length > 0 ? { files: attachedFiles.map(f => ({ name: f.name, size: f.size, type: f.type })) } : undefined
         };
         setMessages(prev => [...prev, userMessage]);
         setInput('');
@@ -208,7 +256,8 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         await supabase.from('messages').insert([{
           conversation_id: conversationId,
           role: 'user',
-          content: messageText,
+          content: fullMessage,
+          metadata: userMessage.metadata
         }]);
       }
 
@@ -218,8 +267,8 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         aiResponse = await handleImageGeneration(imagineMatch[1]);
       } else {
         const messagesToSend = isRegeneration 
-          ? messages.filter(m => m.role === 'user')
-          : [...messages.filter(m => m.role === 'user'), ...(userMessage ? [userMessage] : [])];
+          ? messages
+          : [...messages, ...(userMessage ? [userMessage] : [])];
 
         // Determine which edge function to use based on selected model
         const functionName = selectedModel === 'gemini' ? 'gemini-chat' : 'ai-chat';
@@ -358,7 +407,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto relative">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full px-4 text-center">
             <div className="max-w-4xl mx-auto space-y-10 py-12">
@@ -397,11 +446,32 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
             {messages.map((message, idx) => (
               <div key={message.id} className="w-full animate-fade-in">
                 {message.role === 'user' ? (
-                  <div className="flex items-start gap-4 justify-end">
+                  <div className="flex items-start gap-4 justify-end group">
                     <div className="flex-1 flex justify-end">
                       <div className="bg-primary/10 px-6 py-3 rounded-2xl max-w-[85%]">
-                        <p className="text-foreground">{message.content}</p>
+                        <p className="text-foreground whitespace-pre-wrap break-words">{message.content.split('[Attached Files]')[0]}</p>
+                        {message.metadata?.files && (
+                          <div className="mt-2 space-y-2">
+                            {message.metadata.files.map((file: any, idx: number) => (
+                              <div key={idx} className="flex items-center gap-2 bg-background/50 px-3 py-2 rounded-lg text-sm">
+                                <Paperclip className="h-4 w-4" />
+                                <span className="flex-1 truncate">{file.name}</span>
+                                <span className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)}KB</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
+                    </div>
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <MessageActions 
+                        messageId={message.id} 
+                        content={message.content} 
+                        role={message.role} 
+                        rating={message.rating} 
+                        onRegenerate={handleRegenerate} 
+                        onRatingChange={(r) => setMessages(p => p.map(m => m.id === message.id ? {...m, rating: r} : m))} 
+                      />
                     </div>
                     {user && (
                       <Avatar className="h-8 w-8 bg-gradient-to-br from-ai-blue to-ai-purple flex-shrink-0">
@@ -412,7 +482,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                     )}
                   </div>
                 ) : (
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-4 group">
                     <Avatar className="h-8 w-8 bg-gradient-to-br from-ai-blue to-ai-purple flex-shrink-0">
                       <AvatarFallback className="bg-gradient-to-br from-ai-blue to-ai-purple text-white font-bold">S</AvatarFallback>
                     </Avatar>
@@ -420,8 +490,23 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                       className="flex-1 py-2 select-none"
                       onContextMenu={(e) => { e.preventDefault(); handleLongPress(message.id); }}
                       onTouchStart={(e) => {
-                        const timer = setTimeout(() => handleLongPress(message.id), 500);
+                        const startY = e.touches[0].clientY;
+                        const timer = setTimeout(() => {
+                          const endY = e.touches[0]?.clientY;
+                          if (Math.abs(endY - startY) < 10) {
+                            handleLongPress(message.id);
+                          }
+                        }, 1900);
                         e.currentTarget.dataset.timer = String(timer);
+                        e.currentTarget.dataset.startY = String(startY);
+                      }}
+                      onTouchMove={(e) => {
+                        const timer = e.currentTarget.dataset.timer;
+                        const startY = Number(e.currentTarget.dataset.startY);
+                        const currentY = e.touches[0].clientY;
+                        if (timer && Math.abs(currentY - startY) > 10) {
+                          clearTimeout(Number(timer));
+                        }
                       }}
                       onTouchEnd={(e) => {
                         const timer = e.currentTarget.dataset.timer;
@@ -429,7 +514,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                       }}
                     >
                       {idx === messages.length - 1 && isTyping ? (
-                        <TypingText text={message.content} onComplete={() => setIsTyping(false)} speed={20} />
+                        <TypingText text={message.content} onComplete={() => setIsTyping(false)} speed={10} />
                       ) : (
                         <TypingText text={message.content} speed={0} />
                       )}
@@ -462,6 +547,18 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
             <div ref={messagesEndRef} />
           </div>
         )}
+        
+        {showScrollButton && (
+          <Button
+            onClick={() => scrollToBottom()}
+            className="absolute bottom-4 right-4 rounded-full shadow-lg z-10"
+            size="icon"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </Button>
+        )}
       </div>
 
       <div className="p-4 border-t bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm">
@@ -471,18 +568,66 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
               <WaveformAnimation />
             </div>
           )}
+          
+          {attachedFiles.length > 0 && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {attachedFiles.map((file, idx) => (
+                <div key={idx} className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg text-sm relative group">
+                  {file.type.startsWith('image/') ? (
+                    <img src={URL.createObjectURL(file)} alt={file.name} className="h-10 w-10 object-cover rounded" />
+                  ) : (
+                    <Paperclip className="h-4 w-4" />
+                  )}
+                  <div className="flex flex-col">
+                    <span className="truncate max-w-[150px]">{file.name}</span>
+                    <span className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)}KB</span>
+                  </div>
+                  <button
+                    onClick={() => setAttachedFiles(prev => prev.filter((_, i) => i !== idx))}
+                    className="ml-2 text-destructive hover:text-destructive/80"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          
           <div className="flex items-end gap-2">
             <div className="flex-1 relative">
-              <Input 
-                value={input} 
-                onChange={(e) => setInput(e.target.value)} 
-                placeholder="Message SanGPT..." 
-                className="pr-20 py-3 rounded-2xl" 
-                onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage(input))} 
-                disabled={isLoading || isRecording} 
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Message SanGPT..."
+                className="w-full pr-20 py-3 px-4 rounded-2xl border bg-background resize-none min-h-[48px] max-h-[120px] overflow-y-auto"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage(input);
+                  }
+                }}
+                rows={1}
+                style={{
+                  height: 'auto',
+                  maxHeight: '120px'
+                }}
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = 'auto';
+                  target.style.height = Math.min(target.scrollHeight, 120) + 'px';
+                }}
+                disabled={isLoading || isRecording}
               />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { createRipple(e); setShowAttachment(true); }}>
+              <div className="absolute right-2 bottom-3 flex gap-1">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8" 
+                  onClick={(e) => { 
+                    createRipple(e); 
+                    setShowAttachment(true); 
+                  }}
+                >
                   <Paperclip className="h-4 w-4" />
                 </Button>
                 <SpeechToText 
@@ -527,7 +672,14 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         onRegenerate={handleRegenerate}
         onShare={handleShare}
       />
-      <AttachmentModal isOpen={showAttachment} onClose={() => setShowAttachment(false)} onFileSelect={(f) => toast({ title: "File attached", description: f.name })} />
+      <AttachmentModal 
+        isOpen={showAttachment} 
+        onClose={() => setShowAttachment(false)} 
+        onFileSelect={(files) => {
+          setAttachedFiles(prev => [...prev, ...files]);
+          toast({ title: "Files attached", description: `${files.length} file(s) ready to send` });
+        }} 
+      />
     </div>
   );
 };

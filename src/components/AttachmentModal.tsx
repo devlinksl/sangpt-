@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 interface AttachmentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onFileSelect: (file: File) => void;
+  onFileSelect: (files: File[]) => void;
 }
 
 export const AttachmentModal = ({ isOpen, onClose, onFileSelect }: AttachmentModalProps) => {
@@ -16,10 +16,11 @@ export const AttachmentModal = ({ isOpen, onClose, onFileSelect }: AttachmentMod
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = accept;
+    input.multiple = true;
     input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        onFileSelect(file);
+      const files = Array.from((e.target as HTMLInputElement).files || []);
+      if (files.length > 0) {
+        onFileSelect(files);
         onClose();
       }
     };
