@@ -40,6 +40,8 @@ interface Message {
 
 interface ChatInterfaceProps {
   onOpenSidebar: () => void;
+  conversationId?: string | null;
+  onConversationChange?: (id: string | null) => void;
 }
 
 const STARTER_PROMPTS = [
@@ -49,7 +51,7 @@ const STARTER_PROMPTS = [
   { icon: Sparkles, text: "Suggest ways to improve my productivity", category: "Advice" }
 ];
 
-export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
+export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationChange }: ChatInterfaceProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -75,6 +77,47 @@ export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Load conversation when conversationId changes
+  useEffect(() => {
+    if (conversationId && conversationId !== currentConversationId) {
+      loadConversation(conversationId);
+    }
+  }, [conversationId]);
+
+  const loadConversation = async (id: string) => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      setMessages(data.map(msg => ({
+        id: msg.id,
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+        created_at: msg.created_at,
+        rating: msg.rating || 0,
+        metadata: msg.metadata
+      })));
+      
+      setCurrentConversationId(id);
+      onConversationChange?.(id);
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load conversation",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const generateConversationTitle = async (firstMessage: string): Promise<string> => {
     try {
@@ -253,7 +296,12 @@ export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
   const handleSelectText = () => {
     const message = messages.find(m => m.id === selectedMessageId);
     if (message) {
-      navigate('/text-selection', { state: { content: message.content } });
+      navigate('/text-selection', { 
+        state: { 
+          content: message.content, 
+          conversationId: currentConversationId 
+        } 
+      });
     }
   };
 
@@ -289,7 +337,11 @@ export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
               <Button variant="ghost" size="icon" onClick={() => navigate('/explore')}>
                 <Compass className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => { setMessages([]); setCurrentConversationId(null); }}>
+              <Button variant="ghost" size="icon" onClick={() => { 
+                setMessages([]); 
+                setCurrentConversationId(null); 
+                onConversationChange?.(null);
+              }}>
                 <Edit3 className="h-5 w-5" />
               </Button>
               <Avatar className="h-8 w-8 bg-gradient-to-br from-ai-blue to-ai-purple cursor-pointer" onClick={() => navigate('/account')}>
