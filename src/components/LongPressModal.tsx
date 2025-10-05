@@ -10,6 +10,7 @@ interface LongPressModalProps {
   onReadAloud: () => void;
   onRegenerate: () => void;
   onShare?: () => void;
+  conversationId?: string | null;
 }
 
 export const LongPressModal = ({ 
@@ -19,7 +20,8 @@ export const LongPressModal = ({
   onSelectText,
   onReadAloud,
   onRegenerate,
-  onShare
+  onShare,
+  conversationId
 }: LongPressModalProps) => {
   const handleAction = (action: () => void) => {
     action();

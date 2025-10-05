@@ -70,15 +70,19 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const [isRecording, setIsRecording] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [isStoppable, setIsStoppable] = useState(false);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const userScrolledRef = useRef(false);
 
   const scrollToBottom = (smooth = true) => {
+    userScrolledRef.current = false;
     messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
   };
 
   useEffect(() => {
-    if (isTyping || isLoading) {
+    if ((isTyping || isLoading) && !userScrolledRef.current) {
       scrollToBottom();
     }
   }, [messages, isTyping, isLoading]);
@@ -90,7 +94,10 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = container;
       const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
-      setShowScrollButton(!isNearBottom);
+      const hasScrolledUp = scrollTop < scrollHeight - clientHeight - 100;
+      
+      userScrolledRef.current = hasScrolledUp;
+      setShowScrollButton(hasScrolledUp && !isNearBottom);
     };
 
     container.addEventListener('scroll', handleScroll);
@@ -213,6 +220,16 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     return fileContext;
   };
 
+  const stopGeneration = () => {
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+    }
+    setIsLoading(false);
+    setIsTyping(false);
+    setIsStoppable(false);
+  };
+
   const sendMessage = async (messageText: string, isRegeneration = false) => {
     if (!messageText.trim() && !isRegeneration && attachedFiles.length === 0) return;
 
@@ -227,8 +244,10 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     const fileContext = await processAttachedFiles();
     const fullMessage = messageText + fileContext;
     
+    const controller = new AbortController();
+    setAbortController(controller);
     setIsLoading(true);
-    setIsTyping(true);
+    setIsStoppable(false);
     setAttachedFiles([]);
 
     try {
@@ -264,11 +283,16 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
       let aiResponse: string;
 
       if (imagineMatch) {
+        setIsStoppable(false);
         aiResponse = await handleImageGeneration(imagineMatch[1]);
       } else {
         const messagesToSend = isRegeneration 
           ? messages
           : [...messages, ...(userMessage ? [userMessage] : [])];
+
+        // Show shimmer loading before AI response
+        setIsStoppable(true);
+        await new Promise(resolve => setTimeout(resolve, 500)); // Brief delay to show shimmer
 
         // Determine which edge function to use based on selected model
         const functionName = selectedModel === 'gemini' ? 'gemini-chat' : 'ai-chat';
@@ -285,6 +309,9 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         if (error || data.error) throw new Error(data?.error || error?.message || 'Failed to get AI response');
         aiResponse = data.response;
         if (!aiResponse) throw new Error('No response from AI');
+        
+        setIsStoppable(false);
+        setIsTyping(true);
       }
 
       const assistantMessage: Message = {
@@ -328,7 +355,8 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
       }
     } finally {
       setIsLoading(false);
-      setIsTyping(false);
+      setIsStoppable(false);
+      setAbortController(null);
     }
   };
 
@@ -463,7 +491,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                         )}
                       </div>
                     </div>
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="transition-opacity">
                       <MessageActions 
                         messageId={message.id} 
                         content={message.content} 
@@ -514,7 +542,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                       }}
                     >
                       {idx === messages.length - 1 && isTyping ? (
-                        <TypingText text={message.content} onComplete={() => setIsTyping(false)} speed={10} />
+                        <TypingText text={message.content} onComplete={() => setIsTyping(false)} speed={5} />
                       ) : (
                         <TypingText text={message.content} speed={0} />
                       )}
@@ -534,9 +562,9 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
               </div>
             ))}
             
-            {isLoading && !isTyping && (
+            {isLoading && !isTyping && isStoppable && (
               <div className="flex items-start gap-4 animate-fade-in">
-                <Avatar className="h-8 w-8 bg-gradient-to-br from-ai-blue to-ai-purple">
+                <Avatar className="h-8 w-8 bg-gradient-to-br from-ai-blue to-ai-purple animate-pulse">
                   <AvatarFallback className="bg-gradient-to-br from-ai-blue to-ai-purple text-white font-bold">S</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 py-2">
@@ -551,7 +579,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         {showScrollButton && (
           <Button
             onClick={() => scrollToBottom()}
-            className="absolute bottom-4 right-4 rounded-full shadow-lg z-10"
+            className="absolute bottom-6 right-6 rounded-full shadow-2xl z-10 h-12 w-12 bg-gradient-to-br from-ai-blue to-ai-purple hover:scale-110 transition-all duration-200 animate-fade-in"
             size="icon"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -599,7 +627,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Message SanGPT..."
-                className="w-full pr-20 py-3 px-4 rounded-2xl border bg-background resize-none min-h-[48px] max-h-[120px] overflow-y-auto"
+                className="w-full pr-20 py-3 px-4 rounded-2xl border-2 bg-background focus:border-primary resize-none min-h-[52px] max-h-[144px] overflow-y-auto shadow-sm transition-all duration-200"
                 onKeyPress={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -609,12 +637,13 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                 rows={1}
                 style={{
                   height: 'auto',
-                  maxHeight: '120px'
+                  maxHeight: '144px'
                 }}
                 onInput={(e) => {
                   const target = e.target as HTMLTextAreaElement;
                   target.style.height = 'auto';
-                  target.style.height = Math.min(target.scrollHeight, 120) + 'px';
+                  const newHeight = Math.min(target.scrollHeight, 144);
+                  target.style.height = newHeight + 'px';
                 }}
                 disabled={isLoading || isRecording}
               />
@@ -638,12 +667,27 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
               </div>
             </div>
             <Button 
-              onClick={(e) => { createRipple(e); sendMessage(input); }} 
-              disabled={!input.trim() || isLoading} 
+              onClick={(e) => { 
+                createRipple(e); 
+                if (isLoading && isStoppable) {
+                  stopGeneration();
+                } else {
+                  sendMessage(input);
+                }
+              }} 
+              disabled={!input.trim() && !isLoading} 
               size="icon" 
-              className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl h-12 w-12 relative overflow-hidden"
+              className={`${
+                isLoading && isStoppable 
+                  ? 'bg-destructive hover:bg-destructive/90' 
+                  : 'bg-gray-900 hover:bg-gray-800 hover:scale-110'
+              } text-white rounded-xl h-12 w-12 relative overflow-hidden transition-all duration-200 shadow-lg`}
             >
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {isLoading && isStoppable ? (
+                <div className="h-3 w-3 bg-white rounded-sm" />
+              ) : (
+                <Send className="h-5 w-5" />
+              )}
             </Button>
           </div>
           <div className="flex justify-between mt-2 text-xs text-muted-foreground">
@@ -666,11 +710,25 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
             navigator.clipboard.writeText(m.content);
             toast({ title: "Copied", description: "Message copied to clipboard" });
           }
+          setShowLongPress(false);
         }} 
-        onSelectText={handleSelectText}
-        onReadAloud={() => toast({ title: "Read Aloud", description: "Text-to-speech feature coming soon" })} 
-        onRegenerate={handleRegenerate}
-        onShare={handleShare}
+        onSelectText={() => {
+          handleSelectText();
+          setShowLongPress(false);
+        }}
+        onReadAloud={() => {
+          toast({ title: "Read Aloud", description: "Text-to-speech feature coming soon" });
+          setShowLongPress(false);
+        }} 
+        onRegenerate={() => {
+          handleRegenerate();
+          setShowLongPress(false);
+        }}
+        onShare={() => {
+          handleShare();
+          setShowLongPress(false);
+        }}
+        conversationId={currentConversationId}
       />
       <AttachmentModal 
         isOpen={showAttachment} 

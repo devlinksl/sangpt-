@@ -256,7 +256,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
                   </div>
                 </div>
 
-                <div className="px-4 pb-4 overflow-y-auto max-h-[calc(100vh-300px)]">
+                <div className="px-4 pb-20 overflow-y-auto max-h-[calc(100vh-200px)]">
                   {loadingConversation ? (
                     <div className="space-y-4 p-4">
                       <ShimmerLoading />

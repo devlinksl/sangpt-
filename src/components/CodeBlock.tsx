@@ -34,8 +34,8 @@ export const CodeBlock = ({ code, language = 'text' }: CodeBlockProps) => {
   };
 
   return (
-    <div className="relative group my-4 rounded-xl overflow-hidden border border-gray-700">
-      <div className="absolute right-2 top-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+    <div className="relative group my-4 rounded-xl overflow-hidden border border-gray-700 max-w-full">
+      <div className="absolute right-2 top-2 z-10">
         <Button
           variant="ghost"
           size="icon"
@@ -50,7 +50,7 @@ export const CodeBlock = ({ code, language = 'text' }: CodeBlockProps) => {
         <span>{language}</span>
       </div>
       
-      <div className="bg-[#1E1E1E]">
+      <div className="bg-[#1E1E1E] overflow-x-auto max-w-full">
         <SyntaxHighlighter
           language={language}
           style={vscDarkPlus}
@@ -59,6 +59,9 @@ export const CodeBlock = ({ code, language = 'text' }: CodeBlockProps) => {
             padding: '1rem',
             background: '#1E1E1E',
             fontSize: '0.875rem',
+            maxWidth: '100%',
+            overflowWrap: 'break-word',
+            wordBreak: 'break-word',
           }}
           wrapLongLines={true}
         >
