@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
@@ -48,6 +49,7 @@ const exploreItems = [
 ];
 
 export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: SidebarProps) => {
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -166,6 +168,10 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
               {exploreItems.map((item, index) => (
                 <div
                   key={index}
+                  onClick={() => {
+                    navigate('/explore');
+                    onClose();
+                  }}
                   className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer group transition-all duration-200"
                 >
                   <div className="p-2 bg-ai-blue/20 rounded-lg">
@@ -187,17 +193,15 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
           <div className="p-4 space-y-4">
             <h3 className="font-semibold text-lg">Settings</h3>
             <div className="space-y-3">
-              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <h4 className="font-medium mb-2">Theme</h4>
-                <p className="text-sm text-muted-foreground">Automatically matches your device preference</p>
-              </div>
-              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <h4 className="font-medium mb-2">Voice Settings</h4>
-                <p className="text-sm text-muted-foreground">Configure speech and audio preferences</p>
-              </div>
-              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <h4 className="font-medium mb-2">Privacy</h4>
-                <p className="text-sm text-muted-foreground">Manage your data and privacy settings</p>
+              <div 
+                onClick={() => {
+                  navigate('/settings');
+                  onClose();
+                }}
+                className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+              >
+                <h4 className="font-medium mb-2">All Settings</h4>
+                <p className="text-sm text-muted-foreground">Theme, voice, privacy, and more</p>
               </div>
             </div>
           </div>
@@ -208,17 +212,15 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
           <div className="p-4 space-y-4">
             <h3 className="font-semibold text-lg">Help & Support</h3>
             <div className="space-y-3">
-              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
-                <h4 className="font-medium">Getting Started</h4>
-                <p className="text-sm text-muted-foreground">Learn how to use Copilot AI</p>
-              </div>
-              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
-                <h4 className="font-medium">Keyboard Shortcuts</h4>
-                <p className="text-sm text-muted-foreground">Speed up your workflow</p>
-              </div>
-              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
-                <h4 className="font-medium">Contact Support</h4>
-                <p className="text-sm text-muted-foreground">Get help when you need it</p>
+              <div 
+                onClick={() => {
+                  navigate('/help');
+                  onClose();
+                }}
+                className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <h4 className="font-medium">View All Help Topics</h4>
+                <p className="text-sm text-muted-foreground">Getting started, shortcuts, and FAQs</p>
               </div>
             </div>
           </div>

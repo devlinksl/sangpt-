@@ -77,8 +77,11 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const userScrolledRef = useRef(false);
 
   const scrollToBottom = (smooth = true) => {
-    userScrolledRef.current = false;
-    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+      userScrolledRef.current = false;
+      setShowScrollButton(false);
+    }
   };
 
   useEffect(() => {
@@ -623,7 +626,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           )}
           
           <div className="flex items-end gap-2">
-            <div className="flex-1 relative">
+            <div className="flex-1 relative flex items-center">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -648,7 +651,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                 }}
                 disabled={isLoading || isRecording}
               />
-              <div className="absolute right-2 bottom-3 flex gap-1">
+              <div className="absolute right-2 flex gap-1 items-center">
                 <Button 
                   variant="ghost" 
                   size="icon" 
