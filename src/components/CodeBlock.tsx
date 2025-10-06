@@ -34,7 +34,7 @@ export const CodeBlock = ({ code, language = 'text' }: CodeBlockProps) => {
   };
 
   return (
-    <div className="relative group my-4 rounded-xl overflow-hidden border border-gray-700 max-w-full">
+    <div className="relative group my-4 rounded-xl border border-gray-700 bg-[#1E1E1E]/90 backdrop-blur-md overflow-hidden max-w-full">
       {/* Copy Button */}
       <div className="absolute right-2 top-2 z-10">
         <Button
@@ -52,13 +52,13 @@ export const CodeBlock = ({ code, language = 'text' }: CodeBlockProps) => {
       </div>
 
       {/* Language Header */}
-      <div className="bg-[#1E1E1E] text-gray-300 px-4 py-2 text-xs font-mono border-b border-gray-700 flex items-center justify-between">
+      <div className="bg-[#151515]/80 text-gray-300 px-4 py-2 text-xs font-mono border-b border-gray-700 flex items-center justify-between">
         <span>{language}</span>
       </div>
 
       {/* Code Area */}
-      <div className="bg-[#1E1E1E] max-w-full overflow-x-auto">
-        <div className="min-w-0 w-full">
+      <div className="bg-[#1E1E1E]/90 overflow-x-hidden max-w-full">
+        <div className="w-full min-w-0 overflow-x-auto">
           <SyntaxHighlighter
             language={language}
             style={vscDarkPlus}
@@ -66,13 +66,16 @@ export const CodeBlock = ({ code, language = 'text' }: CodeBlockProps) => {
             customStyle={{
               margin: 0,
               padding: '1rem',
-              background: '#1E1E1E',
+              background: 'transparent',
               fontSize: '0.875rem',
+              width: '100%',
               maxWidth: '100%',
-              overflowX: 'auto',
               whiteSpace: 'pre-wrap',
+              overflowWrap: 'break-word',
               wordBreak: 'break-word',
               lineHeight: 1.6,
+              borderRadius: '0.75rem',
+              boxSizing: 'border-box',
             }}
           >
             {code}
