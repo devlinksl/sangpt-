@@ -7,43 +7,50 @@ const features = [
     icon: ImageIcon,
     title: 'Image Generation',
     description: 'Create stunning images from text descriptions',
-    color: 'from-purple-500 to-pink-500'
+    color: 'from-purple-500 to-pink-500',
+    path: '/image-generation'
   },
   {
     icon: Globe,
     title: 'Deep Research',
     description: 'Get comprehensive research on any topic',
-    color: 'from-blue-500 to-cyan-500'
+    color: 'from-blue-500 to-cyan-500',
+    path: '/deep-research'
   },
   {
     icon: Mic,
     title: 'Create Podcast',
     description: 'Generate podcast scripts and content',
-    color: 'from-green-500 to-emerald-500'
+    color: 'from-green-500 to-emerald-500',
+    path: '/create-podcast'
   },
   {
     icon: Gamepad2,
     title: 'Interactive Quiz',
     description: 'Test your knowledge with AI-generated quizzes',
-    color: 'from-orange-500 to-red-500'
+    color: 'from-orange-500 to-red-500',
+    path: '/interactive-quiz'
   },
   {
     icon: BookOpen,
     title: 'Summarize Text',
     description: 'Get concise summaries of long documents',
-    color: 'from-indigo-500 to-purple-500'
+    color: 'from-indigo-500 to-purple-500',
+    path: '/summarize-text'
   },
   {
     icon: Code,
     title: 'Code Helper',
     description: 'Get help with coding and debugging',
-    color: 'from-teal-500 to-blue-500'
+    color: 'from-teal-500 to-blue-500',
+    path: '/code-helper'
   },
   {
     icon: Sparkles,
     title: 'Creative Writing',
     description: 'Generate stories, poems, and creative content',
-    color: 'from-pink-500 to-rose-500'
+    color: 'from-pink-500 to-rose-500',
+    path: '/creative-writing'
   }
 ];
 
@@ -76,7 +83,7 @@ export default function Explore() {
             return (
               <button
                 key={index}
-                onClick={() => navigate('/')}
+                onClick={() => navigate(feature.path)}
                 className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 text-left transition-all hover:scale-105 hover:shadow-lg"
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-10 transition-opacity`} />

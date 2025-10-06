@@ -49,10 +49,10 @@ export const MessageFormatter = ({ content }: MessageFormatterProps) => {
             .replace(/^\*\s+(.+)$/gm, '<h3 class="text-lg font-bold mt-4 mb-2">$1</h3>')
             // Images
             .replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1" class="rounded-lg max-w-full h-auto my-4" />')
-            // URLs - make them blue and underlined with click handler
+            // URLs - convert to button with shimmer effect
             .replace(
               /(https?:\/\/[^\s<]+)/g,
-              '<a href="$1" class="text-blue-500 underline hover:text-blue-600" data-link="$1">$1</a>'
+              '<button class="inline-flex items-center gap-2 px-4 py-2 my-1 bg-gradient-to-r from-primary/10 via-primary/20 to-primary/10 bg-[length:200%_100%] animate-shimmer rounded-lg border border-primary/30 hover:border-primary/60 text-primary font-medium text-sm transition-all hover:scale-105" data-link="$1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>$1</button>'
             )
             // Line breaks
             .replace(/\n/g, '<br/>');

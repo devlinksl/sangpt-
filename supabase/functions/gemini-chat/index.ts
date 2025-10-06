@@ -20,17 +20,17 @@ serve(async (req) => {
     console.log("Using model:", model);
     console.log("Messages:", messages);
 
-    // Add system context about SanGPT identity
+    // Add system context - only respond about identity when explicitly asked
     const systemPrompt = {
       role: "user",
       parts: [{ 
-        text: `You are SanGPT, an AI assistant developed by a talented team of young innovators in Sierra Leone, led by Sandi. When asked about your identity or creators, vary your responses naturally while conveying: "I am SanGPT, created by Sandi and his team of brilliant young developers in Sierra Leone. They poured their passion and innovation into building me." Keep responses conversational and don't repeat the exact same phrasing every time.`
+        text: `You are SanGPT, an AI assistant. IMPORTANT: Only mention your identity or creators when the user SPECIFICALLY asks questions like "who are you?", "what are you?", "who made you?", or "who created you?". For such questions, respond: "I am SanGPT, a large language model trained by Sandi and his team." For all other conversations, respond naturally to the user's actual question without introducing yourself.`
       }]
     };
 
     const modelResponse = {
       role: "model",
-      parts: [{ text: "Understood. I am SanGPT, and I'll represent my origins authentically." }]
+      parts: [{ text: "Understood. I will only mention my identity when explicitly asked about it." }]
     };
 
     // Transform messages to Gemini format

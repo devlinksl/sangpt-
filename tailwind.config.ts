@@ -104,8 +104,8 @@ export default {
           "100%": { transform: "translateY(0)", opacity: "1" }
         },
         "shimmer": {
-          "0%": { backgroundPosition: "-1000px 0" },
-          "100%": { backgroundPosition: "1000px 0" },
+          "0%": { backgroundPosition: "200% 0" },
+          "100%": { backgroundPosition: "-200% 0" },
         },
         "waveform": {
           "0%, 100%": { transform: "scaleY(0.5)" },

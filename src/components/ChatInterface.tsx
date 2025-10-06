@@ -64,7 +64,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const [showLongPress, setShowLongPress] = useState(false);
   const [showAttachment, setShowAttachment] = useState(false);
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
-  const [selectedModel, setSelectedModel] = useState('gemini');
+  const [selectedModel, setSelectedModel] = useState('lovable');
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -250,8 +250,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     
     const controller = new AbortController();
     setAbortController(controller);
-    setIsLoading(true);
-    setIsStoppable(false);
+    setIsStoppable(true);
     setAttachedFiles([]);
 
     try {
@@ -294,9 +293,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           ? messages
           : [...messages, ...(userMessage ? [userMessage] : [])];
 
-        // Show shimmer loading before AI response
-        setIsStoppable(true);
-        await new Promise(resolve => setTimeout(resolve, 500)); // Brief delay to show shimmer
+        setIsLoading(true);
 
         // Determine which edge function to use based on selected model
         const functionName = selectedModel === 'gemini' ? 'gemini-chat' : 'ai-chat';
@@ -313,9 +310,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         if (error || data.error) throw new Error(data?.error || error?.message || 'Failed to get AI response');
         aiResponse = data.response;
         if (!aiResponse) throw new Error('No response from AI');
-        
-        setIsStoppable(false);
-        setIsTyping(true);
       }
 
       const assistantMessage: Message = {
@@ -544,13 +538,9 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                         const timer = e.currentTarget.dataset.timer;
                         if (timer) clearTimeout(Number(timer));
                       }}
-                    >
-                      {idx === messages.length - 1 && isTyping ? (
-                        <TypingText text={message.content} onComplete={() => setIsTyping(false)} speed={5} />
-                      ) : (
-                        <TypingText text={message.content} speed={0} />
-                      )}
-                      <div className="mt-3">
+                     >
+                       <TypingText text={message.content} speed={0} />
+                       <div className="mt-3">
                         <MessageActions 
                           messageId={message.id} 
                           content={message.content} 
