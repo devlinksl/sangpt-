@@ -34,7 +34,7 @@ export const CodeBlock = ({ code, language = 'text' }: CodeBlockProps) => {
   };
 
   return (
-    <div className="relative group my-4 rounded-xl border border-gray-700 bg-[#1E1E1E]/90 backdrop-blur-md overflow-hidden max-w-full">
+    <div className="relative group my-4 rounded-xl border border-gray-700 bg-[#1E1E1E]/90 backdrop-blur-md overflow-hidden w-full max-w-full">
       {/* Copy Button */}
       <div className="absolute right-2 top-2 z-10">
         <Button
@@ -57,25 +57,26 @@ export const CodeBlock = ({ code, language = 'text' }: CodeBlockProps) => {
       </div>
 
       {/* Code Area */}
-      <div className="bg-[#1E1E1E]/90 overflow-x-hidden max-w-full">
-        <div className="w-full min-w-0 overflow-x-auto">
+      <div className="bg-[#1E1E1E] w-full">
+        <div className="overflow-x-auto w-full">
           <SyntaxHighlighter
             language={language}
             style={vscDarkPlus}
-            wrapLongLines={true}
+            wrapLongLines={false} // disable auto wrap, let horizontal scroll handle it
             customStyle={{
               margin: 0,
               padding: '1rem',
               background: 'transparent',
-              fontSize: '0.875rem',
+              fontSize: '0.9rem',
               width: '100%',
+              minWidth: '100%',
               maxWidth: '100%',
-              whiteSpace: 'pre-wrap',
-              overflowWrap: 'break-word',
-              wordBreak: 'break-word',
-              lineHeight: 1.6,
-              borderRadius: '0.75rem',
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              whiteSpace: 'pre',
+              wordBreak: 'keep-all',
               boxSizing: 'border-box',
+              lineHeight: 1.6,
             }}
           >
             {code}
