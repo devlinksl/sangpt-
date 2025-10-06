@@ -189,19 +189,19 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   };
 
   const handleImageGeneration = async (prompt: string) => {
-    try {
-      const response = await fetch(`https://api.siputzx.my.id/api/ai/flux?prompt=${encodeURIComponent(prompt)}`);
-      const data = await response.json();
-      
-      if (data.status && data.result?.images?.[0]) {
-        return `![Generated Image](${data.result.images[0]})`;
-      }
-      return "Sorry, I couldn't generate that image.";
-    } catch (error) {
-      console.error('Image generation error:', error);
-      return "Sorry, image generation failed.";
+  try {
+    const response = await fetch(`https://api.siputzx.my.id/api/ai/flux?prompt=${encodeURIComponent(prompt)}`);
+    const data = await response.json();
+    
+    if (data.status && data.result?.images?.[0]) {
+      return `![Generated Image](${data.result.images[0]})`;
     }
-  };
+    return "Sorry, I couldn't generate that image.";
+  } catch (error) {
+    console.error('Image generation error:', error);
+    return "Sorry, image generation failed.";
+  }
+};
 
   const processAttachedFiles = async (): Promise<string> => {
     if (attachedFiles.length === 0) return '';
