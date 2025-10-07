@@ -11,6 +11,64 @@ import jsPDF from 'jspdf';
 import { saveAs } from 'file-saver';
 import { Document, Packer, Paragraph } from 'docx';
 
+const formatResponse = (text: string) => {
+  const lines = text.split('\n').map((line, index) => {
+    const trimmed = line.trim();
+
+    // Enlarged text: *text*
+    if (/^\*.*\*$/.test(trimmed)) {
+      return (
+        <p key={index} className="text-2xl font-bold text-blue-600 mb-4">
+          {trimmed.replace(/^\*|\*$/g, '')}
+        </p>
+      );
+    }
+
+    // Headings: ## Heading
+    if (/^##\s/.test(trimmed)) {
+      return (
+        <h2 key={index} className="text-xl font-semibold mt-6 mb-2 text-cyan-700">
+          {trimmed.replace(/^##\s/, '')}
+        </h2>
+      );
+    }
+
+    // Bullet points: - item
+    if (/^-\s/.test(trimmed)) {
+      return (
+        <li key={index} className="ml-6 list-disc text-base text-muted-foreground">
+          {trimmed.replace(/^- /, '')}
+        </li>
+      );
+    }
+
+    // Blockquotes: > quote
+    if (/^>\s/.test(trimmed)) {
+      return (
+        <blockquote key={index} className="border-l-4 pl-4 italic text-muted-foreground">
+          {trimmed.replace(/^>\s/, '')}
+        </blockquote>
+      );
+    }
+
+    // Inline *bold* inside a sentence
+    const inlineBold = trimmed.split(/(\*[^*]+\*)/).map((chunk, i) => {
+      if (/^\*[^*]+\*$/.test(chunk)) {
+        return <strong key={i}>{chunk.replace(/^\*|\*$/g, '')}</strong>;
+      }
+      return <span key={i}>{chunk}</span>;
+    });
+
+    return (
+      <p key={index} className="text-sm text-foreground mb-2">
+        {inlineBold}
+      </p>
+    );
+  });
+
+  return <div>{lines}</div>;
+};
+
 export default function CreatePodcast() {
   const navigate = useNavigate();
   const { user } = useAuth();
