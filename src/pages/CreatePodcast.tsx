@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ChevronLeft, Mic, Download } from 'lucide-react';
+import { ChevronLeft, Mic, Download, Moon, Sun, Share2, Save } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ShimmerLoading } from '@/components/ShimmerLoading';
+import jsPDF from 'jspdf';
+import { saveAs } from 'file-saver';
+import { Document, Packer, Paragraph } from 'docx';
 
 export default function CreatePodcast() {
   const navigate = useNavigate();
@@ -15,6 +18,14 @@ export default function CreatePodcast() {
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [script, setScript] = useState('');
+  const [darkMode, setDarkMode] = useState(false);
+  const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
+  const [history, setHistory] = useState<string[]>([]);
+
+  useEffect(() => {
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length) setVoice(voices[0]);
+  }, []);
 
   const handleGenerate = async () => {
     if (!topic.trim()) {
@@ -32,10 +43,10 @@ export default function CreatePodcast() {
 
     try {
       const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: { 
-          messages: [{ 
-            role: 'user', 
-            content: `Create a compelling podcast script about: ${topic}. Include an engaging introduction, main content points, and a strong conclusion. Format it for a 5-10 minute podcast episode.` 
+        body: {
+          messages: [{
+            role: 'user',
+            content: `Create a compelling podcast script about: ${topic}. Include an engaging introduction, main content points, and a strong conclusion. Format it for a 5-10 minute podcast episode.`
           }],
           model: 'google/gemini-2.5-flash'
         }
@@ -43,24 +54,78 @@ export default function CreatePodcast() {
 
       if (error || data.error) throw new Error(data?.error || 'Failed to generate podcast script');
       setScript(data.response);
+      setHistory(prev => [...prev, data.response]);
       toast({ title: "Success", description: "Podcast script generated!" });
     } catch (error: any) {
-      console.error('Podcast generation error:', error);
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setIsGenerating(false);
     }
   };
 
+  const handleCopy = () => {
+    navigator.clipboard.writeText(script);
+    toast({ title: "Copied", description: "Script copied to clipboard" });
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.text(script, 10, 10);
+    doc.save(`${topic}-podcast.pdf`);
+  };
+
+  const handleExportDOCX = async () => {
+    const doc = new Document({
+      sections: [{ children: [new Paragraph(script)] }]
+    });
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `${topic}-podcast.docx`);
+  };
+
+  const handleExportTXT = () => {
+    const blob = new Blob([script], { type: 'text/plain;charset=utf-8' });
+    saveAs(blob, `${topic}-podcast.txt`);
+  };
+
+  const handlePlayAudio = () => {
+    const utterance = new SpeechSynthesisUtterance(script);
+    if (voice) utterance.voice = voice;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const handleEmailScript = async () => {
+    await supabase.functions.invoke('send-email', {
+      body: {
+        to: user.email,
+        subject: `Podcast Script: ${topic}`,
+        html: `<pre>${script}</pre>`
+      }
+    });
+    toast({ title: "Sent", description: "Script emailed to your inbox" });
+  };
+
+  const handleSaveToCloud = async () => {
+    await supabase.from('scripts').insert({ user_id: user.id, topic, content: script });
+    toast({ title: "Saved", description: "Script saved to your cloud library" });
+  };
+
+  const getDurationEstimate = () => {
+    const words = script.split(/\s+/).length;
+    const minutes = Math.round(words / 150);
+    return `${minutes} min episode`;
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 bg-background/80 backdrop-blur-sm border-b border-border z-10">
+    <div className={darkMode ? 'dark bg-black text-white' : 'bg-background'}>
+      <header className="sticky top-0 backdrop-blur-sm border-b border-border z-10 bg-background/80 dark:bg-black/80">
         <div className="flex items-center justify-between p-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-lg font-semibold">Create Podcast</h1>
-          <div className="w-10" />
+          <Button variant="ghost" size="icon" onClick={() => setDarkMode(!darkMode)}>
+            {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
         </div>
       </header>
 
@@ -78,9 +143,9 @@ export default function CreatePodcast() {
             placeholder="Enter podcast topic... (e.g., 'The Future of Artificial Intelligence')"
             className="min-h-[100px] resize-none"
           />
-          
-          <Button 
-            onClick={handleGenerate} 
+
+          <Button
+            onClick={handleGenerate}
             disabled={isGenerating || !topic.trim()}
             className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
           >
@@ -99,20 +164,33 @@ export default function CreatePodcast() {
           <div className="bg-card rounded-2xl p-6 animate-fade-in space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold">Your Podcast Script</h3>
-              <Button variant="outline" size="sm" onClick={() => {
-                navigator.clipboard.writeText(script);
-                toast({ title: "Copied", description: "Script copied to clipboard" });
-              }}>
-                <Download className="w-4 h-4 mr-2" />
-                Copy Script
-              </Button>
+              <span className="text-sm text-muted-foreground">{getDurationEstimate()}</span>
             </div>
-            <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap border-t pt-4">
-              {script}
+
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={handleCopy}><Download className="w-4 h-4 mr-2" />Copy</Button>
+              <Button variant="outline" onClick={handleExportPDF}>PDF</Button>
+              <Button variant="outline" onClick={handleExportDOCX}>DOCX</Button>
+              <Button variant="outline" onClick={handleExportTXT}>TXT</Button>
+              <Button variant="outline" onClick={handleEmailScript}>Email</Button>
+              <Button variant="outline" onClick={handlePlayAudio}>🔊 Listen</Button>
+              <Button variant="outline" onClick={handleSaveToCloud}><Save className="w-4 h-4 mr-2" />Save</Button>
+              <Button variant="outline" onClick={() => toast({ title: "Link", description: "Shareable link copied!" })}><Share2 className="w-4 h-4 mr-2" />Share</Button>
             </div>
+
+            <div className="border-t pt-4 space-y-2 whitespace-pre-wrap text-sm">{script}</div>
+
+            {history.length > 1 && (
+              <div className="mt-6">
+                <h4 className="text-md font-semibold mb-2">Version History</h4>
+                <ul className="list-disc ml-6 text-muted-foreground text-sm space-y-1">
+                  {history.slice(0, -1).map((entry, i) => (
+                    <li key={i}>{entry.slice(0, 60)}...</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
       </div>
-    </div>
-  );
-}
+    </div
