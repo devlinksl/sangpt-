@@ -18,6 +18,19 @@ import InteractiveQuiz from "./pages/InteractiveQuiz";
 import SummarizeText from "./pages/SummarizeText";
 import CodeHelper from "./pages/CodeHelper";
 import CreativeWriting from "./pages/CreativeWriting";
+import Contact from "./pages/Contact";
+import EmailWriter from "./pages/EmailWriter";
+import VideoScript from "./pages/VideoScript";
+import SocialMediaPost from "./pages/SocialMediaPost";
+import LanguageTranslator from "./pages/LanguageTranslator";
+import MathSolver from "./pages/MathSolver";
+import DataAnalyzer from "./pages/DataAnalyzer";
+import ResumeBuilder from "./pages/ResumeBuilder";
+import BusinessPlan from "./pages/BusinessPlan";
+import SEOOptimizer from "./pages/SEOOptimizer";
+import MusicComposer from "./pages/MusicComposer";
+import RecipeGenerator from "./pages/RecipeGenerator";
+import FitnessPlanner from "./pages/FitnessPlanner";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +57,19 @@ const App = () => (
               <Route path="/summarize-text" element={<SummarizeText />} />
               <Route path="/code-helper" element={<CodeHelper />} />
               <Route path="/creative-writing" element={<CreativeWriting />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/email-writer" element={<EmailWriter />} />
+              <Route path="/video-script" element={<VideoScript />} />
+              <Route path="/social-media-post" element={<SocialMediaPost />} />
+              <Route path="/language-translator" element={<LanguageTranslator />} />
+              <Route path="/math-solver" element={<MathSolver />} />
+              <Route path="/data-analyzer" element={<DataAnalyzer />} />
+              <Route path="/resume-builder" element={<ResumeBuilder />} />
+              <Route path="/business-plan" element={<BusinessPlan />} />
+              <Route path="/seo-optimizer" element={<SEOOptimizer />} />
+              <Route path="/music-composer" element={<MusicComposer />} />
+              <Route path="/recipe-generator" element={<RecipeGenerator />} />
+              <Route path="/fitness-planner" element={<FitnessPlanner />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

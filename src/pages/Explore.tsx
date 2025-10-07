@@ -2,6 +2,8 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ImageIcon, Globe, Mic, Gamepad2, BookOpen, Code, Sparkles } from 'lucide-react';
 
+import { Mail, Video, Share2, Languages, Calculator, BarChart3, FileText, Briefcase, Search, Music, ChefHat, Dumbbell } from 'lucide-react';
+
 const features = [
   {
     icon: ImageIcon,
@@ -51,6 +53,90 @@ const features = [
     description: 'Generate stories, poems, and creative content',
     color: 'from-pink-500 to-rose-500',
     path: '/creative-writing'
+  },
+  {
+    icon: Mail,
+    title: 'Email Writer',
+    description: 'Compose professional emails effortlessly',
+    color: 'from-yellow-500 to-orange-500',
+    path: '/email-writer'
+  },
+  {
+    icon: Video,
+    title: 'Video Script',
+    description: 'Create engaging video scripts',
+    color: 'from-red-500 to-pink-500',
+    path: '/video-script'
+  },
+  {
+    icon: Share2,
+    title: 'Social Media Post',
+    description: 'Generate viral social media content',
+    color: 'from-blue-500 to-purple-500',
+    path: '/social-media-post'
+  },
+  {
+    icon: Languages,
+    title: 'Language Translator',
+    description: 'Translate text between 100+ languages',
+    color: 'from-green-500 to-teal-500',
+    path: '/language-translator'
+  },
+  {
+    icon: Calculator,
+    title: 'Math Solver',
+    description: 'Solve complex math problems step-by-step',
+    color: 'from-cyan-500 to-blue-500',
+    path: '/math-solver'
+  },
+  {
+    icon: BarChart3,
+    title: 'Data Analyzer',
+    description: 'Analyze and visualize your data',
+    color: 'from-indigo-500 to-blue-500',
+    path: '/data-analyzer'
+  },
+  {
+    icon: FileText,
+    title: 'Resume Builder',
+    description: 'Create professional ATS-friendly resumes',
+    color: 'from-purple-500 to-indigo-500',
+    path: '/resume-builder'
+  },
+  {
+    icon: Briefcase,
+    title: 'Business Plan',
+    description: 'Generate comprehensive business plans',
+    color: 'from-gray-600 to-gray-800',
+    path: '/business-plan'
+  },
+  {
+    icon: Search,
+    title: 'SEO Optimizer',
+    description: 'Optimize content for search engines',
+    color: 'from-lime-500 to-green-500',
+    path: '/seo-optimizer'
+  },
+  {
+    icon: Music,
+    title: 'Music Composer',
+    description: 'Generate original music compositions',
+    color: 'from-violet-500 to-purple-500',
+    path: '/music-composer'
+  },
+  {
+    icon: ChefHat,
+    title: 'Recipe Generator',
+    description: 'Create delicious recipes from ingredients',
+    color: 'from-amber-500 to-orange-500',
+    path: '/recipe-generator'
+  },
+  {
+    icon: Dumbbell,
+    title: 'Fitness Planner',
+    description: 'Get personalized workout plans',
+    color: 'from-red-500 to-orange-500',
+    path: '/fitness-planner'
   }
 ];
 

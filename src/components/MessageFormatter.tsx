@@ -21,6 +21,24 @@ export const MessageFormatter = ({ content }: MessageFormatterProps) => {
     }
   };
 
+  const formatLinkDisplay = (url: string): string => {
+    try {
+      const urlObj = new URL(url);
+      let domain = urlObj.hostname.replace('www.', '');
+      
+      // Capitalize first letter of each word
+      return domain
+        .split('.')
+        .slice(0, -1)
+        .join(' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    } catch {
+      return url;
+    }
+  };
+
   // Split content by code blocks
   const parts = content.split(/(```[\s\S]*?```)/g);
 
@@ -49,10 +67,13 @@ export const MessageFormatter = ({ content }: MessageFormatterProps) => {
             .replace(/^\*\s+(.+)$/gm, '<h3 class="text-lg font-bold mt-4 mb-2">$1</h3>')
             // Images
             .replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1" class="rounded-lg max-w-full h-auto my-4" />')
-            // URLs - convert to button with shimmer effect
+            // URLs - convert to button with shimmer effect and formatted display text
             .replace(
               /(https?:\/\/[^\s<]+)/g,
-              '<button class="inline-flex items-center gap-2 px-4 py-2 my-1 bg-gradient-to-r from-primary/10 via-primary/20 to-primary/10 bg-[length:200%_100%] animate-shimmer rounded-lg border border-primary/30 hover:border-primary/60 text-primary font-medium text-sm transition-all hover:scale-105" data-link="$1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>$1</button>'
+              (match) => {
+                const displayText = formatLinkDisplay(match);
+                return `<button class="inline-flex items-center gap-2 px-4 py-2 my-1 bg-gradient-to-r from-primary/10 via-primary/20 to-primary/10 bg-[length:200%_100%] animate-shimmer rounded-lg border border-primary/30 hover:border-primary/60 text-primary font-medium text-sm transition-all hover:scale-105" data-link="${match}"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>${displayText}</button>`;
+              }
             )
             // Line breaks
             .replace(/\n/g, '<br/>');
@@ -63,7 +84,7 @@ export const MessageFormatter = ({ content }: MessageFormatterProps) => {
               dangerouslySetInnerHTML={{ __html: formatted }}
               onClick={(e) => {
                 const target = e.target as HTMLElement;
-                if (target.tagName === 'A' && target.dataset.link) {
+                if (target.tagName === 'BUTTON' && target.dataset.link) {
                   handleLinkClick(e, target.dataset.link);
                 }
               }}

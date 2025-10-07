@@ -23,7 +23,8 @@ import {
   Edit2,
   History,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Mail
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -46,6 +47,7 @@ const exploreItems = [
   { icon: Sparkles, title: "Generate Image", description: "Create AI artwork" },
   { icon: History, title: "Deep Research", description: "Comprehensive analysis" },
   { icon: Settings, title: "Voice Chat", description: "Speak with AI" },
+  { icon: Mail, title: "Contact Us", description: "Get in touch", path: '/contact' },
 ];
 
 export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: SidebarProps) => {
@@ -169,7 +171,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
                 <div
                   key={index}
                   onClick={() => {
-                    navigate('/explore');
+                    navigate(item.path || '/explore');
                     onClose();
                   }}
                   className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer group transition-all duration-200"

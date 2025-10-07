@@ -34,7 +34,7 @@ export const CodeBlock = ({ code, language = 'text' }: CodeBlockProps) => {
   };
 
   return (
-    <div className="relative group my-4 rounded-xl border border-gray-700 bg-[#1E1E1E]/90 backdrop-blur-md overflow-hidden w-full max-w-full">
+    <div className="code-card relative group my-4 rounded-xl border border-gray-700 bg-[#1E1E1E]/90 backdrop-blur-md overflow-hidden w-full max-w-full box-border">
       {/* Copy Button */}
       <div className="absolute right-2 top-2 z-10">
         <Button
@@ -57,31 +57,28 @@ export const CodeBlock = ({ code, language = 'text' }: CodeBlockProps) => {
       </div>
 
       {/* Code Area */}
-      <div className="bg-[#1E1E1E] w-full">
-        <div className="overflow-x-auto w-full">
-          <SyntaxHighlighter
-            language={language}
-            style={vscDarkPlus}
-            wrapLongLines={false} // disable auto wrap, let horizontal scroll handle it
-            customStyle={{
-              margin: 0,
-              padding: '1rem',
-              background: 'transparent',
-              fontSize: '0.9rem',
-              width: '100%',
-              minWidth: '100%',
-              maxWidth: '100%',
-              overflowX: 'auto',
-              overflowY: 'hidden',
-              whiteSpace: 'pre',
-              wordBreak: 'keep-all',
-              boxSizing: 'border-box',
-              lineHeight: 1.6,
-            }}
-          >
-            {code}
-          </SyntaxHighlighter>
-        </div>
+      <div className="bg-[#1E1E1E] w-full overflow-x-auto">
+        <SyntaxHighlighter
+          language={language}
+          style={vscDarkPlus}
+          wrapLongLines={true}
+          customStyle={{
+            margin: 0,
+            padding: '1rem',
+            background: 'transparent',
+            fontSize: '0.9rem',
+            width: '100%',
+            maxWidth: '100%',
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            boxSizing: 'border-box',
+            lineHeight: 1.6,
+          }}
+        >
+          {code}
+        </SyntaxHighlighter>
       </div>
     </div>
   );
