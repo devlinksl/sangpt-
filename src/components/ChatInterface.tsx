@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/components/AuthContext';
 import { AuthModal } from '@/components/AuthModal';
 import { MessageActions } from '@/components/MessageActions';
-import { TypingText } from '@/components/TypingText';
+import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { ShimmerLoading } from '@/components/ShimmerLoading';
 import { SpeechToText } from '@/components/SpeechToText';
 import { WaveformAnimation } from '@/components/WaveformAnimation';
@@ -16,17 +15,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useRipple } from '@/hooks/useRipple';
+import { useTheme } from '@/components/ThemeProvider';
 import { 
   Menu, 
   Edit3, 
   Send, 
   Paperclip,
-  Loader2,
   Compass,
   Sparkles,
   Lightbulb,
   Code,
-  Wand2
+  Wand2,
+  Plus,
+  Moon,
+  Sun
 } from 'lucide-react';
 
 interface Message {
@@ -56,6 +58,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const { toast } = useToast();
   const navigate = useNavigate();
   const createRipple = useRipple();
+  const { theme, setTheme } = useTheme();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -64,7 +67,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const [showLongPress, setShowLongPress] = useState(false);
   const [showAttachment, setShowAttachment] = useState(false);
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
-  const [selectedModel, setSelectedModel] = useState('lovable');
+  const [selectedModel, setSelectedModel] = useState('gemini');
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -392,41 +395,53 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-b from-ai-light-blue to-ai-white dark:from-gray-900 dark:to-gray-800">
-      <header className="flex items-center justify-between p-4 border-b border-border/10 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onOpenSidebar}>
+    <div className="flex flex-col h-screen bg-background">
+      <header className="flex items-center justify-between px-4 py-3 border-b border-border/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={onOpenSidebar} className="hover:bg-accent">
             <Menu className="h-5 w-5" />
           </Button>
           <button 
-            onClick={() => setShowModelSelector(true)}
-            className="text-lg font-semibold hover:bg-muted px-3 py-1 rounded-lg transition-colors"
+            onClick={() => { 
+              setMessages([]); 
+              setCurrentConversationId(null); 
+              onConversationChange?.(null);
+            }}
+            className="text-lg font-semibold hover:bg-accent px-3 py-1.5 rounded-lg transition-colors"
           >
-            {messages.length > 0 ? 'New conversation' : 'SanGPT'}
+            {messages.length > 0 ? 'SanGPT' : 'SanGPT'}
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="hover:bg-accent"
+          >
+            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
           {user ? (
             <>
-              <Button variant="ghost" size="icon" onClick={() => navigate('/explore')}>
+              <Button variant="ghost" size="icon" onClick={() => navigate('/explore')} className="hover:bg-accent">
                 <Compass className="h-5 w-5" />
               </Button>
               <Button variant="ghost" size="icon" onClick={() => { 
                 setMessages([]); 
                 setCurrentConversationId(null); 
                 onConversationChange?.(null);
-              }}>
+              }} className="hover:bg-accent">
                 <Edit3 className="h-5 w-5" />
               </Button>
-              <Avatar className="h-8 w-8 bg-gradient-to-br from-ai-blue to-ai-purple cursor-pointer" onClick={() => navigate('/account')}>
-                <AvatarFallback className="bg-gradient-to-br from-ai-blue to-ai-purple text-white font-medium">
-                  {user.user_metadata?.display_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'W'}
+              <Avatar className="h-8 w-8 bg-primary cursor-pointer ml-1" onClick={() => navigate('/account')}>
+                <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
+                  {user.user_metadata?.display_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
             </>
           ) : (
-            <Button onClick={() => setShowAuthModal(true)} className="bg-gray-900 hover:bg-gray-800 text-white rounded-full px-6">
+            <Button onClick={() => setShowAuthModal(true)} className="rounded-full px-6 ml-2">
               Sign up
             </Button>
           )}
@@ -436,84 +451,64 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto relative">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full px-4 text-center">
-            <div className="max-w-4xl mx-auto space-y-10 py-12">
-              <div className="space-y-3">
-                <h1 className="text-5xl font-bold bg-gradient-to-r from-ai-blue to-ai-purple bg-clip-text text-transparent">
+            <div className="max-w-3xl mx-auto space-y-8 py-20">
+              <div className="space-y-4">
+                <h1 className="text-4xl md:text-5xl font-bold text-foreground">
                   SanGPT
                 </h1>
-                <p className="text-xl text-muted-foreground">
-                  {user ? `Hi ${user.user_metadata?.display_name || user.email?.split('@')[0]}, what's new?` : "How can I help you today?"}
+                <p className="text-lg text-muted-foreground">
+                  {user ? `Hello, ${user.user_metadata?.display_name || user.email?.split('@')[0]}` : "How can I help you today?"}
                 </p>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto">
                 {STARTER_PROMPTS.map((prompt, i) => {
                   const Icon = prompt.icon;
                   return (
-                    <Button
+                    <button
                       key={i}
-                      variant="outline"
                       onClick={(e) => { createRipple(e); setInput(prompt.text); }}
-                      className="p-6 h-auto rounded-2xl hover:scale-105 transition-all flex flex-col items-start gap-3 text-left border-2 hover:border-primary relative overflow-hidden"
+                      className="p-4 rounded-xl border border-border hover:bg-accent transition-all flex flex-col items-start gap-2 text-left group"
                     >
-                      <div className="flex items-center gap-3 w-full">
-                        <Icon className="h-5 w-5 text-primary" />
-                        <span className="text-xs font-semibold text-primary">{prompt.category}</span>
+                      <div className="flex items-center gap-2">
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-xs font-medium text-muted-foreground">{prompt.category}</span>
                       </div>
-                      <p className="text-sm font-medium">{prompt.text}</p>
-                    </Button>
+                      <p className="text-sm text-foreground">{prompt.text}</p>
+                    </button>
                   );
                 })}
               </div>
             </div>
           </div>
         ) : (
-          <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+          <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
             {messages.map((message, idx) => (
-              <div key={message.id} className="w-full animate-fade-in">
+              <div key={message.id} className="animate-fade-in">
                 {message.role === 'user' ? (
-                  <div className="flex items-start gap-4 justify-end group">
-                    <div className="flex-1 flex justify-end">
-                      <div className="bg-primary/10 px-6 py-3 rounded-2xl max-w-[85%]">
-                        <p className="text-foreground whitespace-pre-wrap break-words">{message.content.split('[Attached Files]')[0]}</p>
-                        {message.metadata?.files && (
-                          <div className="mt-2 space-y-2">
-                            {message.metadata.files.map((file: any, idx: number) => (
-                              <div key={idx} className="flex items-center gap-2 bg-background/50 px-3 py-2 rounded-lg text-sm">
-                                <Paperclip className="h-4 w-4" />
-                                <span className="flex-1 truncate">{file.name}</span>
-                                <span className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)}KB</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                  <div className="flex items-start gap-3 justify-end">
+                    <div className="bg-primary text-primary-foreground px-4 py-3 rounded-2xl max-w-[80%] shadow-sm">
+                      <p className="whitespace-pre-wrap break-words">{message.content.split('[Attached Files]')[0]}</p>
+                      {message.metadata?.files && (
+                        <div className="mt-2 space-y-2">
+                          {message.metadata.files.map((file: any, idx: number) => (
+                            <div key={idx} className="flex items-center gap-2 bg-background/10 px-3 py-2 rounded-lg text-sm">
+                              <Paperclip className="h-4 w-4" />
+                              <span className="flex-1 truncate">{file.name}</span>
+                              <span className="text-xs">{(file.size / 1024).toFixed(1)}KB</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <div className="transition-opacity">
-                      <MessageActions 
-                        messageId={message.id} 
-                        content={message.content} 
-                        role={message.role} 
-                        rating={message.rating} 
-                        onRegenerate={handleRegenerate} 
-                        onRatingChange={(r) => setMessages(p => p.map(m => m.id === message.id ? {...m, rating: r} : m))} 
-                      />
-                    </div>
-                    {user && (
-                      <Avatar className="h-8 w-8 bg-gradient-to-br from-ai-blue to-ai-purple flex-shrink-0">
-                        <AvatarFallback className="bg-gradient-to-br from-ai-blue to-ai-purple text-white font-semibold">
-                          {user.user_metadata?.display_name?.charAt(0).toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
                   </div>
                 ) : (
-                  <div className="flex items-start gap-4 group">
-                    <Avatar className="h-8 w-8 bg-gradient-to-br from-ai-blue to-ai-purple flex-shrink-0">
-                      <AvatarFallback className="bg-gradient-to-br from-ai-blue to-ai-purple text-white font-bold">S</AvatarFallback>
+                  <div className="flex items-start gap-3">
+                    <Avatar className="h-7 w-7 bg-primary flex-shrink-0 mt-1">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-sm font-bold">S</AvatarFallback>
                     </Avatar>
                     <div 
-                      className="flex-1 py-2 select-none"
+                      className="flex-1 space-y-3"
                       onContextMenu={(e) => { e.preventDefault(); handleLongPress(message.id); }}
                       onTouchStart={(e) => {
                         const startY = e.touches[0].clientY;
@@ -539,27 +534,25 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                         if (timer) clearTimeout(Number(timer));
                       }}
                      >
-                       <TypingText text={message.content} speed={0} />
-                       <div className="mt-3">
-                        <MessageActions 
-                          messageId={message.id} 
-                          content={message.content} 
-                          role={message.role} 
-                          rating={message.rating} 
-                          onRegenerate={handleRegenerate} 
-                          onRatingChange={(r) => setMessages(p => p.map(m => m.id === message.id ? {...m, rating: r} : m))} 
-                        />
-                      </div>
+                       <MarkdownRenderer content={message.content} />
+                       <MessageActions 
+                         messageId={message.id} 
+                         content={message.content} 
+                         role={message.role} 
+                         rating={message.rating} 
+                         onRegenerate={handleRegenerate} 
+                         onRatingChange={(r) => setMessages(p => p.map(m => m.id === message.id ? {...m, rating: r} : m))} 
+                       />
                     </div>
                   </div>
                 )}
               </div>
             ))}
             
-            {isLoading && !isTyping && isStoppable && (
-              <div className="flex items-start gap-4 animate-fade-in">
-                <Avatar className="h-8 w-8 bg-gradient-to-br from-ai-blue to-ai-purple animate-pulse">
-                  <AvatarFallback className="bg-gradient-to-br from-ai-blue to-ai-purple text-white font-bold">S</AvatarFallback>
+            {isLoading && isStoppable && (
+              <div className="flex items-start gap-3 animate-fade-in">
+                <Avatar className="h-7 w-7 bg-primary animate-pulse mt-1">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-sm font-bold">S</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 py-2">
                   <ShimmerLoading />
@@ -583,30 +576,27 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         )}
       </div>
 
-      <div className="p-4 border-t bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm">
-        <div className="max-w-4xl mx-auto">
+      <div className="p-3 border-t backdrop-blur-sm sticky bottom-0">
+        <div className="max-w-3xl mx-auto">
           {isRecording && (
-            <div className="mb-4 flex items-center justify-center">
+            <div className="mb-3 flex items-center justify-center">
               <WaveformAnimation />
             </div>
           )}
           
           {attachedFiles.length > 0 && (
-            <div className="mb-3 flex flex-wrap gap-2">
+            <div className="mb-2 flex flex-wrap gap-2">
               {attachedFiles.map((file, idx) => (
-                <div key={idx} className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg text-sm relative group">
+                <div key={idx} className="flex items-center gap-2 bg-accent px-3 py-1.5 rounded-lg text-sm">
                   {file.type.startsWith('image/') ? (
-                    <img src={URL.createObjectURL(file)} alt={file.name} className="h-10 w-10 object-cover rounded" />
+                    <img src={URL.createObjectURL(file)} alt={file.name} className="h-8 w-8 object-cover rounded" />
                   ) : (
-                    <Paperclip className="h-4 w-4" />
+                    <Paperclip className="h-3 w-3" />
                   )}
-                  <div className="flex flex-col">
-                    <span className="truncate max-w-[150px]">{file.name}</span>
-                    <span className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)}KB</span>
-                  </div>
+                  <span className="truncate max-w-[120px] text-xs">{file.name}</span>
                   <button
                     onClick={() => setAttachedFiles(prev => prev.filter((_, i) => i !== idx))}
-                    className="ml-2 text-destructive hover:text-destructive/80"
+                    className="text-destructive hover:text-destructive/80 text-xs"
                   >
                     ✕
                   </button>
@@ -616,12 +606,23 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           )}
           
           <div className="flex items-end gap-2">
-            <div className="flex-1 relative flex items-center">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-10 w-10 rounded-full flex-shrink-0" 
+              onClick={(e) => { 
+                createRipple(e); 
+                setShowAttachment(true); 
+              }}
+            >
+              <Plus className="h-5 w-5" />
+            </Button>
+            <div className="flex-1 relative">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Message SanGPT..."
-                className="w-full pr-20 py-3 px-4 rounded-2xl border-2 bg-background focus:border-primary resize-none min-h-[52px] max-h-[144px] overflow-y-auto shadow-sm transition-all duration-200"
+                placeholder="Message SanGPT"
+                className="w-full py-3 px-4 pr-20 rounded-3xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-none min-h-[52px] max-h-[200px] overflow-y-auto transition-all"
                 onKeyPress={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -631,63 +632,55 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                 rows={1}
                 style={{
                   height: 'auto',
-                  maxHeight: '144px'
+                  maxHeight: '200px'
                 }}
                 onInput={(e) => {
                   const target = e.target as HTMLTextAreaElement;
                   target.style.height = 'auto';
-                  const newHeight = Math.min(target.scrollHeight, 144);
+                  const newHeight = Math.min(target.scrollHeight, 200);
                   target.style.height = newHeight + 'px';
                 }}
                 disabled={isLoading || isRecording}
               />
-              <div className="absolute right-2 flex gap-1 items-center">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={(e) => { 
-                    createRipple(e); 
-                    setShowAttachment(true); 
-                  }}
-                >
-                  <Paperclip className="h-4 w-4" />
-                </Button>
+              <div className="absolute right-2 bottom-2 flex gap-1 items-center">
                 <SpeechToText 
                   onTranscription={(t) => { setInput(t); setIsRecording(false); }} 
                   disabled={isLoading} 
                   onRecordingChange={setIsRecording}
                 />
+                <Button 
+                  onClick={(e) => { 
+                    createRipple(e); 
+                    if (isLoading && isStoppable) {
+                      stopGeneration();
+                    } else {
+                      sendMessage(input);
+                    }
+                  }} 
+                  disabled={!input.trim() && !isLoading} 
+                  size="icon" 
+                  className={`h-8 w-8 rounded-full ${
+                    isLoading && isStoppable 
+                      ? 'bg-destructive hover:bg-destructive/90' 
+                      : 'bg-foreground hover:bg-foreground/90'
+                  } text-background transition-all`}
+                >
+                  {isLoading && isStoppable ? (
+                    <div className="h-2.5 w-2.5 bg-background rounded-sm" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
             </div>
-            <Button 
-              onClick={(e) => { 
-                createRipple(e); 
-                if (isLoading && isStoppable) {
-                  stopGeneration();
-                } else {
-                  sendMessage(input);
-                }
-              }} 
-              disabled={!input.trim() && !isLoading} 
-              size="icon" 
-              className={`${
-                isLoading && isStoppable 
-                  ? 'bg-destructive hover:bg-destructive/90' 
-                  : 'bg-gray-900 hover:bg-gray-800 hover:scale-110'
-              } text-white rounded-xl h-12 w-12 relative overflow-hidden transition-all duration-200 shadow-lg`}
-            >
-              {isLoading && isStoppable ? (
-                <div className="h-3 w-3 bg-white rounded-sm" />
-              ) : (
-                <Send className="h-5 w-5" />
-              )}
-            </Button>
           </div>
-          <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-            <button onClick={(e) => { createRipple(e); setShowModelSelector(true); }} className="flex items-center gap-1 hover:text-foreground transition-colors">
+          <div className="flex justify-center mt-2">
+            <button 
+              onClick={(e) => { createRipple(e); setShowModelSelector(true); }} 
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+            >
               <Sparkles className="h-3 w-3" />
-              {selectedModel === 'gemini' ? 'SanGPT (Gemini)' : 'SanGPT (Lovable AI)'}
+              Powered by Gemini
             </button>
           </div>
         </div>

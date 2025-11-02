@@ -2,13 +2,11 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ChatInterface } from '@/components/ChatInterface';
 import { Sidebar } from '@/components/Sidebar';
-import { SplashScreen } from '@/components/SplashScreen';
 
 const Index = () => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
-  const [showSplash, setShowSplash] = useState(true);
 
   // Handle navigation from text selection page
   useEffect(() => {
@@ -26,10 +24,6 @@ const Index = () => {
     setSelectedConversationId(conversationId);
     setSidebarOpen(false);
   };
-
-  if (showSplash) {
-    return <SplashScreen onComplete={() => setShowSplash(false)} />;
-  }
 
   return (
     <div className="min-h-screen bg-background">
