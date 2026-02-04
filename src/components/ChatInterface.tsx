@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useRipple } from '@/hooks/useRipple';
 import { useTheme } from '@/components/ThemeProvider';
+import { humanizeError } from '@/lib/humanizeError';
 import { 
   Menu, 
   Edit3, 
@@ -67,7 +68,8 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const [showLongPress, setShowLongPress] = useState(false);
   const [showAttachment, setShowAttachment] = useState(false);
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
-  const [selectedModel, setSelectedModel] = useState('gemini');
+  // Default to the more reliable built-in model
+  const [selectedModel, setSelectedModel] = useState('lovable');
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -118,6 +120,8 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     }
   }, [conversationId]);
 
+  const modelLabel = selectedModel === 'lovable' ? 'SanGPT' : 'Experimental';
+
   const loadConversation = async (id: string) => {
     try {
       setIsLoading(true);
@@ -144,7 +148,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
       console.error('Error loading conversation:', error);
       toast({
         title: "Error",
-        description: "Failed to load conversation",
+        description: humanizeError(error) ?? "Failed to load conversation",
         variant: "destructive",
       });
     } finally {
@@ -278,12 +282,14 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         setMessages(prev => [...prev, userMessage]);
         setInput('');
 
-        await supabase.from('messages').insert([{
+        const { error: insertUserError } = await supabase.from('messages').insert([{
           conversation_id: conversationId,
           role: 'user',
           content: fullMessage,
           metadata: userMessage.metadata
         }]);
+
+        if (insertUserError) throw insertUserError;
       }
 
       let aiResponse: string;
@@ -310,7 +316,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           }
         });
 
-        if (error || data.error) throw new Error(data?.error || error?.message || 'Failed to get AI response');
+        if (error || data?.error) throw new Error(data?.error || error?.message || 'Failed to get AI response');
         aiResponse = data.response;
         if (!aiResponse) throw new Error('No response from AI');
       }
@@ -337,17 +343,19 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         return [...prev, assistantMessage];
       });
 
-      await supabase.from('messages').insert([{
+      const { error: insertAiError } = await supabase.from('messages').insert([{
         conversation_id: conversationId,
         role: 'assistant',
         content: aiResponse,
       }]);
 
+      if (insertAiError) throw insertAiError;
+
     } catch (error: any) {
       console.error('Error in sendMessage:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to send message",
+        description: humanizeError(error) ?? error?.message ?? "Failed to send message",
         variant: "destructive",
       });
       
@@ -675,12 +683,15 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
             </div>
           </div>
           <div className="flex justify-center mt-2">
-            <button 
-              onClick={(e) => { createRipple(e); setShowModelSelector(true); }} 
+            <button
+              onClick={(e) => {
+                createRipple(e);
+                setShowModelSelector(true);
+              }}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
             >
               <Sparkles className="h-3 w-3" />
-              Powered by Gemini
+              Model: {modelLabel}
             </button>
           </div>
         </div>

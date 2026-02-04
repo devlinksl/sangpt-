@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { X, Chrome } from 'lucide-react';
+import { humanizeError } from '@/lib/humanizeError';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -40,7 +41,7 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     } catch (error: any) {
       toast({
         title: "Sign in failed",
-        description: error.message,
+        description: humanizeError(error) ?? error?.message ?? "Sign in failed",
         variant: "destructive",
       });
     } finally {
@@ -74,7 +75,7 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     } catch (error: any) {
       toast({
         title: "Sign up failed",
-        description: error.message,
+        description: humanizeError(error) ?? error?.message ?? "Sign up failed",
         variant: "destructive",
       });
     } finally {
@@ -96,15 +97,27 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     } catch (error: any) {
       toast({
         title: "Google Sign In Error",
-        description: error.message,
+        description: humanizeError(error) ?? error?.message ?? "Google sign-in failed",
         variant: "destructive",
       });
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
       <DialogContent className="sm:max-w-md bottom-0 top-auto translate-y-0 slide-in-from-bottom animate-slide-in-bottom rounded-t-3xl rounded-b-none border-0 p-0">
+        {/* Accessibility (prevents Radix warnings) */}
+        <DialogTitle className="sr-only">
+          {view === 'main' ? 'Authentication' : view === 'signin' ? 'Sign in' : 'Sign up'}
+        </DialogTitle>
+        <DialogDescription className="sr-only">
+          Sign in or create an account to continue.
+        </DialogDescription>
         {view === 'main' ? (
           <>
             <div className="px-6 pt-6 pb-2 flex justify-end">

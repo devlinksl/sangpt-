@@ -1,4 +1,4 @@
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Zap, Brain, Sparkles } from 'lucide-react';
 
@@ -12,19 +12,19 @@ interface ModelSelectorModalProps {
 const models = [
   {
     id: 'gemini',
-    name: 'SanGPT (Gemini)',
-    description: 'Powered by Google Gemini API',
+    name: 'SanGPT (Experimental)',
+    description: 'Alternate model (may be less stable)',
     icon: Sparkles,
     speed: '2-3 sec',
-    badge: 'Gemini'
+    badge: 'Experimental'
   },
   {
     id: 'lovable',
-    name: 'SanGPT (Lovable AI)',
-    description: 'Advanced AI with multiple capabilities',
+    name: 'SanGPT',
+    description: 'Recommended (fast & reliable)',
     icon: Brain,
     speed: '3-5 sec',
-    badge: 'Lovable'
+    badge: 'Recommended'
   }
 ];
 
@@ -35,8 +35,18 @@ export const ModelSelectorModal = ({
   onSelectModel 
 }: ModelSelectorModalProps) => {
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
       <DialogContent className="sm:max-w-md bottom-0 top-auto translate-y-0 slide-in-from-bottom animate-slide-in-bottom rounded-t-3xl rounded-b-none border-0 p-0">
+        {/* Accessibility (prevents Radix warnings) */}
+        <DialogTitle className="sr-only">Select model</DialogTitle>
+        <DialogDescription className="sr-only">
+          Choose which AI model to use for responses.
+        </DialogDescription>
         <div className="px-6 pt-6 pb-2">
           <div className="w-12 h-1 bg-border mx-auto rounded-full mb-6" />
         </div>
@@ -67,7 +77,7 @@ export const ModelSelectorModal = ({
                         <span className="font-medium">{model.name}</span>
                         <span className="text-xs text-muted-foreground">{model.speed}</span>
                         {model.badge && (
-                          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
+                          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                             {model.badge}
                           </span>
                         )}
