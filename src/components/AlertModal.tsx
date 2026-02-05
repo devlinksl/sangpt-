@@ -1,12 +1,14 @@
  import {
-   AlertDialog,
-   AlertDialogAction,
-   AlertDialogContent,
-   AlertDialogDescription,
-   AlertDialogFooter,
-   AlertDialogHeader,
-   AlertDialogTitle,
- } from '@/components/ui/alert-dialog';
+   Drawer,
+   DrawerClose,
+   DrawerContent,
+   DrawerDescription,
+   DrawerFooter,
+   DrawerHeader,
+   DrawerTitle,
+ } from '@/components/ui/drawer';
+ import { Button } from '@/components/ui/button';
+ import { ScrollArea } from '@/components/ui/scroll-area';
  import { CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
  
  interface AlertModalProps {
@@ -32,32 +34,37 @@
    };
  
    return (
-     <AlertDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-       <AlertDialogContent className="max-w-sm rounded-2xl">
-         <AlertDialogHeader className="flex flex-col items-center text-center gap-3">
-           <div className="p-3 rounded-full bg-muted">
-             {icons[variant]}
-           </div>
-           {title && (
-             <AlertDialogTitle className="text-lg font-semibold">
-               {title}
-             </AlertDialogTitle>
-           )}
-           {description && (
-             <AlertDialogDescription className="text-muted-foreground">
-               {description}
-             </AlertDialogDescription>
-           )}
-         </AlertDialogHeader>
-         <AlertDialogFooter className="mt-4 sm:justify-center">
-           <AlertDialogAction 
-             onClick={onClose}
-             className="w-full sm:w-auto min-w-[100px] rounded-full"
-           >
-             OK
-           </AlertDialogAction>
-         </AlertDialogFooter>
-       </AlertDialogContent>
-     </AlertDialog>
+     <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
+       <DrawerContent className="max-h-[85vh]">
+         <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-4 mt-2" />
+         <ScrollArea className="max-h-[60vh] overflow-y-auto">
+           <DrawerHeader className="flex flex-col items-center text-center gap-3 px-6">
+             <div className="p-3 rounded-full bg-muted">
+               {icons[variant]}
+             </div>
+             {title && (
+               <DrawerTitle className="text-lg font-semibold">
+                 {title}
+               </DrawerTitle>
+             )}
+             {description && (
+               <DrawerDescription className="text-muted-foreground text-base">
+                 {description}
+               </DrawerDescription>
+             )}
+           </DrawerHeader>
+         </ScrollArea>
+         <DrawerFooter className="px-6 pb-8">
+           <DrawerClose asChild>
+             <Button 
+               onClick={onClose}
+               className="w-full rounded-full"
+             >
+               OK
+             </Button>
+           </DrawerClose>
+         </DrawerFooter>
+       </DrawerContent>
+     </Drawer>
    );
  };
