@@ -6,10 +6,13 @@
    FileText, 
    Mic, 
    Send,
-   Sparkles
+   Sparkles,
+   Square,
+   Loader2
  } from 'lucide-react';
  import { SpeechToText } from '@/components/SpeechToText';
  import { cn } from '@/lib/utils';
+ import { useHaptics } from '@/hooks/useHaptics';
  
  interface ChatInputBarProps {
    value: string;
@@ -42,6 +45,7 @@
  }: ChatInputBarProps) => {
    const [isFocused, setIsFocused] = useState(false);
    const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { lightTap, mediumTap } = useHaptics();
    
    const showActions = isFocused || value.length > 0;
    
@@ -64,9 +68,24 @@
    };
  
    const handleFileInput = (type: 'image' | 'camera' | 'file') => {
+    lightTap();
      onAttachment(type);
    };
  
+  const handleButtonClick = (callback: () => void) => {
+    lightTap();
+    callback();
+  };
+
+  const handleSendClick = () => {
+    mediumTap();
+    if (isLoading && isStoppable) {
+      onStop();
+    } else if (value.trim()) {
+      onSend();
+    }
+  };
+
    return (
      <div className="w-full max-w-3xl mx-auto px-3">
        {/* Main glass container */}
@@ -140,7 +159,7 @@
                
                {/* Model selector pill */}
                <button
-                 onClick={onModelSelect}
+                onClick={() => handleButtonClick(onModelSelect)}
                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-all active:scale-95 ml-1"
                  type="button"
                >
@@ -151,26 +170,24 @@
              
              {/* Right side - send button */}
              <Button
-               onClick={() => {
-                 if (isLoading && isStoppable) {
-                   onStop();
-                 } else if (value.trim()) {
-                   onSend();
-                 }
-               }}
-               disabled={!value.trim() && !isLoading}
+              onClick={handleSendClick}
+              disabled={(!value.trim() && !isLoading) || (isLoading && !isStoppable)}
                size="icon"
                className={cn(
                  "h-10 w-10 rounded-full transition-all duration-200 shadow-md",
                  isLoading && isStoppable
                    ? "bg-destructive hover:bg-destructive/90"
-                   : value.trim()
+                  : isLoading
+                    ? "bg-primary/70 cursor-not-allowed"
+                    : value.trim()
                      ? "bg-primary hover:bg-primary/90 scale-100"
                      : "bg-primary/50 scale-95 opacity-60"
                )}
              >
                {isLoading && isStoppable ? (
-                 <div className="h-3 w-3 bg-destructive-foreground rounded-sm" />
+                <Square className="h-3.5 w-3.5 text-destructive-foreground fill-current" />
+              ) : isLoading ? (
+                <Loader2 className="h-4 w-4 text-primary-foreground animate-spin" />
                ) : (
                  <Send className="h-4 w-4 text-primary-foreground" />
                )}
