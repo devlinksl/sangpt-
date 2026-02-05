@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import { useRipple } from '@/hooks/useRipple';
 import { useTheme } from '@/components/ThemeProvider';
 import { humanizeError } from '@/lib/humanizeError';
+ import { useStreamChat } from '@/hooks/useStreamChat';
  import { 
    Menu, 
    Edit3, 
@@ -27,7 +28,8 @@ import { humanizeError } from '@/lib/humanizeError';
    Code,
    Wand2,
    Moon,
-   Sun
+   Sun,
+   ArrowDown
  } from 'lucide-react';
 
 interface Message {
@@ -58,6 +60,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const navigate = useNavigate();
   const createRipple = useRipple();
   const { theme, setTheme } = useTheme();
+  const { streamChat, stopStreaming, isStreaming } = useStreamChat();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -74,7 +77,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [isStoppable, setIsStoppable] = useState(false);
-  const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const userScrolledRef = useRef(false);
@@ -230,13 +233,11 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   };
 
   const stopGeneration = () => {
-    if (abortController) {
-      abortController.abort();
-      setAbortController(null);
-    }
+    stopStreaming();
     setIsLoading(false);
     setIsTyping(false);
     setIsStoppable(false);
+    setStreamingMessageId(null);
   };
 
   const sendMessage = async (messageText: string, isRegeneration = false) => {
@@ -253,8 +254,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     const fileContext = await processAttachedFiles();
     const fullMessage = messageText + fileContext;
     
-    const controller = new AbortController();
-    setAbortController(controller);
     setIsStoppable(true);
     setAttachedFiles([]);
 
@@ -294,60 +293,130 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
       if (imagineMatch) {
         setIsStoppable(false);
+        setIsLoading(true);
         aiResponse = await handleImageGeneration(imagineMatch[1]);
+        setIsLoading(false);
       } else {
         const messagesToSend = isRegeneration 
           ? messages
           : [...messages, ...(userMessage ? [userMessage] : [])];
 
         setIsLoading(true);
-
-        // Determine which edge function to use based on selected model
-        const functionName = selectedModel === 'gemini' ? 'gemini-chat' : 'ai-chat';
-        const modelParam = selectedModel === 'gemini' ? 'gemini-2.0-flash-exp' : 'google/gemini-2.5-flash';
-
-        const { data, error } = await supabase.functions.invoke(functionName, {
-          body: { 
-            messages: messagesToSend.map(m => ({ role: m.role, content: m.content })),
-            conversationId,
-            model: modelParam
+        setIsTyping(true);
+        
+        // Create a placeholder for the streaming message
+        const streamMsgId = `ai-streaming-${Date.now()}`;
+        setStreamingMessageId(streamMsgId);
+        
+        const streamingMessage: Message = {
+          id: streamMsgId,
+          role: 'assistant',
+          content: '',
+          created_at: new Date().toISOString(),
+          rating: 0,
+        };
+        
+        setMessages(prev => {
+          if (isRegeneration) {
+            const newMessages = [...prev];
+            const lastAssistantIndex = newMessages.map(m => m.role).lastIndexOf('assistant');
+            if (lastAssistantIndex !== -1) {
+              newMessages[lastAssistantIndex] = streamingMessage;
+            } else {
+              newMessages.push(streamingMessage);
+            }
+            return newMessages;
           }
+          return [...prev, streamingMessage];
         });
 
-        if (error || data?.error) throw new Error(data?.error || error?.message || 'Failed to get AI response');
-        aiResponse = data.response;
-        if (!aiResponse) throw new Error('No response from AI');
+        const modelParam = selectedModel === 'gemini' ? 'google/gemini-2.5-flash' : 'google/gemini-3-flash-preview';
+        
+        // Use streaming
+        aiResponse = await streamChat(
+          messagesToSend.map(m => ({ role: m.role, content: m.content })),
+          conversationId,
+          modelParam,
+          {
+            onToken: (token) => {
+              setMessages(prev => prev.map(m => 
+                m.id === streamMsgId 
+                  ? { ...m, content: m.content + token }
+                  : m
+              ));
+            },
+            onComplete: (fullResponse) => {
+              // Update the message with final ID
+              const finalMsgId = `ai-${Date.now()}`;
+              setMessages(prev => prev.map(m => 
+                m.id === streamMsgId 
+                  ? { ...m, id: finalMsgId, content: fullResponse }
+                  : m
+              ));
+              setStreamingMessageId(null);
+            },
+            onError: (error) => {
+              console.error('Stream error:', error);
+              toast({
+                title: "Error",
+                description: humanizeError(error) ?? error?.message ?? "Failed to get response",
+                variant: "destructive",
+              });
+              // Remove the streaming message on error
+              setMessages(prev => prev.filter(m => m.id !== streamMsgId));
+            }
+          }
+        );
+        
+        if (!aiResponse) {
+          throw new Error('No response from AI');
+        }
+        
+        setIsTyping(false);
+        setIsLoading(false);
       }
 
-      const assistantMessage: Message = {
-        id: `ai-${Date.now()}`,
-        role: 'assistant',
-        content: aiResponse,
-        created_at: new Date().toISOString(),
-        rating: 0,
-      };
+      // Only save to DB for non-streaming (image generation) or if we have a response
+      if (imagineMatch && aiResponse) {
+        const assistantMessage: Message = {
+          id: `ai-${Date.now()}`,
+          role: 'assistant',
+          content: aiResponse,
+          created_at: new Date().toISOString(),
+          rating: 0,
+        };
 
-      setMessages(prev => {
-        if (isRegeneration) {
-          const newMessages = [...prev];
-          const lastAssistantIndex = newMessages.map(m => m.role).lastIndexOf('assistant');
-          if (lastAssistantIndex !== -1) {
-            newMessages[lastAssistantIndex] = assistantMessage;
-          } else {
-            newMessages.push(assistantMessage);
+        setMessages(prev => {
+          if (isRegeneration) {
+            const newMessages = [...prev];
+            const lastAssistantIndex = newMessages.map(m => m.role).lastIndexOf('assistant');
+            if (lastAssistantIndex !== -1) {
+              newMessages[lastAssistantIndex] = assistantMessage;
+            } else {
+              newMessages.push(assistantMessage);
+            }
+            return newMessages;
           }
-          return newMessages;
-        }
-        return [...prev, assistantMessage];
-      });
+          return [...prev, assistantMessage];
+        });
 
-      const { error: insertAiError } = await supabase.from('messages').insert([{
-        conversation_id: conversationId,
-        role: 'assistant',
-        content: aiResponse,
-      }]);
+        const { error: insertAiError } = await supabase.from('messages').insert([{
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: aiResponse,
+        }]);
 
-      if (insertAiError) throw insertAiError;
+        if (insertAiError) throw insertAiError;
+      } else if (aiResponse) {
+        // Save streamed response to DB
+        const { error: insertAiError } = await supabase.from('messages').insert([{
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: aiResponse,
+        }]);
+
+        if (insertAiError) throw insertAiError;
+      }
 
     } catch (error: any) {
       console.error('Error in sendMessage:', error);
@@ -362,8 +431,9 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
       }
     } finally {
       setIsLoading(false);
+      setIsTyping(false);
       setIsStoppable(false);
-      setAbortController(null);
+      setStreamingMessageId(null);
     }
   };
 
@@ -572,12 +642,10 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         {showScrollButton && (
           <Button
             onClick={() => scrollToBottom()}
-            className="fixed bottom-24 right-6 rounded-full shadow-lg z-50 h-12 w-12 bg-background border-2 border-primary hover:bg-primary hover:text-primary-foreground hover:scale-110 transition-all duration-300 animate-fade-in"
+            className="fixed bottom-24 right-6 rounded-full shadow-xl z-50 h-11 w-11 bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-110 transition-all duration-300 animate-fade-in border-0"
             size="icon"
           >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-            </svg>
+            <ArrowDown className="h-5 w-5" />
           </Button>
         )}
       </div>
@@ -653,7 +721,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           onModelSelect={() => setShowModelSelector(true)}
           onRecordingChange={setIsRecording}
           onTranscription={(text) => setInput(text)}
-          isLoading={isLoading}
+          isLoading={isLoading || isStreaming}
           isRecording={isRecording}
           isStoppable={isStoppable}
           onStop={stopGeneration}

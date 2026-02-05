@@ -2,14 +2,14 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, conversationId, model = "google/gemini-2.5-flash" } = await req.json();
+    const { messages, conversationId, model = "google/gemini-3-flash-preview", stream = false } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -18,6 +18,7 @@ serve(async (req) => {
 
     console.log("Received AI chat request for conversation:", conversationId);
     console.log("Using model:", model);
+    console.log("Streaming:", stream);
 
     // Add system context about SanGPT identity with variations
     const identityResponses = [
@@ -41,6 +42,7 @@ serve(async (req) => {
           { role: "system", content: systemPrompt },
           ...messages
         ],
+        stream,
       }),
     });
 
@@ -65,6 +67,13 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
       throw new Error("Failed to get AI response");
+    }
+
+    // If streaming, return the stream directly
+    if (stream) {
+      return new Response(response.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
     }
 
     const data = await response.json();
