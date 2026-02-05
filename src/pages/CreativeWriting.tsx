@@ -5,25 +5,25 @@ import { Textarea } from '@/components/ui/textarea';
 import { ChevronLeft, Sparkles, Feather } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+ import { useAlert } from '@/hooks/useAlert';
 import { ShimmerLoading } from '@/components/ShimmerLoading';
 
 export default function CreativeWriting() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { toast } = useToast();
+   const { alert } = useAlert();
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [content, setContent] = useState('');
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
-      toast({ title: "Error", description: "Please enter a creative prompt", variant: "destructive" });
+       alert({ title: "Error", description: "Please enter a creative prompt", variant: "destructive" });
       return;
     }
 
     if (!user) {
-      toast({ title: "Error", description: "Please sign in to use this feature", variant: "destructive" });
+       alert({ title: "Error", description: "Please sign in to use this feature", variant: "destructive" });
       return;
     }
 
@@ -43,10 +43,10 @@ export default function CreativeWriting() {
 
       if (error || data.error) throw new Error(data?.error || 'Failed to generate creative content');
       setContent(data.response);
-      toast({ title: "Success", description: "Content generated!" });
+       alert({ title: "Success", description: "Content generated!", variant: "success" });
     } catch (error: any) {
       console.error('Creative writing error:', error);
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+       alert({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setIsGenerating(false);
     }

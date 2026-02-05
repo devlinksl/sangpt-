@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+ import { useAlert } from '@/hooks/useAlert';
 import { Volume2, VolumeX } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -11,7 +11,7 @@ interface TextToSpeechProps {
 
 export const TextToSpeech = ({ text, disabled }: TextToSpeechProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const { toast } = useToast();
+   const { alert } = useAlert();
 
   const speakText = async () => {
     if (!text.trim()) return;
@@ -47,7 +47,7 @@ export const TextToSpeech = ({ text, disabled }: TextToSpeechProps) => {
 
         utterance.onerror = () => {
           setIsPlaying(false);
-          toast({
+           alert({
             title: "Speech Error",
             description: "Could not play audio. Please try again.",
             variant: "destructive",
@@ -64,7 +64,7 @@ export const TextToSpeech = ({ text, disabled }: TextToSpeechProps) => {
         if (error) throw error;
 
         if (data.fallback) {
-          toast({
+           alert({
             title: "Speech Synthesis",
             description: "Text-to-speech is not available in this browser",
             variant: "destructive",
@@ -75,7 +75,7 @@ export const TextToSpeech = ({ text, disabled }: TextToSpeechProps) => {
 
     } catch (error) {
       console.error('Error with text-to-speech:', error);
-      toast({
+       alert({
         title: "Speech Error",
         description: "Could not generate speech",
         variant: "destructive",

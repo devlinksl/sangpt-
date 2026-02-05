@@ -1,7 +1,7 @@
  import { useState } from 'react';
  import { Button } from '@/components/ui/button';
  import { Check, Copy } from 'lucide-react';
- import { useToast } from '@/hooks/use-toast';
+ import { useAlert } from '@/hooks/useAlert';
  import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
  import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
  
@@ -12,7 +12,7 @@
  
  export const CodeBlock = ({ code, language = 'text' }: CodeBlockProps) => {
    const [copied, setCopied] = useState(false);
-   const { toast } = useToast();
+   const { alert } = useAlert();
  
    const handleCopy = async () => {
      try {
@@ -20,12 +20,13 @@
        setCopied(true);
        setTimeout(() => setCopied(false), 2000);
  
-       toast({
+       alert({
          title: "Copied",
          description: "Code copied to clipboard",
+         variant: "success",
        });
      } catch (error) {
-       toast({
+       alert({
          title: "Copy failed",
          description: "Could not copy to clipboard",
          variant: "destructive",

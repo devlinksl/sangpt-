@@ -5,25 +5,25 @@ import { Textarea } from '@/components/ui/textarea';
 import { ChevronLeft, Code, Terminal } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+ import { useAlert } from '@/hooks/useAlert';
 import { ShimmerLoading } from '@/components/ShimmerLoading';
 
 export default function CodeHelper() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { toast } = useToast();
+   const { alert } = useAlert();
   const [codeQuestion, setCodeQuestion] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [response, setResponse] = useState('');
 
   const handleAsk = async () => {
     if (!codeQuestion.trim()) {
-      toast({ title: "Error", description: "Please enter your coding question", variant: "destructive" });
+       alert({ title: "Error", description: "Please enter your coding question", variant: "destructive" });
       return;
     }
 
     if (!user) {
-      toast({ title: "Error", description: "Please sign in to use this feature", variant: "destructive" });
+       alert({ title: "Error", description: "Please sign in to use this feature", variant: "destructive" });
       return;
     }
 
@@ -45,7 +45,7 @@ export default function CodeHelper() {
       setResponse(data.response);
     } catch (error: any) {
       console.error('Code help error:', error);
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+       alert({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setIsProcessing(false);
     }

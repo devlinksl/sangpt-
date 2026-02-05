@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/components/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+ import { useAlert } from '@/hooks/useAlert';
 import { ConversationLongPressModal } from '@/components/ConversationLongPressModal';
 import { ShimmerLoading } from '@/components/ShimmerLoading';
 import {
@@ -53,7 +53,7 @@ const exploreItems = [
 export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: SidebarProps) => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { toast } = useToast();
+   const { alert } = useAlert();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeSection, setActiveSection] = useState<'chat' | 'explore' | 'settings' | 'help'>('chat');
@@ -96,13 +96,14 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
       if (error) throw error;
       setConversations(prev => prev.filter(conv => conv.id !== id));
       
-      toast({
+       alert({
         title: "Conversation deleted",
         description: "The conversation has been removed",
+         variant: "success",
       });
     } catch (error) {
       console.error('Error deleting conversation:', error);
-      toast({
+       alert({
         title: "Error",
         description: "Could not delete conversation",
         variant: "destructive",
@@ -124,13 +125,14 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
       ));
       setEditingId(null);
       
-      toast({
+       alert({
         title: "Title updated",
         description: "Conversation title has been changed",
+         variant: "success",
       });
     } catch (error) {
       console.error('Error updating title:', error);
-      toast({
+       alert({
         title: "Error",
         description: "Could not update title",
         variant: "destructive",
@@ -447,7 +449,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
         }}
         onPin={() => {
           // TODO: Implement pinning
-          toast({ title: "Pin feature", description: "Coming soon" });
+           alert({ title: "Coming Soon", description: "Pin feature coming soon" });
         }}
         onDelete={() => {
           if (selectedConvId) deleteConversation(selectedConvId);

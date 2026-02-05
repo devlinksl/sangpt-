@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+ import { useAlert } from '@/hooks/useAlert';
 import { Mic, MicOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -23,7 +23,7 @@ export const SpeechToText = ({ onTranscription, disabled, onRecordingChange }: S
   const [isProcessing, setIsProcessing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const { toast } = useToast();
+   const { alert } = useAlert();
 
   const startRecording = useCallback(async () => {
     try {
@@ -61,20 +61,21 @@ export const SpeechToText = ({ onTranscription, disabled, onRecordingChange }: S
       setIsRecording(true);
       onRecordingChange?.(true);
 
-      toast({
+       alert({
         title: "Recording started",
         description: "Speak now, click again to stop",
+         variant: "success",
       });
 
     } catch (error) {
       console.error('Error starting recording:', error);
-      toast({
+       alert({
         title: "Microphone Error",
         description: "Could not access microphone. Please check permissions.",
         variant: "destructive",
       });
     }
-  }, [toast]);
+   }, [alert]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
@@ -116,7 +117,7 @@ export const SpeechToText = ({ onTranscription, disabled, onRecordingChange }: S
         };
 
         recognition.onerror = () => {
-          toast({
+           alert({
             title: "Speech Recognition Error",
             description: "Could not process audio. Please try typing instead.",
             variant: "destructive",
@@ -134,7 +135,7 @@ export const SpeechToText = ({ onTranscription, disabled, onRecordingChange }: S
         if (error) throw error;
         
         if (data.placeholder) {
-          toast({
+           alert({
             title: "Speech Processing",
             description: "Speech-to-text is being processed...",
           });
@@ -147,7 +148,7 @@ export const SpeechToText = ({ onTranscription, disabled, onRecordingChange }: S
 
     } catch (error) {
       console.error('Error processing audio:', error);
-      toast({
+       alert({
         title: "Processing Error",
         description: "Could not process audio recording",
         variant: "destructive",

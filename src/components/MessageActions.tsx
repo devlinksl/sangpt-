@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+ import { useAlert } from '@/hooks/useAlert';
 import { supabase } from '@/integrations/supabase/client';
 import { TextToSpeech } from '@/components/TextToSpeech';
 import { 
@@ -30,7 +30,7 @@ export const MessageActions = ({
 }: MessageActionsProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-  const { toast } = useToast();
+   const { alert } = useAlert();
 
   const handleRating = async (newRating: number) => {
     try {
@@ -45,14 +45,15 @@ export const MessageActions = ({
 
       onRatingChange?.(newRating);
       
-      toast({
+       alert({
         title: newRating === 1 ? "Liked" : "Disliked",
         description: "Thank you for your feedback!",
+         variant: "success",
       });
 
     } catch (error) {
       console.error('Error updating rating:', error);
-      toast({
+       alert({
         title: "Error",
         description: "Could not save your feedback",
         variant: "destructive",
@@ -68,12 +69,13 @@ export const MessageActions = ({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       
-      toast({
+       alert({
         title: "Copied",
         description: "Message copied to clipboard",
+         variant: "success",
       });
     } catch (error) {
-      toast({
+       alert({
         title: "Copy failed",
         description: "Could not copy to clipboard",
         variant: "destructive",

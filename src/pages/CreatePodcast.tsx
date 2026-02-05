@@ -5,25 +5,25 @@ import { Textarea } from '@/components/ui/textarea';
 import { ChevronLeft, Mic, Download } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+ import { useAlert } from '@/hooks/useAlert';
 import { ShimmerLoading } from '@/components/ShimmerLoading';
 
 export default function CreatePodcast() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { toast } = useToast();
+   const { alert } = useAlert();
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [script, setScript] = useState('');
 
   const handleGenerate = async () => {
     if (!topic.trim()) {
-      toast({ title: "Error", description: "Please enter a podcast topic", variant: "destructive" });
+       alert({ title: "Error", description: "Please enter a podcast topic", variant: "destructive" });
       return;
     }
 
     if (!user) {
-      toast({ title: "Error", description: "Please sign in to use this feature", variant: "destructive" });
+       alert({ title: "Error", description: "Please sign in to use this feature", variant: "destructive" });
       return;
     }
 
@@ -43,10 +43,10 @@ export default function CreatePodcast() {
 
       if (error || data.error) throw new Error(data?.error || 'Failed to generate podcast script');
       setScript(data.response);
-      toast({ title: "Success", description: "Podcast script generated!" });
+       alert({ title: "Success", description: "Podcast script generated!", variant: "success" });
     } catch (error: any) {
       console.error('Podcast generation error:', error);
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+       alert({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setIsGenerating(false);
     }
@@ -101,7 +101,7 @@ export default function CreatePodcast() {
               <h3 className="text-lg font-semibold">Your Podcast Script</h3>
               <Button variant="outline" size="sm" onClick={() => {
                 navigator.clipboard.writeText(script);
-                toast({ title: "Copied", description: "Script copied to clipboard" });
+                 alert({ title: "Copied", description: "Script copied to clipboard", variant: "success" });
               }}>
                 <Download className="w-4 h-4 mr-2" />
                 Copy Script

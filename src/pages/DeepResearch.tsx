@@ -5,25 +5,25 @@ import { Textarea } from '@/components/ui/textarea';
 import { ChevronLeft, Globe, Search } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+ import { useAlert } from '@/hooks/useAlert';
 import { ShimmerLoading } from '@/components/ShimmerLoading';
 
 export default function DeepResearch() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { toast } = useToast();
+   const { alert } = useAlert();
   const [topic, setTopic] = useState('');
   const [isResearching, setIsResearching] = useState(false);
   const [result, setResult] = useState('');
 
   const handleResearch = async () => {
     if (!topic.trim()) {
-      toast({ title: "Error", description: "Please enter a research topic", variant: "destructive" });
+       alert({ title: "Error", description: "Please enter a research topic", variant: "destructive" });
       return;
     }
 
     if (!user) {
-      toast({ title: "Error", description: "Please sign in to use this feature", variant: "destructive" });
+       alert({ title: "Error", description: "Please sign in to use this feature", variant: "destructive" });
       return;
     }
 
@@ -45,7 +45,7 @@ export default function DeepResearch() {
       setResult(data.response);
     } catch (error: any) {
       console.error('Research error:', error);
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+       alert({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setIsResearching(false);
     }

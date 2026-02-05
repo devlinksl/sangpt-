@@ -1,7 +1,7 @@
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Camera, Image, FileText, ImageIcon, Globe, Mic, Gamepad2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+ import { useAlert } from '@/hooks/useAlert';
 
 interface AttachmentModalProps {
   isOpen: boolean;
@@ -10,7 +10,7 @@ interface AttachmentModalProps {
 }
 
 export const AttachmentModal = ({ isOpen, onClose, onFileSelect }: AttachmentModalProps) => {
-  const { toast } = useToast();
+   const { alert } = useAlert();
 
   const handleFileInput = (accept: string) => {
     const input = document.createElement('input');
@@ -28,8 +28,8 @@ export const AttachmentModal = ({ isOpen, onClose, onFileSelect }: AttachmentMod
   };
 
   const handleFeature = (feature: string) => {
-    toast({
-      title: `${feature} coming soon`,
+     alert({
+       title: "Coming Soon",
       description: "This feature will be available in a future update.",
     });
     onClose();
