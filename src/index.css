@@ -191,6 +191,44 @@ body, html {
     transform: translateY(0);
   }
 }
+
+ /* Streaming text animation */
+ @keyframes typing-cursor {
+   0%, 50% { opacity: 1; }
+   51%, 100% { opacity: 0; }
+ }
+ 
+ .typing-cursor {
+   animation: typing-cursor 1s ease-in-out infinite;
+ }
+ 
+ /* Smooth fade-in for streamed content */
+ @keyframes content-fade-in {
+   from {
+     opacity: 0.7;
+   }
+   to {
+     opacity: 1;
+   }
+ }
+ 
+ .streamed-content {
+   animation: content-fade-in 0.1s ease-out;
+ }
+ 
+ /* Enhanced prose styling for AI responses */
+ .prose-ai h2:first-child {
+   margin-top: 0;
+ }
+ 
+ .prose-ai > *:first-child {
+   margin-top: 0;
+ }
+ 
+ .prose-ai > *:last-child {
+   margin-bottom: 0;
+ }
+
 @layer base {
   * {
     @apply border-border;

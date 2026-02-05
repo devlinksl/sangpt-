@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/components/AuthContext';
 import { AuthModal } from '@/components/AuthModal';
 import { MessageActions } from '@/components/MessageActions';
-import { MarkdownRenderer } from '@/components/MarkdownRenderer';
+ import { StreamingMarkdown } from '@/components/StreamingMarkdown';
 import { ShimmerLoading } from '@/components/ShimmerLoading';
 import { ModelSelectorModal } from '@/components/ModelSelectorModal';
 import { LongPressModal } from '@/components/LongPressModal';
@@ -610,7 +610,10 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                         if (timer) clearTimeout(Number(timer));
                       }}
                      >
-                       <MarkdownRenderer content={message.content} />
+                       <StreamingMarkdown 
+                         content={message.content} 
+                         isStreaming={streamingMessageId === message.id}
+                       />
                        <MessageActions 
                          messageId={message.id} 
                          content={message.content} 
