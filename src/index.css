@@ -1,6 +1,17 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+ 
+ /* Glass morphism utilities */
+ @layer utilities {
+   .glass-card {
+     @apply bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg;
+   }
+   
+   .glass-input {
+     @apply bg-card/60 backdrop-blur-xl border border-border/40 shadow-md;
+   }
+ }
 
 /* AI Chat App Design System - Inspired by the uploaded designs
 Using Sen font and the specified color palette: #abd5ff, #eec7f4, #e4f5ff, #ffffff
@@ -131,7 +142,8 @@ All colors MUST be HSL.
 code, pre {
   white-space: pre-wrap;
   word-break: break-word;
-  overflow-x: auto;
+  overflow-wrap: break-word;
+  overflow-x: hidden;
   max-width: 100%;
   display: block;
   box-sizing: border-box;
@@ -140,7 +152,8 @@ code, pre {
 .code-card {
   max-width: 100%;
   width: 100%;
-  overflow-x: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   border-radius: 12px;
   background: rgba(20, 20, 20, 0.9);
   padding: 1rem;
@@ -227,4 +240,35 @@ body, html {
       opacity: 0;
     }
   }
+ 
+   /* Smooth action fade */
+   .action-fade-enter {
+     animation: actionFadeIn 0.2s ease-out forwards;
+   }
+   
+   .action-fade-exit {
+     animation: actionFadeOut 0.15s ease-in forwards;
+   }
+   
+   @keyframes actionFadeIn {
+     from {
+       opacity: 0;
+       transform: translateY(8px);
+     }
+     to {
+       opacity: 1;
+       transform: translateY(0);
+     }
+   }
+   
+   @keyframes actionFadeOut {
+     from {
+       opacity: 1;
+       transform: translateY(0);
+     }
+     to {
+       opacity: 0;
+       transform: translateY(4px);
+     }
+   }
 }

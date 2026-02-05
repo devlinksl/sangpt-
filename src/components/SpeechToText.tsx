@@ -170,9 +170,9 @@ export const SpeechToText = ({ onTranscription, disabled, onRecordingChange }: S
       size="icon"
       onClick={handleClick}
       disabled={disabled || isProcessing}
-      className={`h-8 w-8 ${isRecording ? 'text-red-500 animate-pulse' : ''}`}
+      className={`h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all active:scale-95 ${isRecording ? 'text-red-500 animate-pulse bg-red-500/10' : ''}`}
     >
-      {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+      {isRecording ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
     </Button>
   );
 };
