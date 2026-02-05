@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/components/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+ import { useAlert } from '@/hooks/useAlert';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, User, Mail, Key, Shield, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom';
 export const Account = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { toast } = useToast();
+   const { alert } = useAlert();
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -35,12 +35,13 @@ export const Account = () => {
 
       if (error) throw error;
 
-      toast({
+       alert({
         title: "Profile updated",
         description: "Your profile has been successfully updated",
+         variant: "success",
       });
     } catch (error) {
-      toast({
+       alert({
         title: "Error",
         description: "Could not update profile",
         variant: "destructive",

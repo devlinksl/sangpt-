@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+ import { useAlert } from '@/hooks/useAlert';
 import { X, Chrome } from 'lucide-react';
 import { humanizeError } from '@/lib/humanizeError';
 
@@ -19,7 +19,7 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+   const { alert } = useAlert();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,13 +33,14 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
 
       if (error) throw error;
 
-      toast({
+       alert({
         title: "Welcome back!",
         description: "You're now signed in",
+         variant: "success",
       });
       onClose();
     } catch (error: any) {
-      toast({
+       alert({
         title: "Sign in failed",
         description: humanizeError(error) ?? error?.message ?? "Sign in failed",
         variant: "destructive",
@@ -67,13 +68,14 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
 
       if (error) throw error;
 
-      toast({
+       alert({
         title: "Account created!",
         description: "You can now start using the app",
+         variant: "success",
       });
       onClose();
     } catch (error: any) {
-      toast({
+       alert({
         title: "Sign up failed",
         description: humanizeError(error) ?? error?.message ?? "Sign up failed",
         variant: "destructive",
@@ -95,7 +97,7 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
 
       if (error) throw error;
     } catch (error: any) {
-      toast({
+       alert({
         title: "Google Sign In Error",
         description: humanizeError(error) ?? error?.message ?? "Google sign-in failed",
         variant: "destructive",

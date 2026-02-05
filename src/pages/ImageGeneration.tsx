@@ -3,19 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ChevronLeft, ImageIcon, Wand2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+ import { useAlert } from '@/hooks/useAlert';
 import { ShimmerLoading } from '@/components/ShimmerLoading';
 
 export default function ImageGeneration() {
   const navigate = useNavigate();
-  const { toast } = useToast();
+   const { alert } = useAlert();
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
-      toast({
+       alert({
         title: "Error",
         description: "Please enter a prompt",
         variant: "destructive",
@@ -43,13 +43,13 @@ export default function ImageGeneration() {
         const blob = await response.blob();
         const imageUrl = URL.createObjectURL(blob);
         setGeneratedImage(imageUrl);
-        toast({ title: "Success", description: "Image generated successfully!" });
+         alert({ title: "Success", description: "Image generated successfully!", variant: "success" });
       } else {
         throw new Error("Unexpected response format (not an image)");
       }
     } catch (error) {
       console.error("Image generation error:", error);
-      toast({
+       alert({
         title: "Error",
         description: "An error occurred during image generation.",
         variant: "destructive",

@@ -5,25 +5,25 @@ import { Textarea } from '@/components/ui/textarea';
 import { ChevronLeft, BookOpen, Sparkles } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+ import { useAlert } from '@/hooks/useAlert';
 import { ShimmerLoading } from '@/components/ShimmerLoading';
 
 export default function SummarizeText() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { toast } = useToast();
+   const { alert } = useAlert();
   const [text, setText] = useState('');
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [summary, setSummary] = useState('');
 
   const handleSummarize = async () => {
     if (!text.trim()) {
-      toast({ title: "Error", description: "Please enter text to summarize", variant: "destructive" });
+       alert({ title: "Error", description: "Please enter text to summarize", variant: "destructive" });
       return;
     }
 
     if (!user) {
-      toast({ title: "Error", description: "Please sign in to use this feature", variant: "destructive" });
+       alert({ title: "Error", description: "Please sign in to use this feature", variant: "destructive" });
       return;
     }
 
@@ -43,10 +43,10 @@ export default function SummarizeText() {
 
       if (error || data.error) throw new Error(data?.error || 'Failed to summarize text');
       setSummary(data.response);
-      toast({ title: "Success", description: "Text summarized!" });
+       alert({ title: "Success", description: "Text summarized!", variant: "success" });
     } catch (error: any) {
       console.error('Summarization error:', error);
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+       alert({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setIsSummarizing(false);
     }

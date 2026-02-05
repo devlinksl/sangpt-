@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ChevronLeft, Gamepad2, CheckCircle2, XCircle } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+ import { useAlert } from '@/hooks/useAlert';
 import { ShimmerLoading } from '@/components/ShimmerLoading';
 
 interface Question {
@@ -17,7 +17,7 @@ interface Question {
 export default function InteractiveQuiz() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { toast } = useToast();
+   const { alert } = useAlert();
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -28,12 +28,12 @@ export default function InteractiveQuiz() {
 
   const handleGenerate = async () => {
     if (!topic.trim()) {
-      toast({ title: "Error", description: "Please enter a quiz topic", variant: "destructive" });
+       alert({ title: "Error", description: "Please enter a quiz topic", variant: "destructive" });
       return;
     }
 
     if (!user) {
-      toast({ title: "Error", description: "Please sign in to use this feature", variant: "destructive" });
+       alert({ title: "Error", description: "Please sign in to use this feature", variant: "destructive" });
       return;
     }
 
@@ -60,13 +60,13 @@ export default function InteractiveQuiz() {
       if (jsonMatch) {
         const parsedQuestions = JSON.parse(jsonMatch[0]);
         setQuestions(parsedQuestions);
-        toast({ title: "Success", description: "Quiz generated!" });
+         alert({ title: "Success", description: "Quiz generated!", variant: "success" });
       } else {
         throw new Error('Invalid quiz format');
       }
     } catch (error: any) {
       console.error('Quiz generation error:', error);
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+       alert({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setIsGenerating(false);
     }

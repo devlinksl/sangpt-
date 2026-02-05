@@ -3,11 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChevronLeft, Mail, MessageSquare, Phone, Send } from 'lucide-react';
 import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
+ import { useAlert } from '@/hooks/useAlert';
 
 export default function Contact() {
   const navigate = useNavigate();
-  const { toast } = useToast();
+   const { alert } = useAlert();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -17,9 +17,10 @@ export default function Contact() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
+     alert({
       title: "Message Sent!",
       description: "We'll get back to you as soon as possible.",
+       variant: "success",
     });
     setFormData({ name: '', email: '', subject: '', message: '' });
   };

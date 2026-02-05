@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Highlighter, Copy, Share2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
+ import { useAlert } from '@/hooks/useAlert';
 
 export const TextSelection = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { toast } = useToast();
+   const { alert } = useAlert();
   const content = location.state?.content || '';
   const conversationId = location.state?.conversationId || null;
   const [selectedText, setSelectedText] = useState('');
@@ -22,12 +22,13 @@ export const TextSelection = () => {
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(selectedText || content);
-      toast({
+       alert({
         title: "Copied",
         description: "Text copied to clipboard",
+         variant: "success",
       });
     } catch (error) {
-      toast({
+       alert({
         title: "Error",
         description: "Could not copy text",
         variant: "destructive",
