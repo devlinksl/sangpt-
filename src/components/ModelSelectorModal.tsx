@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Zap, Brain, Sparkles } from 'lucide-react';
+import { Brain, Sparkles } from 'lucide-react';
 
 interface ModelSelectorModalProps {
   isOpen: boolean;
@@ -12,11 +12,11 @@ interface ModelSelectorModalProps {
 const models = [
   {
     id: 'gemini',
-    name: 'SanGPT (Experimental)',
+    name: 'SanGPT Experimental',
     description: 'Alternate model (may be less stable)',
     icon: Sparkles,
     speed: '2-3 sec',
-    badge: 'Experimental'
+    badge: 'Alt'
   },
   {
     id: 'lovable',
@@ -24,7 +24,7 @@ const models = [
     description: 'Recommended (fast & reliable)',
     icon: Brain,
     speed: '3-5 sec',
-    badge: 'Recommended'
+    badge: '✓'
   }
 ];
 

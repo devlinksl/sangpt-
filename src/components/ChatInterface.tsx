@@ -6,31 +6,29 @@ import { AuthModal } from '@/components/AuthModal';
 import { MessageActions } from '@/components/MessageActions';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { ShimmerLoading } from '@/components/ShimmerLoading';
-import { SpeechToText } from '@/components/SpeechToText';
-import { WaveformAnimation } from '@/components/WaveformAnimation';
 import { ModelSelectorModal } from '@/components/ModelSelectorModal';
 import { LongPressModal } from '@/components/LongPressModal';
 import { AttachmentModal } from '@/components/AttachmentModal';
+ import { ChatInputBar } from '@/components/ChatInputBar';
+ import { WaveformAnimation } from '@/components/WaveformAnimation';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useRipple } from '@/hooks/useRipple';
 import { useTheme } from '@/components/ThemeProvider';
 import { humanizeError } from '@/lib/humanizeError';
-import { 
-  Menu, 
-  Edit3, 
-  Send, 
-  Paperclip,
-  Compass,
-  Sparkles,
-  Lightbulb,
-  Code,
-  Wand2,
-  Plus,
-  Moon,
-  Sun
-} from 'lucide-react';
+ import { 
+   Menu, 
+   Edit3, 
+   Paperclip,
+   Compass,
+   Sparkles,
+   Lightbulb,
+   Code,
+   Wand2,
+   Moon,
+   Sun
+ } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -584,18 +582,21 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         )}
       </div>
 
-      <div className="p-3 border-t backdrop-blur-sm sticky bottom-0">
-        <div className="max-w-3xl mx-auto">
-          {isRecording && (
-            <div className="mb-3 flex items-center justify-center">
-              <WaveformAnimation />
-            </div>
-          )}
-          
-          {attachedFiles.length > 0 && (
-            <div className="mb-2 flex flex-wrap gap-2">
+      {/* Input Bar Section */}
+      <div className="sticky bottom-0 pb-4 pt-2 bg-gradient-to-t from-background via-background to-transparent">
+        {/* Waveform animation when recording */}
+        {isRecording && (
+          <div className="mb-3 flex items-center justify-center">
+            <WaveformAnimation />
+          </div>
+        )}
+        
+        {/* Attached files preview */}
+        {attachedFiles.length > 0 && (
+          <div className="max-w-3xl mx-auto px-3 mb-2">
+            <div className="flex flex-wrap gap-2">
               {attachedFiles.map((file, idx) => (
-                <div key={idx} className="flex items-center gap-2 bg-accent px-3 py-1.5 rounded-lg text-sm">
+                <div key={idx} className="flex items-center gap-2 bg-accent/80 backdrop-blur-sm px-3 py-1.5 rounded-lg text-sm border border-border/50">
                   {file.type.startsWith('image/') ? (
                     <img src={URL.createObjectURL(file)} alt={file.name} className="h-8 w-8 object-cover rounded" />
                   ) : (
@@ -604,97 +605,60 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                   <span className="truncate max-w-[120px] text-xs">{file.name}</span>
                   <button
                     onClick={() => setAttachedFiles(prev => prev.filter((_, i) => i !== idx))}
-                    className="text-destructive hover:text-destructive/80 text-xs"
+                    className="text-destructive hover:text-destructive/80 text-xs font-medium"
                   >
                     ✕
                   </button>
                 </div>
               ))}
             </div>
-          )}
-          
-          <div className="flex items-end gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-10 w-10 rounded-full flex-shrink-0" 
-              onClick={(e) => { 
-                createRipple(e); 
-                setShowAttachment(true); 
-              }}
-            >
-              <Plus className="h-5 w-5" />
-            </Button>
-            <div className="flex-1 relative">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Message SanGPT"
-                className="w-full py-3 px-4 pr-20 rounded-3xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-none min-h-[52px] max-h-[200px] overflow-y-auto transition-all"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage(input);
-                  }
-                }}
-                rows={1}
-                style={{
-                  height: 'auto',
-                  maxHeight: '200px'
-                }}
-                onInput={(e) => {
-                  const target = e.target as HTMLTextAreaElement;
-                  target.style.height = 'auto';
-                  const newHeight = Math.min(target.scrollHeight, 200);
-                  target.style.height = newHeight + 'px';
-                }}
-                disabled={isLoading || isRecording}
-              />
-              <div className="absolute right-2 bottom-2 flex gap-1 items-center">
-                <SpeechToText 
-                  onTranscription={(t) => { setInput(t); setIsRecording(false); }} 
-                  disabled={isLoading} 
-                  onRecordingChange={setIsRecording}
-                />
-                <Button 
-                  onClick={(e) => { 
-                    createRipple(e); 
-                    if (isLoading && isStoppable) {
-                      stopGeneration();
-                    } else {
-                      sendMessage(input);
-                    }
-                  }} 
-                  disabled={!input.trim() && !isLoading} 
-                  size="icon" 
-                  className={`h-8 w-8 rounded-full ${
-                    isLoading && isStoppable 
-                      ? 'bg-destructive hover:bg-destructive/90' 
-                      : 'bg-foreground hover:bg-foreground/90'
-                  } text-background transition-all`}
-                >
-                  {isLoading && isStoppable ? (
-                    <div className="h-2.5 w-2.5 bg-background rounded-sm" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
           </div>
-          <div className="flex justify-center mt-2">
-            <button
-              onClick={(e) => {
-                createRipple(e);
-                setShowModelSelector(true);
-              }}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-            >
-              <Sparkles className="h-3 w-3" />
-              Model: {modelLabel}
-            </button>
-          </div>
-        </div>
+        )}
+        
+        {/* New Glass Morphism Input Bar */}
+        <ChatInputBar
+          value={input}
+          onChange={setInput}
+          onSend={() => sendMessage(input)}
+          onAttachment={(type) => {
+            if (type === 'image' || type === 'camera') {
+              const input = document.createElement('input');
+              input.type = 'file';
+              input.accept = 'image/*';
+              if (type === 'camera') input.capture = 'environment';
+              input.multiple = true;
+              input.onchange = (e) => {
+                const files = Array.from((e.target as HTMLInputElement).files || []);
+                if (files.length > 0) {
+                  setAttachedFiles(prev => [...prev, ...files]);
+                  toast({ title: "Files attached", description: `${files.length} file(s) ready to send` });
+                }
+              };
+              input.click();
+            } else {
+              const input = document.createElement('input');
+              input.type = 'file';
+              input.accept = '.pdf,.doc,.docx,.txt';
+              input.multiple = true;
+              input.onchange = (e) => {
+                const files = Array.from((e.target as HTMLInputElement).files || []);
+                if (files.length > 0) {
+                  setAttachedFiles(prev => [...prev, ...files]);
+                  toast({ title: "Files attached", description: `${files.length} file(s) ready to send` });
+                }
+              };
+              input.click();
+            }
+          }}
+          onModelSelect={() => setShowModelSelector(true)}
+          onRecordingChange={setIsRecording}
+          onTranscription={(text) => setInput(text)}
+          isLoading={isLoading}
+          isRecording={isRecording}
+          isStoppable={isStoppable}
+          onStop={stopGeneration}
+          disabled={!user}
+        />
       </div>
 
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
