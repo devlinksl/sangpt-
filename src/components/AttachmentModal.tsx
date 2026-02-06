@@ -40,7 +40,7 @@ export const AttachmentModal = ({ isOpen, onClose, onFileSelect }: AttachmentMod
 
   return (
     <Drawer open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DrawerContent className="max-h-[85vh]">
+      <DrawerContent className="max-h-[85vh] bg-background/80 backdrop-blur-2xl backdrop-saturate-150">
         <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-4 mt-2" />
         
         <div className="px-6 pb-6 space-y-4">
@@ -48,9 +48,9 @@ export const AttachmentModal = ({ isOpen, onClose, onFileSelect }: AttachmentMod
           <div className="grid grid-cols-3 gap-3">
             <button
               onClick={() => handleFileInput('image/*')}
-              className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-muted/50 hover:bg-muted transition-colors"
+              className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-colors border border-border/30"
             >
-              <div className="w-12 h-12 rounded-2xl bg-background flex items-center justify-center">
+                <div className="w-12 h-12 rounded-2xl bg-background/60 backdrop-blur-sm flex items-center justify-center">
                 <Camera className="w-6 h-6" />
               </div>
               <span className="text-sm font-medium">Camera</span>
@@ -58,9 +58,9 @@ export const AttachmentModal = ({ isOpen, onClose, onFileSelect }: AttachmentMod
 
             <button
               onClick={() => handleFileInput('image/*')}
-              className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-muted/50 hover:bg-muted transition-colors"
+              className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-colors border border-border/30"
             >
-              <div className="w-12 h-12 rounded-2xl bg-background flex items-center justify-center">
+                <div className="w-12 h-12 rounded-2xl bg-background/60 backdrop-blur-sm flex items-center justify-center">
                 <Image className="w-6 h-6" />
               </div>
               <span className="text-sm font-medium">Photos</span>
@@ -68,9 +68,9 @@ export const AttachmentModal = ({ isOpen, onClose, onFileSelect }: AttachmentMod
 
             <button
               onClick={() => handleFileInput('.pdf,.doc,.docx,.txt')}
-              className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-muted/50 hover:bg-muted transition-colors"
+              className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-colors border border-border/30"
             >
-              <div className="w-12 h-12 rounded-2xl bg-background flex items-center justify-center">
+              <div className="w-12 h-12 rounded-2xl bg-background/60 backdrop-blur-sm flex items-center justify-center">
                 <FileText className="w-6 h-6" />
               </div>
               <span className="text-sm font-medium">Files</span>

@@ -176,7 +176,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
                     navigate(item.path || '/explore');
                     onClose();
                   }}
-                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer group transition-all duration-200"
+                  className="flex items-center gap-3 p-3 bg-card/50 backdrop-blur-sm rounded-lg hover:bg-card/80 cursor-pointer group transition-all duration-200 border border-border/30"
                 >
                   <div className="p-2 bg-ai-blue/20 rounded-lg">
                     <item.icon className="h-5 w-5 text-ai-blue" />
@@ -202,7 +202,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
                   navigate('/settings');
                   onClose();
                 }}
-                className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                className="p-3 bg-card/50 backdrop-blur-sm rounded-lg hover:bg-card/80 cursor-pointer transition-colors border border-border/30"
               >
                 <h4 className="font-medium mb-2">All Settings</h4>
                 <p className="text-sm text-muted-foreground">Theme, voice, privacy, and more</p>
@@ -221,7 +221,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
                   navigate('/help');
                   onClose();
                 }}
-                className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="p-3 bg-card/50 backdrop-blur-sm rounded-lg cursor-pointer hover:bg-card/80 transition-colors border border-border/30"
               >
                 <h4 className="font-medium">View All Help Topics</h4>
                 <p className="text-sm text-muted-foreground">Getting started, shortcuts, and FAQs</p>
@@ -361,12 +361,12 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
     <>
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/50 z-40 md:hidden" 
+        className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 md:hidden" 
         onClick={onClose}
       />
       
       {/* Sidebar */}
-      <div className="fixed left-0 top-0 h-full w-80 bg-chat-sidebar dark:bg-gray-900 border-r border-border z-50 transform transition-transform duration-300 ease-in-out animate-slide-in-left">
+      <div className="fixed left-0 top-0 h-full w-80 bg-background/70 backdrop-blur-2xl backdrop-saturate-150 border-r border-border/50 z-50 transform transition-transform duration-300 ease-in-out animate-slide-in-left shadow-2xl">
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border">
@@ -500,7 +500,7 @@ const ConversationItem = ({
 
   return (
     <div 
-      className="group flex items-center gap-3 p-3 hover:bg-muted rounded-lg cursor-pointer transition-all duration-200"
+      className="group flex items-center gap-3 p-3 hover:bg-card/60 backdrop-blur-sm rounded-lg cursor-pointer transition-all duration-200 border border-transparent hover:border-border/30"
       onClick={onSelect}
       onTouchStart={handleLongPressStart}
       onTouchEnd={handleLongPressEnd}

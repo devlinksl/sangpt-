@@ -35,7 +35,7 @@
  
    return (
      <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
-       <DrawerContent className="max-h-[85vh]">
+       <DrawerContent className="max-h-[85vh] bg-background/80 backdrop-blur-2xl backdrop-saturate-150">
          <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-4 mt-2" />
          <ScrollArea className="max-h-[60vh] overflow-y-auto">
            <DrawerHeader className="flex flex-col items-center text-center gap-3 px-6">

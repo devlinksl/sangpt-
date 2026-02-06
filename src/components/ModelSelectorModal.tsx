@@ -40,7 +40,7 @@ export const ModelSelectorModal = ({
 }: ModelSelectorModalProps) => {
   return (
     <Drawer open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DrawerContent className="max-h-[85vh]">
+      <DrawerContent className="max-h-[85vh] bg-background/80 backdrop-blur-2xl backdrop-saturate-150">
         <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-4 mt-2" />
         <DrawerTitle className="sr-only">Select model</DrawerTitle>
         <DrawerDescription className="sr-only">
@@ -61,8 +61,8 @@ export const ModelSelectorModal = ({
                 }}
                 className={`w-full text-left p-4 rounded-2xl transition-colors ${
                   isSelected 
-                    ? 'bg-muted border-2 border-primary' 
-                    : 'bg-background hover:bg-muted/50 border-2 border-transparent'
+                    ? 'bg-primary/10 backdrop-blur-sm border-2 border-primary' 
+                    : 'bg-card/40 backdrop-blur-sm hover:bg-card/60 border-2 border-transparent'
                 }`}
               >
                 <div className="flex items-start justify-between">

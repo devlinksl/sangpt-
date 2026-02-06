@@ -108,7 +108,8 @@ export const MessageActions = ({
         size="icon"
         onClick={() => handleRating(rating === 1 ? 0 : 1)}
         disabled={isLoading}
-        className={`h-8 w-8 rounded-lg ${rating === 1 ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`}
+        className={`h-8 w-8 rounded-lg action-stagger ${rating === 1 ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`}
+        style={{ animationDelay: '0ms' }}
       >
         <ThumbsUp className="h-3.5 w-3.5" />
       </Button>
@@ -118,7 +119,8 @@ export const MessageActions = ({
         size="icon"
         onClick={() => handleRating(rating === -1 ? 0 : -1)}
         disabled={isLoading}
-        className={`h-8 w-8 rounded-lg ${rating === -1 ? 'text-destructive bg-destructive/10' : 'text-muted-foreground'}`}
+        className={`h-8 w-8 rounded-lg action-stagger ${rating === -1 ? 'text-destructive bg-destructive/10' : 'text-muted-foreground'}`}
+        style={{ animationDelay: '60ms' }}
       >
         <ThumbsDown className="h-3.5 w-3.5" />
       </Button>
@@ -127,7 +129,8 @@ export const MessageActions = ({
         variant="ghost"
         size="icon"
         onClick={handleCopy}
-        className="h-8 w-8 rounded-lg text-muted-foreground"
+        className="h-8 w-8 rounded-lg text-muted-foreground action-stagger"
+        style={{ animationDelay: '120ms' }}
       >
         {copied ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
       </Button>
@@ -137,19 +140,23 @@ export const MessageActions = ({
         size="icon"
         onClick={handleRegenerate}
         disabled={isLoading}
-        className="h-8 w-8 rounded-lg text-muted-foreground"
+        className="h-8 w-8 rounded-lg text-muted-foreground action-stagger"
+        style={{ animationDelay: '180ms' }}
       >
         <RotateCcw className="h-3.5 w-3.5" />
       </Button>
 
-      <TextToSpeech text={content} disabled={isLoading} />
+      <span className="action-stagger" style={{ animationDelay: '240ms' }}>
+        <TextToSpeech text={content} disabled={isLoading} />
+      </span>
 
       {navigator.share && (
         <Button
           variant="ghost"
           size="icon"
           onClick={handleShare}
-          className="h-8 w-8 rounded-lg text-muted-foreground"
+          className="h-8 w-8 rounded-lg text-muted-foreground action-stagger"
+          style={{ animationDelay: '300ms' }}
         >
           <Share2 className="h-3.5 w-3.5" />
         </Button>

@@ -29,7 +29,7 @@ export const ConversationLongPressModal = ({
 
   return (
     <Drawer open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DrawerContent className="max-h-[85vh]">
+      <DrawerContent className="max-h-[85vh] bg-background/80 backdrop-blur-2xl backdrop-saturate-150">
         <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-4 mt-2" />
         <div className="px-6 pb-2">
           <h3 className="text-center font-semibold text-lg mb-2">Conversation Actions</h3>

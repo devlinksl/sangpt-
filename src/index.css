@@ -352,6 +352,24 @@ body, html {
      will-change: transform, opacity;
    }
 
+   /* Staggered action button reveal */
+   @keyframes action-stagger-in {
+     0% {
+       opacity: 0;
+       transform: translateY(6px) scale(0.8);
+     }
+     100% {
+       opacity: 1;
+       transform: translateY(0) scale(1);
+     }
+   }
+
+   .action-stagger {
+     opacity: 0;
+     animation: action-stagger-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+     will-change: transform, opacity;
+   }
+
    /* AI response content reveal */
    @keyframes ai-content-reveal {
      0% {

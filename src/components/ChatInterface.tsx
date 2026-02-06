@@ -449,7 +449,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      <header className="flex items-center justify-between px-4 py-3 border-b border-border/50 backdrop-blur-sm sticky top-0 z-10">
+      <header className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-background/60 backdrop-blur-2xl backdrop-saturate-150 sticky top-0 z-10">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={onOpenSidebar} className="hover:bg-accent">
             <Menu className="h-5 w-5" />
@@ -521,7 +521,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                     <button
                       key={i}
                       onClick={(e) => { createRipple(e); setInput(prompt.text); }}
-                      className="p-4 rounded-xl border border-border hover:bg-accent transition-all flex flex-col items-start gap-2 text-left group"
+                      className="p-4 rounded-xl border border-border/30 bg-card/50 backdrop-blur-xl hover:bg-card/70 transition-all flex flex-col items-start gap-2 text-left group shadow-sm"
                     >
                       <div className="flex items-center gap-2">
                         <Icon className="h-4 w-4 text-muted-foreground" />
@@ -540,7 +540,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
               <div key={message.id} className="message-enter">
                 {message.role === 'user' ? (
                   <div className="flex items-start gap-3 justify-end">
-                    <div className="bg-primary text-primary-foreground px-4 py-3 rounded-2xl max-w-[80%] shadow-sm">
+                    <div className="bg-primary/90 backdrop-blur-sm text-primary-foreground px-4 py-3 rounded-2xl max-w-[80%] shadow-md">
                       <p className="whitespace-pre-wrap break-words">{message.content.split('[Attached Files]')[0]}</p>
                       {message.metadata?.files && (
                         <div className="mt-2 space-y-2">
@@ -601,7 +601,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
       </div>
 
       {/* Input Bar Section */}
-      <div className="sticky bottom-0 pb-4 pt-2 bg-gradient-to-t from-background via-background to-transparent">
+      <div className="sticky bottom-0 pb-4 pt-2 bg-gradient-to-t from-background/90 via-background/70 to-transparent backdrop-blur-xl">
         {/* Waveform animation when recording */}
         {isRecording && (
           <div className="mb-3 flex items-center justify-center">
