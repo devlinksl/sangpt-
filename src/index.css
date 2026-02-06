@@ -391,4 +391,22 @@ body, html {
      animation: ai-content-reveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
      will-change: transform, opacity, filter;
    }
+
+   /* Settings item staggered entry */
+   @keyframes settings-item-enter {
+     0% {
+       opacity: 0;
+       transform: translateY(8px);
+     }
+     100% {
+       opacity: 1;
+       transform: translateY(0);
+     }
+   }
+
+   .settings-item-enter {
+     opacity: 0;
+     animation: settings-item-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+     will-change: transform, opacity;
+   }
 }
