@@ -335,34 +335,42 @@ body, html {
     }
   }
  
-   /* Smooth action fade */
-   .action-fade-enter {
-     animation: actionFadeIn 0.2s ease-out forwards;
-   }
-   
-   .action-fade-exit {
-     animation: actionFadeOut 0.15s ease-in forwards;
-   }
-   
-   @keyframes actionFadeIn {
-     from {
+   /* Actions reveal animation - smooth slide up with fade */
+   @keyframes actions-reveal {
+     0% {
        opacity: 0;
-       transform: translateY(8px);
+       transform: translateY(8px) scale(0.96);
      }
-     to {
+     100% {
+       opacity: 1;
+       transform: translateY(0) scale(1);
+     }
+   }
+
+   .actions-reveal {
+     animation: actions-reveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+     will-change: transform, opacity;
+   }
+
+   /* AI response content reveal */
+   @keyframes ai-content-reveal {
+     0% {
+       opacity: 0;
+       transform: translateY(16px);
+       filter: blur(4px);
+     }
+     60% {
+       filter: blur(0px);
+     }
+     100% {
        opacity: 1;
        transform: translateY(0);
+       filter: blur(0px);
      }
    }
-   
-   @keyframes actionFadeOut {
-     from {
-       opacity: 1;
-       transform: translateY(0);
-     }
-     to {
-       opacity: 0;
-       transform: translateY(4px);
-     }
+
+   .ai-response-reveal {
+     animation: ai-content-reveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+     will-change: transform, opacity, filter;
    }
 }

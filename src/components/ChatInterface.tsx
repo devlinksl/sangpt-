@@ -557,10 +557,10 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                   </div>
                 ) : (
                   <div className="flex items-start gap-3">
-                    <Avatar className="h-7 w-7 bg-primary flex-shrink-0 mt-1">
+                    <Avatar className="h-7 w-7 bg-primary flex-shrink-0 mt-1 ai-response-reveal">
                       <AvatarFallback className="bg-primary text-primary-foreground text-sm font-bold">S</AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 space-y-2">
+                    <div className="flex-1 space-y-2 ai-response-reveal">
                        <StreamingMarkdown 
                          content={message.content} 
                          isStreaming={streamingMessageId === message.id}

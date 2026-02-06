@@ -102,7 +102,7 @@ export const MessageActions = ({
   if (role !== 'assistant') return null;
 
   return (
-    <div className="flex items-center gap-0.5 pt-1">
+    <div className="flex items-center gap-0.5 pt-1 actions-reveal">
       <Button
         variant="ghost"
         size="icon"
