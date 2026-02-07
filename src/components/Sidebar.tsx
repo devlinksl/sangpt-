@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/components/AuthContext';
@@ -8,7 +7,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAlert } from '@/hooks/useAlert';
 import { ConversationLongPressModal } from '@/components/ConversationLongPressModal';
 import {
-  X,
   MessageSquare,
   Grid3x3,
   Settings,
@@ -20,6 +18,7 @@ import {
   History,
   Sparkles,
   Mail,
+  Trash2,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -351,21 +350,15 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop — tapping closes sidebar */}
       <div 
-        className="fixed inset-0 bg-black/25 backdrop-blur-sm z-40 md:hidden" 
+        className="fixed inset-0 bg-black/25 backdrop-blur-sm z-40" 
         onClick={onClose}
       />
       
       {/* Sidebar */}
       <div className="fixed left-0 top-0 h-full w-80 bg-background/50 backdrop-blur-2xl backdrop-saturate-150 border-r border-border/30 z-50 transform transition-transform duration-200 ease-out animate-slide-in-left shadow-2xl">
         <div className="flex flex-col h-full">
-          {/* Header — close button only, no title */}
-          <div className="flex items-center justify-end p-4 border-b border-border/30">
-            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
 
           {/* Top Action Buttons — 4 horizontal, evenly spaced */}
           <div className="border-b border-border/30">
@@ -444,7 +437,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
   );
 };
 
-// ── Conversation Item ──
+// ── Swipeable Conversation Item ──
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -460,6 +453,8 @@ interface ConversationItemProps {
   isLoading?: boolean;
 }
 
+const SWIPE_THRESHOLD = 80;
+
 const ConversationItem = ({
   conversation,
   editingId,
@@ -474,63 +469,148 @@ const ConversationItem = ({
   isLoading,
 }: ConversationItemProps) => {
   const isEditing = editingId === conversation.id;
+  const [swipeX, setSwipeX] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const startXRef = useRef(0);
+  const startYRef = useRef(0);
+  const currentXRef = useRef(0);
+  const isHorizontalRef = useRef<boolean | null>(null);
+  const longPressTimerRef = useRef<number | null>(null);
 
-  const handleLongPressStart = (e: React.TouchEvent | React.MouseEvent) => {
-    const timer = setTimeout(() => onLongPress(), 2000);
-    if ('touches' in e) {
-      (e.currentTarget as HTMLElement).dataset.timer = String(timer);
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    startXRef.current = e.touches[0].clientX;
+    startYRef.current = e.touches[0].clientY;
+    currentXRef.current = 0;
+    isHorizontalRef.current = null;
+    setIsSwiping(false);
+
+    // Start long press timer
+    longPressTimerRef.current = window.setTimeout(() => onLongPress(), 2000);
+  }, [onLongPress]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    const dx = e.touches[0].clientX - startXRef.current;
+    const dy = e.touches[0].clientY - startYRef.current;
+
+    // Determine direction on first significant move
+    if (isHorizontalRef.current === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+      isHorizontalRef.current = Math.abs(dx) > Math.abs(dy);
+      // Cancel long press on any move
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
     }
-  };
 
-  const handleLongPressEnd = (e: React.TouchEvent | React.MouseEvent) => {
-    const timer = (e.currentTarget as HTMLElement).dataset.timer;
-    if (timer) clearTimeout(Number(timer));
-  };
+    if (!isHorizontalRef.current) return;
+
+    // Only allow swiping left (negative dx)
+    const clampedX = Math.min(0, Math.max(dx, -140));
+    currentXRef.current = clampedX;
+    setSwipeX(clampedX);
+    setIsSwiping(true);
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    // Cancel long press
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+
+    if (!isSwiping) {
+      // It was a tap, not a swipe
+      if (Math.abs(currentXRef.current) < 10) {
+        onSelect();
+      }
+      return;
+    }
+
+    if (currentXRef.current < -SWIPE_THRESHOLD) {
+      // Commit delete
+      setIsDeleting(true);
+      setSwipeX(-300);
+      setTimeout(() => {
+        onDelete(conversation.id);
+      }, 250);
+    } else {
+      // Snap back
+      setSwipeX(0);
+    }
+    setIsSwiping(false);
+  }, [isSwiping, onSelect, onDelete, conversation.id]);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    onLongPress();
+  }, [onLongPress]);
+
+  // Reset swipe when editing starts
+  useEffect(() => {
+    if (isEditing) setSwipeX(0);
+  }, [isEditing]);
 
   return (
-    <div 
-      className={`group flex items-center gap-3 p-3 hover:bg-card/60 backdrop-blur-sm rounded-lg cursor-pointer transition-all duration-200 border border-transparent hover:border-border/30 ${
-        isLoading ? 'opacity-70 pointer-events-none' : ''
-      }`}
-      onClick={onSelect}
-      onTouchStart={handleLongPressStart}
-      onTouchEnd={handleLongPressEnd}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        onLongPress();
-      }}
-    >
-      {isLoading ? (
-        <Loader2 className="h-4 w-4 text-muted-foreground flex-shrink-0 animate-spin" />
-      ) : (
-        <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-      )}
-      
-      <div className="flex-1 min-w-0">
-        {isEditing ? (
-          <Input
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                onSubmitEdit(conversation.id);
-              } else if (e.key === 'Escape') {
-                onSubmitEdit(conversation.id);
-              }
-            }}
-            onBlur={() => onSubmitEdit(conversation.id)}
-            onClick={(e) => e.stopPropagation()}
-            className="h-8 text-sm"
-            autoFocus
-          />
+    <div className="relative overflow-hidden rounded-lg">
+      {/* Delete background revealed on swipe */}
+      <div className="absolute inset-y-0 right-0 flex items-center justify-end pr-4 bg-destructive rounded-lg w-full">
+        <div className={`flex items-center gap-2 transition-opacity duration-150 ${Math.abs(swipeX) > 30 ? 'opacity-100' : 'opacity-0'}`}>
+          <Trash2 className="h-4 w-4 text-destructive-foreground" />
+          <span className="text-xs font-medium text-destructive-foreground">Delete</span>
+        </div>
+      </div>
+
+      {/* Swipeable foreground */}
+      <div
+        className={`relative flex items-center gap-3 p-3 bg-background rounded-lg cursor-pointer border border-transparent hover:border-border/30 ${
+          isLoading ? 'opacity-70 pointer-events-none' : ''
+        } ${isDeleting ? 'opacity-0' : ''}`}
+        style={{
+          transform: `translateX(${swipeX}px)`,
+          transition: isSwiping ? 'none' : 'transform 0.25s cubic-bezier(0.2, 0, 0, 1), opacity 0.25s ease',
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onContextMenu={handleContextMenu}
+        onClick={(e) => {
+          // Desktop click (touch handled in touchEnd)
+          if (!('ontouchstart' in window)) onSelect();
+        }}
+      >
+        {isLoading ? (
+          <Loader2 className="h-4 w-4 text-muted-foreground flex-shrink-0 animate-spin" />
         ) : (
-          <>
-            <p className="font-medium truncate">{conversation.title}</p>
-            <p className="text-sm text-muted-foreground">
-              {new Date(conversation.updated_at).toLocaleDateString()}
-            </p>
-          </>
+          <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
         )}
+
+        <div className="flex-1 min-w-0">
+          {isEditing ? (
+            <Input
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  onSubmitEdit(conversation.id);
+                } else if (e.key === 'Escape') {
+                  onSubmitEdit(conversation.id);
+                }
+              }}
+              onBlur={() => onSubmitEdit(conversation.id)}
+              onClick={(e) => e.stopPropagation()}
+              className="h-8 text-sm"
+              autoFocus
+            />
+          ) : (
+            <>
+              <p className="font-medium truncate">{conversation.title}</p>
+              <p className="text-sm text-muted-foreground">
+                {new Date(conversation.updated_at).toLocaleDateString()}
+              </p>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
