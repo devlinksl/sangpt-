@@ -487,7 +487,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
               }} className="hover:bg-accent">
                 <Edit3 className="h-5 w-5" />
               </Button>
-              <Avatar className="h-8 w-8 bg-primary cursor-pointer ml-1" onClick={() => navigate('/account')}>
+              <Avatar className="h-8 w-8 bg-primary cursor-pointer ml-1" onClick={() => navigate('/settings')}>
                 <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
                   {user.user_metadata?.display_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
                 </AvatarFallback>

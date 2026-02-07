@@ -105,28 +105,52 @@ export type Database = {
       }
       user_preferences: {
         Row: {
+          analytics_opt_out: boolean | null
+          animations: boolean | null
           auto_speech: boolean | null
           created_at: string
+          data_mode: string | null
           id: string
+          new_chat_auto: boolean | null
+          notifications: boolean | null
+          response_style: string | null
+          sound_haptics: boolean | null
           theme: string | null
+          typing_speed: string | null
           updated_at: string
           user_id: string
           voice_preference: string | null
         }
         Insert: {
+          analytics_opt_out?: boolean | null
+          animations?: boolean | null
           auto_speech?: boolean | null
           created_at?: string
+          data_mode?: string | null
           id?: string
+          new_chat_auto?: boolean | null
+          notifications?: boolean | null
+          response_style?: string | null
+          sound_haptics?: boolean | null
           theme?: string | null
+          typing_speed?: string | null
           updated_at?: string
           user_id: string
           voice_preference?: string | null
         }
         Update: {
+          analytics_opt_out?: boolean | null
+          animations?: boolean | null
           auto_speech?: boolean | null
           created_at?: string
+          data_mode?: string | null
           id?: string
+          new_chat_auto?: boolean | null
+          notifications?: boolean | null
+          response_style?: string | null
+          sound_haptics?: boolean | null
           theme?: string | null
+          typing_speed?: string | null
           updated_at?: string
           user_id?: string
           voice_preference?: string | null

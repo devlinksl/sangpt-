@@ -3,13 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/AuthContext';
 import { useTheme } from '@/components/ThemeProvider';
 import { useAlert } from '@/hooks/useAlert';
+import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Switch } from '@/components/ui/switch';
 import { SettingsItem } from '@/components/settings/SettingsItem';
 import { SettingsSection } from '@/components/settings/SettingsSection';
 import { ProfileInfoSubPage } from '@/components/settings/ProfileInfoSubPage';
 import { AboutSubPage } from '@/components/settings/AboutSubPage';
+import { AccountSecuritySubPage } from '@/components/settings/AccountSecuritySubPage';
+import { LinkedAccountsSubPage } from '@/components/settings/LinkedAccountsSubPage';
+import { ChatAppearanceSubPage } from '@/components/settings/ChatAppearanceSubPage';
+import { NotificationsSubPage } from '@/components/settings/NotificationsSubPage';
+import { SoundsHapticsSubPage } from '@/components/settings/SoundsHapticsSubPage';
+import { ChatHistorySubPage } from '@/components/settings/ChatHistorySubPage';
+import { PrivacyControlsSubPage } from '@/components/settings/PrivacyControlsSubPage';
 import {
   ChevronLeft,
   User,
@@ -30,27 +37,26 @@ import {
   LogOut,
 } from 'lucide-react';
 
-type SubPage = 'main' | 'profile' | 'about';
+type SubPage =
+  | 'main'
+  | 'profile'
+  | 'about'
+  | 'security'
+  | 'linked'
+  | 'chat-appearance'
+  | 'notifications'
+  | 'sounds'
+  | 'chat-history'
+  | 'privacy';
 
 export default function Settings() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const { alert } = useAlert();
+  const { preferences, updatePreference } = useUserPreferences();
 
   const [subPage, setSubPage] = useState<SubPage>('main');
-
-  // Local state for toggles
-  const [animations, setAnimations] = useState(true);
-  const [newChatAuto, setNewChatAuto] = useState(true);
-  const [notifications, setNotifications] = useState(true);
-  const [soundHaptics, setSoundHaptics] = useState(true);
-  const [analyticsOptOut, setAnalyticsOptOut] = useState(false);
-
-  // Local state for selections
-  const [responseStyle, setResponseStyle] = useState<'concise' | 'balanced' | 'detailed'>('balanced');
-  const [typingSpeed, setTypingSpeed] = useState<'slow' | 'normal' | 'fast'>('normal');
-  const [dataMode, setDataMode] = useState<'standard' | 'low' | 'offline'>('standard');
 
   const handleSignOut = async () => {
     await signOut();
@@ -58,29 +64,75 @@ export default function Settings() {
   };
 
   const cycleResponseStyle = () => {
-    const next = responseStyle === 'concise' ? 'balanced' : responseStyle === 'balanced' ? 'detailed' : 'concise';
-    setResponseStyle(next);
+    const next =
+      preferences.response_style === 'concise'
+        ? 'balanced'
+        : preferences.response_style === 'balanced'
+        ? 'detailed'
+        : 'concise';
+    updatePreference('response_style', next);
   };
 
   const cycleTypingSpeed = () => {
-    const next = typingSpeed === 'slow' ? 'normal' : typingSpeed === 'normal' ? 'fast' : 'slow';
-    setTypingSpeed(next);
+    const next =
+      preferences.typing_speed === 'slow'
+        ? 'normal'
+        : preferences.typing_speed === 'normal'
+        ? 'fast'
+        : 'slow';
+    updatePreference('typing_speed', next);
   };
 
   const cycleDataMode = () => {
-    const next = dataMode === 'standard' ? 'low' : dataMode === 'low' ? 'offline' : 'standard';
-    setDataMode(next);
+    const next =
+      preferences.data_mode === 'standard'
+        ? 'low'
+        : preferences.data_mode === 'low'
+        ? 'offline'
+        : 'standard';
+    updatePreference('data_mode', next);
   };
 
   const themeLabel = theme === 'dark' ? 'Dark' : theme === 'light' ? 'Light' : 'System';
   const cycleTheme = () => {
     const next = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light';
     setTheme(next);
+    updatePreference('theme', next);
   };
 
-  // Render sub-pages
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+  // Sub-page routing
   if (subPage === 'profile') return <ProfileInfoSubPage onBack={() => setSubPage('main')} />;
   if (subPage === 'about') return <AboutSubPage onBack={() => setSubPage('main')} />;
+  if (subPage === 'security') return <AccountSecuritySubPage onBack={() => setSubPage('main')} />;
+  if (subPage === 'linked') return <LinkedAccountsSubPage onBack={() => setSubPage('main')} />;
+  if (subPage === 'chat-appearance') return <ChatAppearanceSubPage onBack={() => setSubPage('main')} />;
+  if (subPage === 'notifications')
+    return (
+      <NotificationsSubPage
+        onBack={() => setSubPage('main')}
+        notifications={preferences.notifications}
+        onToggleNotifications={(v) => updatePreference('notifications', v)}
+      />
+    );
+  if (subPage === 'sounds')
+    return (
+      <SoundsHapticsSubPage
+        onBack={() => setSubPage('main')}
+        soundHaptics={preferences.sound_haptics}
+        onToggleSoundHaptics={(v) => updatePreference('sound_haptics', v)}
+      />
+    );
+  if (subPage === 'chat-history') return <ChatHistorySubPage onBack={() => setSubPage('main')} />;
+  if (subPage === 'privacy')
+    return (
+      <PrivacyControlsSubPage
+        onBack={() => setSubPage('main')}
+        analyticsOptOut={preferences.analytics_opt_out}
+        onToggleAnalytics={(v) => updatePreference('analytics_opt_out', v)}
+      />
+    );
 
   return (
     <div className="min-h-screen bg-background">
@@ -102,19 +154,23 @@ export default function Settings() {
         >
           <Avatar className="h-16 w-16 bg-gradient-to-br from-ai-blue to-ai-purple shadow-lg">
             <AvatarFallback className="bg-gradient-to-br from-ai-blue to-ai-purple text-white text-xl font-semibold">
-              {user?.user_metadata?.display_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'S'}
+              {user?.user_metadata?.display_name?.charAt(0).toUpperCase() ||
+                user?.email?.charAt(0).toUpperCase() ||
+                'S'}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
             <h2 className="text-lg font-semibold truncate">
               {user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'User'}
             </h2>
-            <p className="text-sm text-muted-foreground truncate">{user?.email || 'Sign in to access settings'}</p>
+            <p className="text-sm text-muted-foreground truncate">
+              {user?.email || 'Sign in to access settings'}
+            </p>
           </div>
           <ChevronLeft className="h-5 w-5 text-muted-foreground rotate-180 shrink-0" />
         </div>
 
-        {/* === 1. Account & Profile === */}
+        {/* 1. Account & Profile */}
         <SettingsSection title="Account & Profile">
           <SettingsItem
             icon={<User className="h-[18px] w-[18px]" />}
@@ -127,19 +183,19 @@ export default function Settings() {
             icon={<Shield className="h-[18px] w-[18px]" />}
             label="Account Security"
             description="Password and authentication"
-            onClick={() => alert({ title: 'Coming Soon', description: 'Security settings are being built.' })}
+            onClick={() => setSubPage('security')}
             index={1}
           />
           <SettingsItem
             icon={<Link2 className="h-[18px] w-[18px]" />}
             label="Linked Accounts"
             description="Google and email sign-in"
-            onClick={() => alert({ title: 'Coming Soon', description: 'Account linking is coming soon.' })}
+            onClick={() => setSubPage('linked')}
             index={2}
           />
         </SettingsSection>
 
-        {/* === 2. Appearance & Experience === */}
+        {/* 2. Appearance & Experience */}
         <SettingsSection title="Appearance & Experience">
           <SettingsItem
             icon={<Sun className="h-[18px] w-[18px]" />}
@@ -152,7 +208,7 @@ export default function Settings() {
             icon={<MessageSquare className="h-[18px] w-[18px]" />}
             label="Chat Appearance"
             description="Font size, bubble style, density"
-            onClick={() => alert({ title: 'Coming Soon', description: 'Chat appearance customization coming soon.' })}
+            onClick={() => setSubPage('chat-appearance')}
             index={4}
           />
           <SettingsItem
@@ -160,19 +216,19 @@ export default function Settings() {
             label="Animations & Smoothness"
             description="Enhanced visual effects"
             toggle
-            toggled={animations}
-            onToggle={setAnimations}
+            toggled={preferences.animations}
+            onToggle={(v) => updatePreference('animations', v)}
             index={5}
           />
         </SettingsSection>
 
-        {/* === 3. AI & Chat Behavior === */}
+        {/* 3. AI & Chat Behavior */}
         <SettingsSection title="AI & Chat Behavior">
           <SettingsItem
             icon={<BrainCircuit className="h-[18px] w-[18px]" />}
             label="AI Response Style"
             onClick={cycleResponseStyle}
-            trailing={responseStyle.charAt(0).toUpperCase() + responseStyle.slice(1)}
+            trailing={capitalize(preferences.response_style)}
             index={6}
           />
           <SettingsItem
@@ -180,7 +236,7 @@ export default function Settings() {
             label="Typing Speed"
             description="Typewriter effect speed"
             onClick={cycleTypingSpeed}
-            trailing={typingSpeed.charAt(0).toUpperCase() + typingSpeed.slice(1)}
+            trailing={capitalize(preferences.typing_speed)}
             index={7}
           />
           <SettingsItem
@@ -188,61 +244,67 @@ export default function Settings() {
             label="New Chat Behavior"
             description="Auto-create on first message"
             toggle
-            toggled={newChatAuto}
-            onToggle={setNewChatAuto}
+            toggled={preferences.new_chat_auto}
+            onToggle={(v) => updatePreference('new_chat_auto', v)}
             index={8}
           />
         </SettingsSection>
 
-        {/* === 4. Notifications & Sound === */}
+        {/* 4. Notifications & Sound */}
         <SettingsSection title="Notifications & Sound">
           <SettingsItem
             icon={<Bell className="h-[18px] w-[18px]" />}
             label="Notifications"
             description="Messages, updates, and alerts"
+            onClick={() => setSubPage('notifications')}
             toggle
-            toggled={notifications}
-            onToggle={setNotifications}
+            toggled={preferences.notifications}
+            onToggle={(v) => updatePreference('notifications', v)}
             index={9}
           />
           <SettingsItem
             icon={<Volume2 className="h-[18px] w-[18px]" />}
             label="Sounds & Haptics"
             description="Vibration and subtle sounds"
+            onClick={() => setSubPage('sounds')}
             toggle
-            toggled={soundHaptics}
-            onToggle={setSoundHaptics}
+            toggled={preferences.sound_haptics}
+            onToggle={(v) => updatePreference('sound_haptics', v)}
             index={10}
           />
         </SettingsSection>
 
-        {/* === 5. Data & Performance === */}
+        {/* 5. Data & Performance */}
         <SettingsSection title="Data & Performance">
           <SettingsItem
             icon={<Wifi className="h-[18px] w-[18px]" />}
             label="Data Usage Mode"
             onClick={cycleDataMode}
-            trailing={dataMode === 'low' ? 'Low Data' : dataMode === 'offline' ? 'Offline' : 'Standard'}
+            trailing={
+              preferences.data_mode === 'low'
+                ? 'Low Data'
+                : preferences.data_mode === 'offline'
+                ? 'Offline'
+                : 'Standard'
+            }
             index={11}
           />
           <SettingsItem
             icon={<History className="h-[18px] w-[18px]" />}
             label="Chat History Management"
             description="Clear chats, auto-delete"
-            onClick={() => alert({ title: 'Coming Soon', description: 'History management is coming soon.' })}
+            onClick={() => setSubPage('chat-history')}
             index={12}
           />
         </SettingsSection>
 
-        {/* === 6. Privacy & Legal === */}
+        {/* 6. Privacy & Legal */}
         <SettingsSection title="Privacy & Legal">
           <SettingsItem
             icon={<Eye className="h-[18px] w-[18px]" />}
             label="Privacy Controls"
             description="Data usage and analytics"
-            toggle
-            toggled={!analyticsOptOut}
-            onToggle={(v) => setAnalyticsOptOut(!v)}
+            onClick={() => setSubPage('privacy')}
             index={13}
           />
           <SettingsItem
