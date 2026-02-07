@@ -5,11 +5,11 @@
  /* Glass morphism utilities */
  @layer utilities {
    .glass-card {
-     @apply bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg;
+     @apply bg-card/50 backdrop-blur-2xl border border-border/30 shadow-lg;
    }
    
    .glass-input {
-     @apply bg-card/60 backdrop-blur-xl border border-border/40 shadow-md;
+     @apply bg-card/40 backdrop-blur-2xl border border-border/30 shadow-md;
    }
  }
 
@@ -178,6 +178,14 @@ code, pre {
 body, html {
   overflow-x: hidden;
   max-width: 100vw;
+}
+
+/* Faster vaul drawer animations */
+[vaul-drawer] {
+  transition-duration: 0.2s !important;
+}
+[vaul-overlay] {
+  transition-duration: 0.2s !important;
 }
 
 /* Fade out animation for shimmer */

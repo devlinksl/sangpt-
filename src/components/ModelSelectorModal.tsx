@@ -40,7 +40,7 @@ export const ModelSelectorModal = ({
 }: ModelSelectorModalProps) => {
   return (
     <Drawer open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DrawerContent className="max-h-[85vh] bg-background/80 backdrop-blur-2xl backdrop-saturate-150">
+      <DrawerContent className="max-h-[85vh] bg-background/50 backdrop-blur-2xl backdrop-saturate-150">
         <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-4 mt-2" />
         <DrawerTitle className="sr-only">Select model</DrawerTitle>
         <DrawerDescription className="sr-only">

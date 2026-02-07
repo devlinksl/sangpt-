@@ -10,7 +10,7 @@ interface SettingsSubPageProps {
 export function SettingsSubPage({ title, onBack, children }: SettingsSubPageProps) {
   return (
     <div className="min-h-screen bg-background animate-fade-in">
-      <header className="sticky top-0 bg-background/70 backdrop-blur-2xl backdrop-saturate-150 border-b border-border/30 z-10">
+      <header className="sticky top-0 bg-background/50 backdrop-blur-2xl backdrop-saturate-150 border-b border-border/20 z-10">
         <div className="flex items-center gap-3 p-4">
           <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full">
             <ChevronLeft className="h-5 w-5" />
