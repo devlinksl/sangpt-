@@ -3,28 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/components/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
- import { useAlert } from '@/hooks/useAlert';
+import { useAlert } from '@/hooks/useAlert';
 import { ConversationLongPressModal } from '@/components/ConversationLongPressModal';
-import { ShimmerLoading } from '@/components/ShimmerLoading';
 import {
   X,
   MessageSquare,
   Grid3x3,
   Settings,
   HelpCircle,
-  Trash2,
   Search,
-  Plus,
   Pin,
-  PinOff,
-  Edit2,
+  Loader2,
+  ChevronRight,
   History,
   Sparkles,
-  ChevronRight,
-  Mail
+  Mail,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -53,7 +48,7 @@ const exploreItems = [
 export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: SidebarProps) => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-   const { alert } = useAlert();
+  const { alert } = useAlert();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeSection, setActiveSection] = useState<'chat' | 'explore' | 'settings' | 'help'>('chat');
@@ -61,7 +56,8 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
   const [editTitle, setEditTitle] = useState('');
   const [showConvLongPress, setShowConvLongPress] = useState(false);
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
-  const [loadingConversation, setLoadingConversation] = useState(false);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
+  const [loadingConversationId, setLoadingConversationId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user && isOpen) {
@@ -71,6 +67,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
 
   const fetchConversations = async () => {
     if (!user) return;
+    setIsLoadingConversations(true);
 
     try {
       const { data, error } = await supabase
@@ -83,6 +80,8 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
       setConversations(data || []);
     } catch (error) {
       console.error('Error fetching conversations:', error);
+    } finally {
+      setIsLoadingConversations(false);
     }
   };
 
@@ -96,14 +95,14 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
       if (error) throw error;
       setConversations(prev => prev.filter(conv => conv.id !== id));
       
-       alert({
+      alert({
         title: "Conversation deleted",
         description: "The conversation has been removed",
-         variant: "success",
+        variant: "success",
       });
     } catch (error) {
       console.error('Error deleting conversation:', error);
-       alert({
+      alert({
         title: "Error",
         description: "Could not delete conversation",
         variant: "destructive",
@@ -125,14 +124,14 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
       ));
       setEditingId(null);
       
-       alert({
+      alert({
         title: "Title updated",
         description: "Conversation title has been changed",
-         variant: "success",
+        variant: "success",
       });
     } catch (error) {
       console.error('Error updating title:', error);
-       alert({
+      alert({
         title: "Error",
         description: "Could not update title",
         variant: "destructive",
@@ -153,6 +152,18 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
     }
   };
 
+  const handleConversationClick = (conversationId: string) => {
+    if (onConversationSelect) {
+      setLoadingConversationId(conversationId);
+      onConversationSelect(conversationId);
+      // Give time for chat to load, then close sidebar
+      setTimeout(() => {
+        setLoadingConversationId(null);
+        onClose();
+      }, 600);
+    }
+  };
+
   const filteredConversations = conversations.filter(conv =>
     conv.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -161,6 +172,14 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
   const regularConversations = filteredConversations.filter(conv => !conv.pinned);
 
   if (!isOpen) return null;
+
+  // ── Top navigation buttons ──
+  const navButtons = [
+    { id: 'chat' as const, icon: MessageSquare, tooltip: 'Chats' },
+    { id: 'explore' as const, icon: Grid3x3, tooltip: 'Explore' },
+    { id: 'settings' as const, icon: Settings, tooltip: 'Settings' },
+    { id: 'help' as const, icon: HelpCircle, tooltip: 'Help' },
+  ];
 
   const renderContent = () => {
     switch (activeSection) {
@@ -178,8 +197,8 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
                   }}
                   className="flex items-center gap-3 p-3 bg-card/50 backdrop-blur-sm rounded-lg hover:bg-card/80 cursor-pointer group transition-all duration-200 border border-border/30"
                 >
-                  <div className="p-2 bg-ai-blue/20 rounded-lg">
-                    <item.icon className="h-5 w-5 text-ai-blue" />
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <item.icon className="h-5 w-5 text-primary" />
                   </div>
                   <div className="flex-1">
                     <h4 className="font-medium">{item.title}</h4>
@@ -233,20 +252,6 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
       default: // chat
         return (
           <>
-            {/* New Chat Button */}
-            <div className="p-4 border-b border-border">
-              <Button 
-                onClick={() => {
-                  onNewChat?.();
-                  onClose();
-                }}
-                className="w-full bg-gradient-to-r from-ai-blue to-ai-purple hover:opacity-90 text-white"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                New Chat
-              </Button>
-            </div>
-
             {/* Conversations */}
             {user && (
               <div className="flex-1 overflow-hidden">
@@ -262,12 +267,11 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
                   </div>
                 </div>
 
-                <div className="px-4 pb-20 overflow-y-auto max-h-[calc(100vh-200px)]">
-                  {loadingConversation ? (
-                    <div className="space-y-4 p-4">
-                      <ShimmerLoading />
-                      <ShimmerLoading />
-                      <ShimmerLoading />
+                <div className="px-4 pb-20 overflow-y-auto max-h-[calc(100vh-260px)]">
+                  {isLoadingConversations ? (
+                    <div className="flex flex-col items-center justify-center py-12 gap-3">
+                      <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" />
+                      <p className="text-sm text-muted-foreground">Loading conversations...</p>
                     </div>
                   ) : filteredConversations.length === 0 ? (
                     <div className="text-center text-muted-foreground py-8">
@@ -299,14 +303,8 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
                                 setSelectedConvId(conversation.id);
                                 setShowConvLongPress(true);
                               }}
-                              onSelect={() => {
-                                if (onConversationSelect) {
-                                  setLoadingConversation(true);
-                                  onConversationSelect(conversation.id);
-                                  onClose();
-                                  setTimeout(() => setLoadingConversation(false), 500);
-                                }
-                              }}
+                              onSelect={() => handleConversationClick(conversation.id)}
+                              isLoading={loadingConversationId === conversation.id}
                             />
                           ))}
                         </div>
@@ -335,14 +333,8 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
                                 setSelectedConvId(conversation.id);
                                 setShowConvLongPress(true);
                               }}
-                              onSelect={() => {
-                                if (onConversationSelect) {
-                                  setLoadingConversation(true);
-                                  onConversationSelect(conversation.id);
-                                  onClose();
-                                  setTimeout(() => setLoadingConversation(false), 500);
-                                }
-                              }}
+                              onSelect={() => handleConversationClick(conversation.id)}
+                              isLoading={loadingConversationId === conversation.id}
                             />
                           ))}
                         </div>
@@ -361,60 +353,41 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
     <>
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 md:hidden" 
+        className="fixed inset-0 bg-black/25 backdrop-blur-sm z-40 md:hidden" 
         onClick={onClose}
       />
       
       {/* Sidebar */}
-      <div className="fixed left-0 top-0 h-full w-80 bg-background/70 backdrop-blur-2xl backdrop-saturate-150 border-r border-border/50 z-50 transform transition-transform duration-300 ease-in-out animate-slide-in-left shadow-2xl">
+      <div className="fixed left-0 top-0 h-full w-80 bg-background/50 backdrop-blur-2xl backdrop-saturate-150 border-r border-border/30 z-50 transform transition-transform duration-200 ease-out animate-slide-in-left shadow-2xl">
         <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border">
-            <h2 className="text-lg font-semibold">SanGPT</h2>
-            <Button variant="ghost" size="icon" onClick={onClose}>
+          {/* Header — close button only, no title */}
+          <div className="flex items-center justify-end p-4 border-b border-border/30">
+            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
               <X className="h-5 w-5" />
             </Button>
           </div>
 
-          {/* User Info */}
-          {user && (
-            <div className="p-4 border-b border-border">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10 bg-gradient-to-br from-ai-blue to-ai-purple">
-                  <AvatarFallback className="bg-gradient-to-br from-ai-blue to-ai-purple text-white font-medium">
-                    {user.email?.charAt(0).toUpperCase() || 'W'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{user.email?.split('@')[0] || 'User'}</p>
-                  <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Navigation */}
-          <div className="border-b border-border">
+          {/* Top Action Buttons — 4 horizontal, evenly spaced */}
+          <div className="border-b border-border/30">
             <div className="flex">
-              {[
-                { id: 'chat' as const, icon: MessageSquare, label: 'Chat' },
-                { id: 'explore' as const, icon: Grid3x3, label: 'Explore' },
-                { id: 'settings' as const, icon: Settings, label: 'Settings' },
-                { id: 'help' as const, icon: HelpCircle, label: 'Help' },
-              ].map((item) => (
-                <Button
+              {navButtons.map((item) => (
+                <button
                   key={item.id}
-                  variant={activeSection === item.id ? 'default' : 'ghost'}
-                  size="sm"
                   onClick={() => setActiveSection(item.id)}
-                  className={`flex-1 rounded-none ${
+                  className={`flex-1 flex flex-col items-center gap-1 py-3 transition-all duration-200 relative ${
                     activeSection === item.id 
-                      ? 'bg-ai-blue/10 text-ai-blue border-b-2 border-ai-blue' 
-                      : ''
+                      ? 'text-primary' 
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
+                  title={item.tooltip}
                 >
-                  <item.icon className="h-4 w-4" />
-                </Button>
+                  <item.icon className="h-5 w-5" />
+                  <span className="text-[10px] font-medium">{item.tooltip}</span>
+                  {/* Active indicator bar */}
+                  {activeSection === item.id && (
+                    <div className="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-primary rounded-full" />
+                  )}
+                </button>
               ))}
             </div>
           </div>
@@ -424,16 +397,29 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
             {renderContent()}
           </div>
 
-          {/* Footer */}
+          {/* Footer — User Account Button → navigates to Settings */}
           {user && (
-            <div className="p-4 border-t border-border">
-              <Button
-                variant="outline"
-                onClick={signOut}
-                className="w-full"
+            <div className="p-4 border-t border-border/30">
+              <button
+                onClick={() => {
+                  navigate('/settings');
+                  onClose();
+                }}
+                className="w-full flex items-center gap-3 p-3 rounded-xl bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-all border border-border/20 active:scale-[0.98]"
               >
-                Sign out
-              </Button>
+                <Avatar className="h-9 w-9 bg-primary flex-shrink-0">
+                  <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-sm">
+                    {user.user_metadata?.display_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-sm font-medium truncate">
+                    {user.user_metadata?.display_name || user.email?.split('@')[0] || 'User'}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              </button>
             </div>
           )}
         </div>
@@ -448,8 +434,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
           if (conv) startEditing(conv);
         }}
         onPin={() => {
-          // TODO: Implement pinning
-           alert({ title: "Coming Soon", description: "Pin feature coming soon" });
+          alert({ title: "Coming Soon", description: "Pin feature coming soon" });
         }}
         onDelete={() => {
           if (selectedConvId) deleteConversation(selectedConvId);
@@ -458,6 +443,8 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
     </>
   );
 };
+
+// ── Conversation Item ──
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -470,6 +457,7 @@ interface ConversationItemProps {
   onPin: (id: string) => void;
   onLongPress: () => void;
   onSelect: () => void;
+  isLoading?: boolean;
 }
 
 const ConversationItem = ({
@@ -483,6 +471,7 @@ const ConversationItem = ({
   onPin,
   onLongPress,
   onSelect,
+  isLoading,
 }: ConversationItemProps) => {
   const isEditing = editingId === conversation.id;
 
@@ -500,7 +489,9 @@ const ConversationItem = ({
 
   return (
     <div 
-      className="group flex items-center gap-3 p-3 hover:bg-card/60 backdrop-blur-sm rounded-lg cursor-pointer transition-all duration-200 border border-transparent hover:border-border/30"
+      className={`group flex items-center gap-3 p-3 hover:bg-card/60 backdrop-blur-sm rounded-lg cursor-pointer transition-all duration-200 border border-transparent hover:border-border/30 ${
+        isLoading ? 'opacity-70 pointer-events-none' : ''
+      }`}
       onClick={onSelect}
       onTouchStart={handleLongPressStart}
       onTouchEnd={handleLongPressEnd}
@@ -509,7 +500,11 @@ const ConversationItem = ({
         onLongPress();
       }}
     >
-      <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+      {isLoading ? (
+        <Loader2 className="h-4 w-4 text-muted-foreground flex-shrink-0 animate-spin" />
+      ) : (
+        <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+      )}
       
       <div className="flex-1 min-w-0">
         {isEditing ? (
