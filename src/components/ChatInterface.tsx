@@ -5,6 +5,7 @@ import { useAuth } from '@/components/AuthContext';
 import { AuthModal } from '@/components/AuthModal';
 import { MessageActions } from '@/components/MessageActions';
 import { StreamingMarkdown } from '@/components/StreamingMarkdown';
+import { HomeScreen } from '@/components/HomeScreen';
 import { TypingIndicator } from '@/components/TypingIndicator';
 import { ModelSelectorModal } from '@/components/ModelSelectorModal';
 import { AttachmentModal } from '@/components/AttachmentModal';
@@ -52,6 +53,15 @@ const STARTER_PROMPTS = [
   { icon: Wand2, text: "Help me brainstorm creative project ideas", category: "Create" },
   { icon: Sparkles, text: "Suggest ways to improve my productivity", category: "Advice" }
 ];
+
+// Handler for conversation selection from HomeScreen
+const useHomeConversationSelect = (
+  loadConversation: (id: string) => void,
+) => {
+  return (id: string) => {
+    loadConversation(id);
+  };
+};
 
 export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationChange }: ChatInterfaceProps) => {
   const { user } = useAuth();
@@ -503,37 +513,11 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto relative overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full px-4 text-center">
-            <div className="max-w-3xl mx-auto space-y-8 py-20">
-              <div className="space-y-4">
-                <h1 className="text-4xl md:text-5xl font-bold text-foreground">
-                  SanGPT
-                </h1>
-                <p className="text-lg text-muted-foreground">
-                  {user ? `Hello, ${user.user_metadata?.display_name || user.email?.split('@')[0]}` : "How can I help you today?"}
-                </p>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto">
-                {STARTER_PROMPTS.map((prompt, i) => {
-                  const Icon = prompt.icon;
-                  return (
-                    <button
-                      key={i}
-                      onClick={(e) => { createRipple(e); setInput(prompt.text); }}
-                      className="p-4 rounded-xl border border-border/30 bg-card/50 backdrop-blur-xl hover:bg-card/70 transition-all flex flex-col items-start gap-2 text-left group shadow-sm"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Icon className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-xs font-medium text-muted-foreground">{prompt.category}</span>
-                      </div>
-                      <p className="text-sm text-foreground">{prompt.text}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+          <HomeScreen
+            onPromptSelect={(text) => setInput(text)}
+            onConversationSelect={(id) => loadConversation(id)}
+            user={user}
+          />
         ) : (
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
             {messages.map((message, idx) => (
