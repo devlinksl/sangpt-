@@ -1,73 +1,126 @@
-# Welcome to your Lovable project
+# SANGPT  
+Enterprise Artificial Intelligence System  
+Built by Dev-Link
 
-## Project info
+---
 
-**URL**: https://lovable.dev/projects/c0121502-add1-422b-8c56-efee6e671567
+## Overview
 
-## How can I edit this code?
+**Sangpt** is an enterprise-grade artificial intelligence platform designed to support
+telecom customer care operations, internal staff knowledge access, and operational
+decision support.
 
-There are several ways of editing your application.
+It is built with a strong focus on:
+- Reliability
+- Human-in-the-loop control
+- Data isolation
+- Enterprise deployment readiness
 
-**Use Lovable**
+Sangpt is not an autonomous system.  
+It is an **assistive intelligence layer** designed to enhance human workflows.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/c0121502-add1-422b-8c56-efee6e671567) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## Background
 
-**Use your preferred IDE**
+Sangpt was developed over a period of approximately **two (2) years** by **Dev-Link**.
+The system evolved through multiple design, testing, and refinement phases to ensure
+it is suitable for real-world enterprise environments such as telecommunications.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+The project was designed to be:
+- Scalable
+- Secure
+- Customizable
+- Governable
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
+## Key Capabilities
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### 1. Conversational AI
+- Natural language question answering
+- Context-aware responses
+- Structured, consistent outputs
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### 2. Enterprise Knowledge Support
+- Centralized knowledge access
+- Policy, product, and internal documentation support
+- Reduced staff dependency on manual searches
 
-# Step 3: Install the necessary dependencies.
-npm i
+### 3. Customer Care Assistance
+- AI-assisted response drafting
+- Faster inquiry resolution
+- Reduced repetitive workload for agents
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+### 4. Live Interaction Mode (UI-Ready)
+- Push-to-Talk interface (UI-first)
+- Animated AI presence (visual feedback)
+- Designed for future voice integration
 
-**Edit a file directly in GitHub**
+### 5. Controlled Intelligence
+- Human oversight at all times
+- No autonomous decision execution
+- Designed to align with telecom governance standards
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## Architecture (High-Level)
+### Architecture Principles
+- Modular design
+- API-driven
+- Separation of concerns
+- Easy enterprise integration
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## Technology Stack
 
-This project is built with:
+- **Frontend:** Web-based UI (Chat & Live Mode)
+- **Backend:** API-based service architecture
+- **AI Model:** Gemini API (LLM)
+- **Authentication:** Token-based access
+- **Deployment:** Cloud or enterprise-hosted (configurable)
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+## Security & Data Handling
 
-Simply open [Lovable](https://lovable.dev/projects/c0121502-add1-422b-8c56-efee6e671567) and click on Share -> Publish.
+Sangpt is designed with enterprise security in mind:
 
-## Can I connect a custom domain to my Lovable project?
+- No unauthorized data sharing
+- Isolated client data contexts
+- Controlled access permissions
+- No training on client private data without consent
 
-Yes, you can!
+Data ownership remains defined by contractual agreement.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+---
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Deployment Models
+
+Sangpt supports multiple enterprise deployment models:
+
+1. **Enterprise License**
+   - Internal use
+   - Dev-Link retains ownership
+
+2. **White-Label License**
+   - Custom branding and UI
+   - Dev-Link retains intellectual property
+
+3. **Full Ownership Acquisition**
+   - Complete system and IP transfer
+   - Source code and documentation included
+
+Deployment specifics are governed by signed agreements.
+
+---
+
+## Configuration
+
+Basic environment configuration example:
+
+```env
+GEMINI_API_KEY=your_api_key_here
+APP_ENV=production
+APP_NAME=Sangpt
