@@ -418,18 +418,29 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
         <span className="text-base font-semibold">{chatTitle}</span>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {
-            setMessages([]);
-            setCurrentConversationId(null);
-            onConversationChange?.(null);
-          }}
-          className="hover:bg-accent"
-        >
-          <Edit3 className="h-5 w-5" />
-        </Button>
+        {user ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setMessages([]);
+              setCurrentConversationId(null);
+              onConversationChange?.(null);
+            }}
+            className="hover:bg-accent"
+          >
+            <Edit3 className="h-5 w-5" />
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowAuthModal(true)}
+            className="hover:bg-accent text-sm font-medium"
+          >
+            Sign in
+          </Button>
+        )}
       </header>
 
       {/* ─── Messages ─── */}
