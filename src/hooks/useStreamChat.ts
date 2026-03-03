@@ -19,12 +19,13 @@
      setIsStreaming(false);
    }, []);
  
-   const streamChat = useCallback(async (
-     messages: Array<{ role: string; content: string }>,
-     conversationId: string | null,
-     model: string,
-     options: StreamChatOptions
-   ) => {
+  const streamChat = useCallback(async (
+    messages: Array<{ role: string; content: string | any[] }>,
+    conversationId: string | null,
+    model: string,
+    options: StreamChatOptions,
+    extra?: { customInstructions?: string }
+  ) => {
      const controller = new AbortController();
      abortControllerRef.current = controller;
      setIsStreaming(true);
@@ -39,12 +40,13 @@
            'Content-Type': 'application/json',
            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
          },
-         body: JSON.stringify({ 
-           messages, 
-           conversationId, 
-           model,
-           stream: true 
-         }),
+        body: JSON.stringify({ 
+          messages, 
+          conversationId, 
+          model,
+          stream: true,
+          customInstructions: extra?.customInstructions || '',
+        }),
          signal: controller.signal,
        });
  

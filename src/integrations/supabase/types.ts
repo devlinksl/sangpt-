@@ -109,6 +109,7 @@ export type Database = {
           animations: boolean | null
           auto_speech: boolean | null
           created_at: string
+          custom_instructions: string | null
           data_mode: string | null
           id: string
           new_chat_auto: boolean | null
@@ -126,6 +127,7 @@ export type Database = {
           animations?: boolean | null
           auto_speech?: boolean | null
           created_at?: string
+          custom_instructions?: string | null
           data_mode?: string | null
           id?: string
           new_chat_auto?: boolean | null
@@ -143,6 +145,7 @@ export type Database = {
           animations?: boolean | null
           auto_speech?: boolean | null
           created_at?: string
+          custom_instructions?: string | null
           data_mode?: string | null
           id?: string
           new_chat_auto?: boolean | null

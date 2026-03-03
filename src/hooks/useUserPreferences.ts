@@ -14,6 +14,7 @@ export interface UserPreferences {
   analytics_opt_out: boolean;
   auto_speech: boolean;
   voice_preference: string;
+  custom_instructions: string;
 }
 
 const DEFAULT_PREFS: UserPreferences = {
@@ -28,6 +29,7 @@ const DEFAULT_PREFS: UserPreferences = {
   analytics_opt_out: false,
   auto_speech: false,
   voice_preference: 'alloy',
+  custom_instructions: '',
 };
 
 export function useUserPreferences() {
@@ -66,6 +68,7 @@ export function useUserPreferences() {
             analytics_opt_out: (data as any).analytics_opt_out ?? DEFAULT_PREFS.analytics_opt_out,
             auto_speech: data.auto_speech ?? DEFAULT_PREFS.auto_speech,
             voice_preference: data.voice_preference ?? DEFAULT_PREFS.voice_preference,
+            custom_instructions: (data as any).custom_instructions ?? DEFAULT_PREFS.custom_instructions,
           });
         }
       } catch (err) {

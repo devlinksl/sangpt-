@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
 import { useAuth } from '@/components/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useAlert } from '@/hooks/useAlert';
 import { ConversationLongPressModal } from '@/components/ConversationLongPressModal';
+import { SearchOverlay } from '@/components/SearchOverlay';
 import {
   cacheConversations,
   getCachedConversations,
@@ -72,6 +72,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const [loadingConversationId, setLoadingConversationId] = useState<string | null>(null);
+  const [showSearchOverlay, setShowSearchOverlay] = useState(false);
 
   useEffect(() => {
     if (user && isOpen) {
@@ -183,19 +184,15 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
       {/* Sidebar */}
       <div className="fixed left-0 top-0 h-full w-80 bg-background/95 backdrop-blur-2xl border-r border-border/30 z-50 transform transition-transform duration-200 ease-out animate-slide-in-left shadow-2xl flex flex-col">
 
-        {/* ─── TOP: Search ─── */}
-
-        {/* ─── Search ─── */}
+        {/* ─── Search trigger ─── */}
         <div className="px-4 pt-3 pb-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search conversations..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-9 text-sm"
-            />
-          </div>
+          <button
+            onClick={() => setShowSearchOverlay(true)}
+            className="w-full flex items-center gap-2.5 px-3 h-9 rounded-md border border-input bg-background text-sm text-muted-foreground hover:bg-accent/50 transition-colors"
+          >
+            <Search className="h-4 w-4" />
+            <span>Search conversations...</span>
+          </button>
         </div>
 
         {/* ─── MAIN: Conversations list ─── */}
@@ -276,6 +273,15 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
         }}
         onDelete={() => {
           if (selectedConvId) deleteConversation(selectedConvId);
+        }}
+      />
+
+      <SearchOverlay
+        isOpen={showSearchOverlay}
+        onClose={() => setShowSearchOverlay(false)}
+        onConversationSelect={(id) => {
+          setShowSearchOverlay(false);
+          handleConversationClick(id);
         }}
       />
     </>
@@ -422,7 +428,7 @@ const ConversationItem = ({
 
         <div className="flex-1 min-w-0">
           {isEditing ? (
-            <Input
+            <input
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
               onKeyDown={(e) => {
@@ -431,7 +437,7 @@ const ConversationItem = ({
               }}
               onBlur={() => onSubmitEdit(conversation.id)}
               onClick={(e) => e.stopPropagation()}
-              className="h-7 text-sm"
+              className="h-7 text-sm w-full bg-background border border-input rounded px-2 outline-none focus:ring-1 focus:ring-ring"
               autoFocus
             />
           ) : (

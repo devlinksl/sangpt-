@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, conversationId, model = "google/gemini-3-flash-preview", stream = false } = await req.json();
+    const { messages, conversationId, model = "google/gemini-3-flash-preview", stream = false, customInstructions = "" } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -21,7 +21,7 @@ serve(async (req) => {
     console.log("Streaming:", stream);
 
     // Professional system prompt - only reveal identity when explicitly asked
-    const systemPrompt = `You are SanGPT, a helpful, intelligent AI assistant. You provide clear, accurate, and professional responses.
+    let systemPrompt = `You are SanGPT, a helpful, intelligent AI assistant. You provide clear, accurate, and professional responses.
 
 IDENTITY GUIDELINES:
 - Only discuss your identity when DIRECTLY asked questions like "Who are you?", "What are you?", "Who made you?", or "Who created you?"
@@ -35,6 +35,10 @@ RESPONSE GUIDELINES:
 - Format code in proper code blocks with language specification.
 - Keep responses helpful, concise, and well-structured.
 - Be friendly but professional.`;
+
+    if (customInstructions && customInstructions.trim()) {
+      systemPrompt += `\n\nUSER'S CUSTOM INSTRUCTIONS (always follow these):\n${customInstructions.trim()}`;
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

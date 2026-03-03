@@ -17,6 +17,7 @@ import { NotificationsSubPage } from '@/components/settings/NotificationsSubPage
 import { SoundsHapticsSubPage } from '@/components/settings/SoundsHapticsSubPage';
 import { ChatHistorySubPage } from '@/components/settings/ChatHistorySubPage';
 import { PrivacyControlsSubPage } from '@/components/settings/PrivacyControlsSubPage';
+import { DataControlsSubPage } from '@/components/settings/DataControlsSubPage';
 import {
   ChevronLeft,
   User,
@@ -35,6 +36,7 @@ import {
   Eye,
   Info,
   LogOut,
+  Database,
 } from 'lucide-react';
 
 type SubPage =
@@ -47,7 +49,8 @@ type SubPage =
   | 'notifications'
   | 'sounds'
   | 'chat-history'
-  | 'privacy';
+  | 'privacy'
+  | 'data-controls';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -133,6 +136,7 @@ export default function Settings() {
         onToggleAnalytics={(v) => updatePreference('analytics_opt_out', v)}
       />
     );
+  if (subPage === 'data-controls') return <DataControlsSubPage onBack={() => setSubPage('main')} />;
 
   return (
     <div className="min-h-screen bg-background">
@@ -277,6 +281,13 @@ export default function Settings() {
         {/* 5. Data & Performance */}
         <SettingsSection title="Data & Performance">
           <SettingsItem
+            icon={<Database className="h-[18px] w-[18px]" />}
+            label="Data Controls"
+            description="Custom instructions for AI"
+            onClick={() => setSubPage('data-controls')}
+            index={11}
+          />
+          <SettingsItem
             icon={<Wifi className="h-[18px] w-[18px]" />}
             label="Data Usage Mode"
             onClick={cycleDataMode}
@@ -287,14 +298,14 @@ export default function Settings() {
                 ? 'Offline'
                 : 'Standard'
             }
-            index={11}
+            index={12}
           />
           <SettingsItem
             icon={<History className="h-[18px] w-[18px]" />}
             label="Chat History Management"
             description="Clear chats, auto-delete"
             onClick={() => setSubPage('chat-history')}
-            index={12}
+            index={13}
           />
         </SettingsSection>
 

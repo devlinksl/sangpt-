@@ -19,6 +19,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { humanizeError } from '@/lib/humanizeError';
 import { useStreamChat } from '@/hooks/useStreamChat';
 import { getCachedMessages, cacheMessages } from '@/lib/chatCache';
+import { useUserPreferences } from '@/hooks/useUserPreferences';
 import {
   Menu,
   Edit3,
@@ -48,6 +49,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const createRipple = useRipple();
   const { theme, setTheme } = useTheme();
   const { streamChat, stopStreaming, isStreaming } = useStreamChat();
+  const { preferences } = useUserPreferences();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -62,6 +64,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [isStoppable, setIsStoppable] = useState(false);
   const [newChatLoading, setNewChatLoading] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -98,7 +101,10 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   // Load conversation when conversationId changes
   useEffect(() => {
     if (conversationId && conversationId !== currentConversationId) {
-      loadConversation(conversationId);
+      setChatLoading(true);
+      loadConversation(conversationId).finally(() => {
+        setTimeout(() => setChatLoading(false), 600);
+      });
     }
   }, [conversationId]);
 
@@ -214,21 +220,30 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     }
   };
 
-  const processAttachedFiles = async (): Promise<string> => {
-    if (attachedFiles.length === 0) return '';
+  const processAttachedFiles = async (): Promise<{ text: string; imageDataUrls: string[] }> => {
+    if (attachedFiles.length === 0) return { text: '', imageDataUrls: [] };
     let fileContext = '\n\n[Attached Files]:\n';
+    const imageDataUrls: string[] = [];
+
     for (const file of attachedFiles) {
       fileContext += `\nFile: ${file.name} (${(file.size / 1024).toFixed(2)} KB, ${file.type})\n`;
       if (file.type.startsWith('text/') || file.type.includes('json')) {
         const text = await file.text();
         fileContext += `Content:\n${text}\n`;
       } else if (file.type === 'application/pdf' || file.type.includes('document')) {
-        fileContext += `[Document file - content extraction would require backend processing]\n`;
+        fileContext += `[Document file attached]\n`;
       } else if (file.type.startsWith('image/')) {
-        fileContext += `[Image file - visual analysis would require vision model]\n`;
+        // Convert image to base64 for vision model
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+        imageDataUrls.push(base64);
+        fileContext += `[Image attached for analysis]\n`;
       }
     }
-    return fileContext;
+    return { text: fileContext, imageDataUrls };
   };
 
   const stopGeneration = () => {
@@ -244,7 +259,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     if (!user) { setShowAuthModal(true); return; }
 
     const imagineMatch = messageText.match(/^imagine\s+(.+)/i);
-    const fileContext = await processAttachedFiles();
+    const { text: fileContext, imageDataUrls } = await processAttachedFiles();
     const fullMessage = messageText + fileContext;
     setAttachedFiles([]);
 
@@ -322,8 +337,21 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
         const modelParam = selectedModel === 'gemini' ? 'google/gemini-2.5-flash' : 'google/gemini-3-flash-preview';
 
+        // Build messages with image support
+        const formattedMessages = messagesToSend.map(m => {
+          // Check if this is the latest user message with images
+          if (m.id === userMessage?.id && imageDataUrls.length > 0) {
+            const content: any[] = [{ type: 'text', text: m.content }];
+            for (const dataUrl of imageDataUrls) {
+              content.push({ type: 'image_url', image_url: { url: dataUrl } });
+            }
+            return { role: m.role, content };
+          }
+          return { role: m.role, content: m.content };
+        });
+
         aiResponse = await streamChat(
-          messagesToSend.map(m => ({ role: m.role, content: m.content })),
+          formattedMessages,
           conversationId,
           modelParam,
           {
@@ -348,7 +376,8 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
               });
               setMessages(prev => prev.filter(m => m.id !== streamMsgId));
             }
-          }
+          },
+          { customInstructions: preferences.custom_instructions }
         );
 
         if (!aiResponse) throw new Error('No response from AI');
@@ -448,12 +477,14 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
       {/* ─── Messages ─── */}
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto relative overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
-        {newChatLoading ? (
+        {newChatLoading || chatLoading ? (
           <div className="flex-1 flex flex-col items-center justify-center h-full animate-fade-in">
             <div className="relative">
               <div className="h-10 w-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
             </div>
-            <p className="mt-4 text-sm text-muted-foreground animate-pulse">Starting new chat...</p>
+            <p className="mt-4 text-sm text-muted-foreground animate-pulse">
+              {newChatLoading ? 'Starting new chat...' : 'Loading conversation...'}
+            </p>
           </div>
         ) : messages.length === 0 ? (
           <HomeScreen
