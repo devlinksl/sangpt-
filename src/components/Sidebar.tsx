@@ -17,7 +17,6 @@ import {
   Search,
   Loader2,
   Trash2,
-  Plus,
   ChevronRight,
 } from 'lucide-react';
 
@@ -184,28 +183,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
       {/* Sidebar */}
       <div className="fixed left-0 top-0 h-full w-80 bg-background/95 backdrop-blur-2xl border-r border-border/30 z-50 transform transition-transform duration-200 ease-out animate-slide-in-left shadow-2xl flex flex-col">
 
-        {/* ─── TOP: User Account ─── */}
-        {user && (
-          <div className="p-4 border-b border-border/20">
-            <button
-              onClick={() => { navigate('/settings'); onClose(); }}
-              className="w-full flex items-center gap-3 p-3 rounded-xl bg-card/40 hover:bg-card/60 transition-all border border-border/20 active:scale-[0.98]"
-            >
-              <Avatar className="h-10 w-10 bg-primary flex-shrink-0">
-                <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
-                  {user.user_metadata?.display_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-medium truncate">
-                  {user.user_metadata?.display_name || user.email?.split('@')[0] || 'User'}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            </button>
-          </div>
-        )}
+        {/* ─── TOP: Search ─── */}
 
         {/* ─── Search ─── */}
         <div className="px-4 pt-3 pb-2">
@@ -265,19 +243,28 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
           )}
         </div>
 
-        {/* ─── BOTTOM: New Chat ─── */}
-        <div className="p-3 border-t border-border/20">
-          <button
-            onClick={() => {
-              onNewChat?.();
-              onClose();
-            }}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors active:scale-[0.98]"
-          >
-            <Plus className="h-4 w-4" />
-            New Chat
-          </button>
-        </div>
+        {/* ─── BOTTOM: User Account ─── */}
+        {user && (
+          <div className="p-3 border-t border-border/20">
+            <button
+              onClick={() => { navigate('/settings'); onClose(); }}
+              className="w-full flex items-center gap-3 p-3 rounded-xl bg-card/40 hover:bg-card/60 transition-all border border-border/20 active:scale-[0.98]"
+            >
+              <Avatar className="h-10 w-10 bg-primary flex-shrink-0">
+                <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
+                  {user.user_metadata?.display_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-sm font-medium truncate">
+                  {user.user_metadata?.display_name || user.email?.split('@')[0] || 'User'}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            </button>
+          </div>
+        )}
       </div>
 
       <ConversationLongPressModal
@@ -332,11 +319,14 @@ const ConversationItem = ({
   const isHorizontalRef = useRef<boolean | null>(null);
   const longPressTimerRef = useRef<number | null>(null);
 
+  const movedRef = useRef(false);
+
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     startXRef.current = e.touches[0].clientX;
     startYRef.current = e.touches[0].clientY;
     currentXRef.current = 0;
     isHorizontalRef.current = null;
+    movedRef.current = false;
     setIsSwiping(false);
     longPressTimerRef.current = window.setTimeout(() => onLongPress(), 600);
   }, [onLongPress]);
@@ -344,6 +334,11 @@ const ConversationItem = ({
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     const dx = e.touches[0].clientX - startXRef.current;
     const dy = e.touches[0].clientY - startYRef.current;
+
+    // Mark as moved if finger traveled more than 10px in any direction
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+      movedRef.current = true;
+    }
 
     if (isHorizontalRef.current === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
       isHorizontalRef.current = Math.abs(dx) > Math.abs(dy);
@@ -367,12 +362,13 @@ const ConversationItem = ({
       longPressTimerRef.current = null;
     }
 
-    if (!isSwiping) {
-      if (Math.abs(currentXRef.current) < 10) onSelect();
+    // Only trigger select if finger did NOT move (true tap)
+    if (!isSwiping && !movedRef.current) {
+      onSelect();
       return;
     }
 
-    if (currentXRef.current < -SWIPE_THRESHOLD) {
+    if (isSwiping && currentXRef.current < -SWIPE_THRESHOLD) {
       setIsDeleting(true);
       setSwipeX(-300);
       setTimeout(() => onDelete(conversation.id), 250);

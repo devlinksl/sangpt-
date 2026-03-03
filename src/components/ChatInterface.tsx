@@ -61,6 +61,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [isStoppable, setIsStoppable] = useState(false);
+  const [newChatLoading, setNewChatLoading] = useState(false);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -423,9 +424,11 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
             variant="ghost"
             size="icon"
             onClick={() => {
+              setNewChatLoading(true);
               setMessages([]);
               setCurrentConversationId(null);
               onConversationChange?.(null);
+              setTimeout(() => setNewChatLoading(false), 3000);
             }}
             className="hover:bg-accent"
           >
@@ -445,7 +448,14 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
       {/* ─── Messages ─── */}
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto relative overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
-        {messages.length === 0 ? (
+        {newChatLoading ? (
+          <div className="flex-1 flex flex-col items-center justify-center h-full animate-fade-in">
+            <div className="relative">
+              <div className="h-10 w-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+            </div>
+            <p className="mt-4 text-sm text-muted-foreground animate-pulse">Starting new chat...</p>
+          </div>
+        ) : messages.length === 0 ? (
           <HomeScreen
             onPromptSelect={(text) => setInput(text)}
             onConversationSelect={(id) => loadConversation(id)}
