@@ -2,9 +2,7 @@ import {
   Drawer,
   DrawerContent,
 } from '@/components/ui/drawer';
-import { Button } from '@/components/ui/button';
 import { Camera, Image, FileText, ImageIcon, Globe, Mic, Gamepad2 } from 'lucide-react';
-import { useAlert } from '@/hooks/useAlert';
 
 interface AttachmentModalProps {
   isOpen: boolean;
@@ -13,8 +11,6 @@ interface AttachmentModalProps {
 }
 
 export const AttachmentModal = ({ isOpen, onClose, onFileSelect }: AttachmentModalProps) => {
-  const { alert } = useAlert();
-
   const handleFileInput = (accept: string) => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -30,100 +26,83 @@ export const AttachmentModal = ({ isOpen, onClose, onFileSelect }: AttachmentMod
     input.click();
   };
 
-  const handleFeature = (feature: string) => {
-    alert({
-      title: "Coming Soon",
-      description: "This feature will be available in a future update.",
-    });
-    onClose();
-  };
-
   return (
     <Drawer open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DrawerContent className="max-h-[85vh] bg-background/50 backdrop-blur-2xl backdrop-saturate-150">
         <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-4 mt-2" />
         
-        <div className="px-6 pb-6 space-y-4">
-          {/* File Upload Options */}
-          <div className="grid grid-cols-3 gap-3">
+        <div className="px-6 pb-6">
+          {/* Grid layout */}
+          <div className="grid grid-cols-4 gap-3">
             <button
               onClick={() => handleFileInput('image/*')}
-              className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-colors border border-border/30"
+              className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-colors border border-border/30 active:scale-95"
             >
-                <div className="w-12 h-12 rounded-2xl bg-background/60 backdrop-blur-sm flex items-center justify-center">
-                <Camera className="w-6 h-6" />
+              <div className="w-11 h-11 rounded-xl bg-background/60 flex items-center justify-center">
+                <Camera className="w-5 h-5" />
               </div>
-              <span className="text-sm font-medium">Camera</span>
+              <span className="text-[11px] font-medium">Camera</span>
             </button>
 
             <button
               onClick={() => handleFileInput('image/*')}
-              className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-colors border border-border/30"
+              className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-colors border border-border/30 active:scale-95"
             >
-                <div className="w-12 h-12 rounded-2xl bg-background/60 backdrop-blur-sm flex items-center justify-center">
-                <Image className="w-6 h-6" />
+              <div className="w-11 h-11 rounded-xl bg-background/60 flex items-center justify-center">
+                <Image className="w-5 h-5" />
               </div>
-              <span className="text-sm font-medium">Photos</span>
+              <span className="text-[11px] font-medium">Photos</span>
             </button>
 
             <button
               onClick={() => handleFileInput('.pdf,.doc,.docx,.txt')}
-              className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-colors border border-border/30"
+              className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-colors border border-border/30 active:scale-95"
             >
-              <div className="w-12 h-12 rounded-2xl bg-background/60 backdrop-blur-sm flex items-center justify-center">
-                <FileText className="w-6 h-6" />
+              <div className="w-11 h-11 rounded-xl bg-background/60 flex items-center justify-center">
+                <FileText className="w-5 h-5" />
               </div>
-              <span className="text-sm font-medium">Files</span>
+              <span className="text-[11px] font-medium">Files</span>
             </button>
-          </div>
 
-          {/* Feature Options */}
-          <div className="space-y-2">
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-left h-14 px-4 rounded-xl hover:bg-muted"
-              onClick={() => handleFeature('Image Generation')}
+            <button
+              onClick={onClose}
+              className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-colors border border-border/30 active:scale-95"
             >
-              <ImageIcon className="w-5 h-5 mr-3" />
-              <span className="text-base">Generate Image</span>
-            </Button>
-
-            <Button
-              variant="ghost"
-              className="w-full justify-between text-left h-14 px-4 rounded-xl hover:bg-muted"
-              onClick={() => handleFeature('Deep Research')}
-            >
-              <div className="flex items-center">
-                <Globe className="w-5 h-5 mr-3" />
-                <span className="text-base">Start deep research</span>
+              <div className="w-11 h-11 rounded-xl bg-background/60 flex items-center justify-center">
+                <ImageIcon className="w-5 h-5" />
               </div>
-              <span className="text-xs px-2 py-1 rounded-md bg-muted text-muted-foreground">
-                10 remaining
-              </span>
-            </Button>
+              <span className="text-[11px] font-medium">Generate</span>
+            </button>
 
-            <Button
-              variant="ghost"
-              className="w-full justify-between text-left h-14 px-4 rounded-xl hover:bg-muted"
-              onClick={() => handleFeature('Podcast')}
+            <button
+              onClick={onClose}
+              className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-colors border border-border/30 active:scale-95"
             >
-              <div className="flex items-center">
-                <Mic className="w-5 h-5 mr-3" />
-                <span className="text-base">Create a podcast</span>
+              <div className="w-11 h-11 rounded-xl bg-background/60 flex items-center justify-center">
+                <Globe className="w-5 h-5" />
               </div>
-              <span className="text-xs px-2 py-1 rounded-md bg-muted text-muted-foreground">
-                3 remaining
-              </span>
-            </Button>
+              <span className="text-[11px] font-medium">Research</span>
+            </button>
 
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-left h-14 px-4 rounded-xl hover:bg-muted"
-              onClick={() => handleFeature('Quiz')}
+            <button
+              onClick={onClose}
+              className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-colors border border-border/30 active:scale-95"
             >
-              <Gamepad2 className="w-5 h-5 mr-3" />
-              <span className="text-base">Start a quiz</span>
-            </Button>
+              <div className="w-11 h-11 rounded-xl bg-background/60 flex items-center justify-center">
+                <Mic className="w-5 h-5" />
+              </div>
+              <span className="text-[11px] font-medium">Podcast</span>
+            </button>
+
+            <button
+              onClick={onClose}
+              className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-colors border border-border/30 active:scale-95"
+            >
+              <div className="w-11 h-11 rounded-xl bg-background/60 flex items-center justify-center">
+                <Gamepad2 className="w-5 h-5" />
+              </div>
+              <span className="text-[11px] font-medium">Quiz</span>
+            </button>
           </div>
         </div>
       </DrawerContent>

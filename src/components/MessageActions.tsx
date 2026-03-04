@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useAlert } from '@/hooks/useAlert';
 import { supabase } from '@/integrations/supabase/client';
 import { TextToSpeech } from '@/components/TextToSpeech';
 import { 
@@ -31,34 +30,18 @@ export const MessageActions = ({
 }: MessageActionsProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-  const { alert } = useAlert();
 
   const handleRating = async (newRating: number) => {
     try {
       setIsLoading(true);
-      
       const { error } = await supabase
         .from('messages')
         .update({ rating: newRating })
         .eq('id', messageId);
-
       if (error) throw error;
-
       onRatingChange?.(newRating);
-      
-      alert({
-        title: newRating === 1 ? "Liked" : "Disliked",
-        description: "Thank you for your feedback!",
-        variant: "success",
-      });
-
     } catch (error) {
       console.error('Error updating rating:', error);
-      alert({
-        title: "Error",
-        description: "Could not save your feedback",
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }
@@ -69,18 +52,8 @@ export const MessageActions = ({
       await navigator.clipboard.writeText(content);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-      
-      alert({
-        title: "Copied",
-        description: "Message copied to clipboard",
-        variant: "success",
-      });
     } catch (error) {
-      alert({
-        title: "Copy failed",
-        description: "Could not copy to clipboard",
-        variant: "destructive",
-      });
+      console.error('Copy failed:', error);
     }
   };
 
@@ -94,11 +67,6 @@ export const MessageActions = ({
     }
   };
 
-  const handleRegenerate = () => {
-    onRegenerate?.();
-  };
-
-  // Only show actions for assistant messages
   if (role !== 'assistant') return null;
 
   return (
@@ -138,7 +106,7 @@ export const MessageActions = ({
       <Button
         variant="ghost"
         size="icon"
-        onClick={handleRegenerate}
+        onClick={() => onRegenerate?.()}
         disabled={isLoading}
         className="h-8 w-8 rounded-lg text-muted-foreground action-stagger"
         style={{ animationDelay: '180ms' }}
