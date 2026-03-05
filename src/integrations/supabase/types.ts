@@ -38,6 +38,127 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_chunks: {
+        Row: {
+          chunk_index: number
+          content: string
+          created_at: string
+          document_id: string
+          embedding: string | null
+          id: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          chunk_index?: number
+          content: string
+          created_at?: string
+          document_id: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          chunk_index?: number
+          content?: string
+          created_at?: string
+          document_id?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_documents: {
+        Row: {
+          chunk_count: number | null
+          content: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          source_type: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chunk_count?: number | null
+          content: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          source_type?: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chunk_count?: number | null
+          content?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          source_type?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      memory_embeddings: {
+        Row: {
+          content: string
+          conversation_id: string | null
+          created_at: string
+          embedding: string | null
+          id: string
+          memory_type: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id?: string | null
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          memory_type?: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string | null
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          memory_type?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memory_embeddings_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
@@ -47,6 +168,7 @@ export type Database = {
           metadata: Json | null
           rating: number | null
           role: string
+          token_usage: number | null
         }
         Insert: {
           content: string
@@ -56,6 +178,7 @@ export type Database = {
           metadata?: Json | null
           rating?: number | null
           role: string
+          token_usage?: number | null
         }
         Update: {
           content?: string
@@ -65,6 +188,7 @@ export type Database = {
           metadata?: Json | null
           rating?: number | null
           role?: string
+          token_usage?: number | null
         }
         Relationships: [
           {
@@ -165,7 +289,34 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      search_knowledge: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          match_user_id: string
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          document_id: string
+          id: string
+          similarity: number
+        }[]
+      }
+      search_memories: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          match_user_id: string
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          id: string
+          memory_type: string
+          similarity: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

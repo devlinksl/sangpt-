@@ -437,62 +437,69 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      {/* ─── Minimal Header ─── */}
-      <header className="flex items-center justify-between px-3 py-2.5 border-b border-border/20 bg-background/80 backdrop-blur-2xl sticky top-0 z-10">
+      {/* ─── Header (ChatGPT-style per reference) ─── */}
+      <header className="flex items-center justify-between px-2 py-2 bg-background sticky top-0 z-10">
+        {/* Left: circular sidebar toggle */}
         <Button
           variant="ghost"
           size="icon"
           onClick={onOpenSidebar}
-          className="h-9 w-9 rounded-full hover:bg-accent"
+          className="h-10 w-10 rounded-full bg-accent/60 hover:bg-accent"
         >
           <Menu className="h-5 w-5" />
         </Button>
 
-        <span className="text-sm font-medium text-foreground/80 truncate max-w-[50%]">
-          {currentConversationId ? (chatTitle || 'Chat') : ''}
-        </span>
+        {/* Center: title pill */}
+        <button className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent/60 hover:bg-accent transition-colors max-w-[45%]">
+          <span className="text-sm font-semibold truncate">
+            {currentConversationId ? (chatTitle || 'SanGPT') : 'SanGPT'}
+          </span>
+        </button>
 
-        <div className="flex items-center gap-1">
+        {/* Right: new chat + 3-dot */}
+        <div className="flex items-center gap-0.5">
           {user ? (
             <>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={handleNewChat}
-                className="h-9 w-9 rounded-full hover:bg-accent"
+                className="h-10 w-10 rounded-full hover:bg-accent"
               >
-                <Edit3 className="h-4.5 w-4.5" />
+                <Edit3 className="h-[18px] w-[18px]" />
               </Button>
-              <div className="relative">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowOverflowMenu(!showOverflowMenu)}
-                  className="h-9 w-9 rounded-full hover:bg-accent"
-                >
-                  <MoreVertical className="h-4.5 w-4.5" />
-                </Button>
+              {currentConversationId && (
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowOverflowMenu(!showOverflowMenu)}
+                    className="h-10 w-10 rounded-full hover:bg-accent"
+                  >
+                    <MoreVertical className="h-[18px] w-[18px]" />
+                  </Button>
 
-                {showOverflowMenu && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowOverflowMenu(false)} />
-                    <div className="absolute right-0 top-full mt-1 w-52 bg-background/95 backdrop-blur-2xl rounded-xl border border-border/30 shadow-2xl z-50 overflow-hidden animate-scale-in">
-                      {overflowMenuItems.map((item) => (
-                        <button
-                          key={item.label}
-                          onClick={item.action}
-                          className={`w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent/50 transition-colors ${
-                            item.destructive ? 'text-destructive' : 'text-foreground'
-                          }`}
-                        >
-                          <item.icon className="h-4 w-4" />
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
+                  {showOverflowMenu && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowOverflowMenu(false)} />
+                      <div className="absolute right-0 top-full mt-1 w-52 bg-background/95 backdrop-blur-2xl rounded-xl border border-border/30 shadow-2xl z-50 overflow-hidden animate-scale-in">
+                        {overflowMenuItems.map((item) => (
+                          <button
+                            key={item.label}
+                            onClick={item.action}
+                            className={`w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent/50 transition-colors ${
+                              item.destructive ? 'text-destructive' : 'text-foreground'
+                            }`}
+                          >
+                            <item.icon className="h-4 w-4" />
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </>
           ) : (
             <Button
