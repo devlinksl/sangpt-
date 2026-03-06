@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/components/AuthContext';
 import { AuthModal } from '@/components/AuthModal';
 import { MessageActions } from '@/components/MessageActions';
@@ -12,9 +13,8 @@ import { WaveformAnimation } from '@/components/WaveformAnimation';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/components/ThemeProvider';
-import { humanizeError } from '@/lib/humanizeError';
 import { useStreamChat } from '@/hooks/useStreamChat';
-import { getCachedMessages, cacheMessages } from '@/lib/chatCache';
+import { getCachedMessages, cacheMessages, removeCachedConversation } from '@/lib/chatCache';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import {
   Menu,
@@ -22,14 +22,14 @@ import {
   Paperclip,
   ArrowDown,
   MoreVertical,
-  UserPlus,
   Share2,
   Pencil,
   Archive,
   Pin,
-  Home,
   Trash2,
   Flag,
+  Copy,
+  X,
 } from 'lucide-react';
 
 interface Message {
@@ -65,25 +65,29 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [isStoppable, setIsStoppable] = useState(false);
-  const [chatLoading, setChatLoading] = useState(false);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
   const [chatTitle, setChatTitle] = useState('');
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const userScrolledRef = useRef(false);
 
-  const scrollToBottom = (smooth = true) => {
+  // Auto-scroll: scroll to bottom during streaming
+  const scrollToBottom = useCallback((smooth = true) => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
       userScrolledRef.current = false;
       setShowScrollButton(false);
     }
-  };
+  }, []);
 
+  // Auto-scroll on new content during streaming
   useEffect(() => {
-    if ((isTyping || isLoading) && !userScrolledRef.current) scrollToBottom();
-  }, [messages, isTyping, isLoading]);
+    if (!userScrolledRef.current) scrollToBottom();
+  }, [messages, isTyping, isLoading, scrollToBottom]);
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -91,24 +95,23 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = container;
       const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-      setShowScrollButton(distanceFromBottom > 50 && scrollHeight > clientHeight);
-      userScrolledRef.current = distanceFromBottom > 50;
+      setShowScrollButton(distanceFromBottom > 100 && scrollHeight > clientHeight);
+      userScrolledRef.current = distanceFromBottom > 100;
     };
-    container.addEventListener('scroll', handleScroll);
+    container.addEventListener('scroll', handleScroll, { passive: true });
     return () => container.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Load conversation — instant from cache, background sync
   useEffect(() => {
     if (conversationId && conversationId !== currentConversationId) {
-      setChatLoading(true);
-      loadConversation(conversationId).finally(() => {
-        setTimeout(() => setChatLoading(false), 600);
-      });
+      loadConversation(conversationId);
     }
   }, [conversationId]);
 
   const loadConversation = async (id: string) => {
     try {
+      // Instant load from cache
       const cached = await getCachedMessages(id);
       if (cached.length > 0) {
         setMessages(cached.map(msg => ({
@@ -119,53 +122,35 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           rating: msg.rating || 0,
           metadata: msg.metadata,
         })));
-        setCurrentConversationId(id);
-        onConversationChange?.(id);
       }
-
-      setIsLoading(cached.length === 0);
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('conversation_id', id)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-
-      const serverMessages = data.map(msg => ({
-        id: msg.id,
-        role: msg.role as 'user' | 'assistant',
-        content: msg.content,
-        created_at: msg.created_at,
-        rating: msg.rating || 0,
-        metadata: msg.metadata,
-      }));
-
-      setMessages(serverMessages);
       setCurrentConversationId(id);
       onConversationChange?.(id);
 
-      // Get title
-      const { data: convData } = await supabase
-        .from('conversations')
-        .select('title')
-        .eq('id', id)
-        .single();
+      // Background sync from server
+      const [{ data: msgData }, { data: convData }] = await Promise.all([
+        supabase.from('messages').select('*').eq('conversation_id', id).order('created_at', { ascending: true }),
+        supabase.from('conversations').select('title').eq('id', id).single(),
+      ]);
+
       if (convData) setChatTitle(convData.title);
 
-      cacheMessages(data.map(msg => ({
-        id: msg.id,
-        conversation_id: msg.conversation_id,
-        role: msg.role,
-        content: msg.content,
-        created_at: msg.created_at,
-        rating: msg.rating || 0,
-        metadata: msg.metadata,
-      }))).catch(() => {});
+      if (msgData) {
+        const serverMessages = msgData.map(msg => ({
+          id: msg.id,
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+          created_at: msg.created_at,
+          rating: msg.rating || 0,
+          metadata: msg.metadata,
+        }));
+        setMessages(serverMessages);
+        cacheMessages(msgData.map(msg => ({
+          id: msg.id, conversation_id: msg.conversation_id, role: msg.role,
+          content: msg.content, created_at: msg.created_at, rating: msg.rating || 0, metadata: msg.metadata,
+        }))).catch(() => {});
+      }
     } catch (error) {
       console.error('Error loading conversation:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -238,12 +223,10 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   };
 
   const handleNewChat = () => {
-    setChatLoading(true);
     setMessages([]);
     setCurrentConversationId(null);
     setChatTitle('');
     onConversationChange?.(null);
-    setTimeout(() => setChatLoading(false), 1500);
   };
 
   const sendMessage = useCallback(async (messageText: string, isRegeneration = false) => {
@@ -277,6 +260,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         convId = await createNewConversation(messageText);
         if (!convId) throw new Error('Failed to create conversation');
         setCurrentConversationId(convId);
+        onConversationChange?.(convId);
       }
 
       if (!isRegeneration && userMessage) {
@@ -417,29 +401,84 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
       setIsStoppable(false);
       setStreamingMessageId(null);
     }
-  }, [user, currentConversationId, messages, attachedFiles, selectedModel, streamChat]);
+  }, [user, currentConversationId, messages, attachedFiles, selectedModel, streamChat, preferences.custom_instructions]);
 
   const handleRegenerate = () => {
     const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
     if (lastUserMessage) sendMessage(lastUserMessage.content, true);
   };
 
+  // ─── 3-dot menu actions ───
+  const handleRename = () => {
+    setShowOverflowMenu(false);
+    setRenameValue(chatTitle);
+    setShowRenameModal(true);
+  };
+
+  const submitRename = async () => {
+    if (!renameValue.trim() || !currentConversationId) return;
+    setChatTitle(renameValue.trim());
+    setShowRenameModal(false);
+    await supabase.from('conversations').update({ title: renameValue.trim() }).eq('id', currentConversationId);
+  };
+
+  const handleDeleteChat = () => {
+    setShowOverflowMenu(false);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteChat = async () => {
+    if (!currentConversationId) return;
+    const id = currentConversationId;
+    setShowDeleteConfirm(false);
+    handleNewChat();
+    removeCachedConversation(id).catch(() => {});
+    await supabase.from('conversations').delete().eq('id', id);
+  };
+
+  const handleShareChat = async () => {
+    setShowOverflowMenu(false);
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: chatTitle, text: messages.map(m => `${m.role}: ${m.content}`).join('\n\n') });
+      } catch { /* cancelled */ }
+    } else {
+      await navigator.clipboard.writeText(messages.map(m => `${m.role}: ${m.content}`).join('\n\n'));
+    }
+  };
+
+  const handleCopyConversation = async () => {
+    setShowOverflowMenu(false);
+    const text = messages.map(m => `${m.role === 'user' ? 'You' : 'SanGPT'}: ${m.content}`).join('\n\n');
+    await navigator.clipboard.writeText(text);
+  };
+
+  const handleArchiveChat = async () => {
+    setShowOverflowMenu(false);
+    // Archive = soft delete for now (remove from view)
+    if (!currentConversationId) return;
+    handleNewChat();
+  };
+
+  const handleReport = () => {
+    setShowOverflowMenu(false);
+    // Could open a report form
+  };
+
   const overflowMenuItems = [
-    { icon: UserPlus, label: 'Add People', action: () => { setShowOverflowMenu(false); } },
-    { icon: Share2, label: 'Share', action: () => { if (navigator.share) navigator.share({ text: `Chat: ${chatTitle}` }).catch(() => {}); setShowOverflowMenu(false); } },
-    { icon: Pencil, label: 'Rename', action: () => { setShowOverflowMenu(false); } },
-    { icon: Archive, label: 'Archive', action: () => { setShowOverflowMenu(false); } },
-    { icon: Pin, label: 'Pin Chat', action: () => { setShowOverflowMenu(false); } },
-    { icon: Home, label: 'Add to Home', action: () => { setShowOverflowMenu(false); } },
-    { icon: Trash2, label: 'Delete', action: () => { setShowOverflowMenu(false); }, destructive: true },
-    { icon: Flag, label: 'Report', action: () => { setShowOverflowMenu(false); } },
+    { icon: Pencil, label: 'Rename', action: handleRename },
+    { icon: Share2, label: 'Share', action: handleShareChat },
+    { icon: Copy, label: 'Copy Conversation', action: handleCopyConversation },
+    { icon: Archive, label: 'Archive', action: handleArchiveChat },
+    { icon: Pin, label: 'Pin Chat', action: () => setShowOverflowMenu(false) },
+    { icon: Trash2, label: 'Delete', action: handleDeleteChat, destructive: true },
+    { icon: Flag, label: 'Report', action: handleReport },
   ];
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      {/* ─── Header (ChatGPT-style per reference) ─── */}
+      {/* ─── Header ─── */}
       <header className="flex items-center justify-between px-2 py-2 bg-background sticky top-0 z-10">
-        {/* Left: circular sidebar toggle */}
         <Button
           variant="ghost"
           size="icon"
@@ -449,14 +488,12 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           <Menu className="h-5 w-5" />
         </Button>
 
-        {/* Center: title pill */}
         <button className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent/60 hover:bg-accent transition-colors max-w-[45%]">
           <span className="text-sm font-semibold truncate">
             {currentConversationId ? (chatTitle || 'SanGPT') : 'SanGPT'}
           </span>
         </button>
 
-        {/* Right: new chat + 3-dot */}
         <div className="flex items-center gap-0.5">
           {user ? (
             <>
@@ -516,14 +553,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
       {/* ─── Messages ─── */}
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto relative overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
-        {chatLoading ? (
-          <div className="flex-1 flex flex-col items-center justify-center h-full animate-fade-in">
-            <div className="relative">
-              <div className="h-10 w-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-            </div>
-            <p className="mt-4 text-sm text-muted-foreground animate-pulse">Loading...</p>
-          </div>
-        ) : messages.length === 0 ? (
+        {messages.length === 0 ? (
           <HomeScreen
             onPromptSelect={(text) => setInput(text)}
             onConversationSelect={(id) => loadConversation(id)}
@@ -552,7 +582,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                   </div>
                 ) : (
                   <div className="flex items-start gap-3">
-                    <div className="flex-1 space-y-2">
+                    <div className="flex-1 space-y-2 prose-ai">
                       <StreamingMarkdown
                         content={message.content}
                         isStreaming={streamingMessageId === message.id}
@@ -646,6 +676,40 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           disabled={!user}
         />
       </div>
+
+      {/* ─── Rename Modal ─── */}
+      {showRenameModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowRenameModal(false)}>
+          <div className="bg-background rounded-2xl p-6 mx-4 max-w-sm w-full shadow-2xl border border-border/30 animate-scale-in" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-4">Rename Chat</h3>
+            <Input
+              value={renameValue}
+              onChange={e => setRenameValue(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') submitRename(); }}
+              className="mb-4"
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setShowRenameModal(false)} className="flex-1 rounded-xl">Cancel</Button>
+              <Button onClick={submitRename} className="flex-1 rounded-xl">Save</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Delete Confirm Modal ─── */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(false)}>
+          <div className="bg-background rounded-2xl p-6 mx-4 max-w-sm w-full shadow-2xl border border-border/30 animate-scale-in" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-2">Delete this chat?</h3>
+            <p className="text-sm text-muted-foreground mb-6">This action cannot be undone.</p>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} className="flex-1 rounded-xl">Cancel</Button>
+              <Button variant="destructive" onClick={confirmDeleteChat} className="flex-1 rounded-xl">Delete</Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
       <ModelSelectorModal isOpen={showModelSelector} onClose={() => setShowModelSelector(false)} selectedModel={selectedModel} onSelectModel={setSelectedModel} />

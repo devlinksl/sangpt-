@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -12,11 +14,6 @@
      @apply bg-card/40 backdrop-blur-2xl border border-border/30 shadow-md;
    }
  }
-
-/* AI Chat App Design System - Inspired by the uploaded designs
-Using Sen font and the specified color palette: #abd5ff, #eec7f4, #e4f5ff, #ffffff
-All colors MUST be HSL.
-*/
 
 @layer base {
   :root {
@@ -51,10 +48,10 @@ All colors MUST be HSL.
     --radius: 1rem;
 
     /* AI Chat App Specific Colors */
-    --ai-blue: 208 100% 84%;        /* #abd5ff */
-    --ai-purple: 295 76% 87%;       /* #eec7f4 */
-    --ai-light-blue: 208 100% 95%;  /* #e4f5ff */
-    --ai-white: 0 0% 100%;          /* #ffffff */
+    --ai-blue: 208 100% 84%;
+    --ai-purple: 295 76% 87%;
+    --ai-light-blue: 208 100% 95%;
+    --ai-white: 0 0% 100%;
     
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--ai-blue)), hsl(var(--ai-purple)));
@@ -68,19 +65,12 @@ All colors MUST be HSL.
     --chat-sidebar: 228 100% 98%;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
@@ -113,18 +103,15 @@ All colors MUST be HSL.
     --input: 217 33% 18%;
     --ring: 213 27% 84%;
 
-    /* Dark mode AI colors */
     --ai-blue: 208 80% 40%;
     --ai-purple: 295 60% 40%;
     --ai-light-blue: 208 40% 15%;
     --ai-white: 222 47% 9%;
     
-    /* Dark gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--ai-blue)), hsl(var(--ai-purple)));
     --gradient-chat: linear-gradient(180deg, hsl(var(--ai-light-blue)), hsl(var(--ai-white)));
     --gradient-hero: linear-gradient(135deg, hsl(var(--ai-light-blue)), hsl(var(--ai-blue)));
     
-    /* Dark chat colors */
     --chat-user: 208 80% 40%;
     --chat-assistant: 222 47% 9%;
     --chat-input: 217 33% 18%;
@@ -139,6 +126,7 @@ All colors MUST be HSL.
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
+
 code, pre {
   white-space: pre-wrap;
   word-break: break-word;
@@ -161,133 +149,80 @@ code, pre {
 }
 
 @media (max-width: 768px) {
-  .code-card {
-    font-size: 0.85rem;
-    padding: 0.75rem;
-  }
+  .code-card { font-size: 0.85rem; padding: 0.75rem; }
 }
-
 @media (max-width: 480px) {
-  .code-card {
-    font-size: 0.8rem;
-    padding: 0.5rem;
-  }
+  .code-card { font-size: 0.8rem; padding: 0.5rem; }
 }
 
-/* Ensure page never scrolls horizontally */
 body, html {
   overflow-x: hidden;
   max-width: 100vw;
 }
 
 /* Faster vaul drawer animations */
-[vaul-drawer] {
-  transition-duration: 0.2s !important;
+[vaul-drawer] { transition-duration: 0.2s !important; }
+[vaul-overlay] { transition-duration: 0.2s !important; }
+
+/* Streaming text animation */
+@keyframes typing-cursor {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
 }
-[vaul-overlay] {
-  transition-duration: 0.2s !important;
+.typing-cursor { animation: typing-cursor 1s ease-in-out infinite; }
+
+@keyframes content-fade-in {
+  from { opacity: 0.7; }
+  to { opacity: 1; }
+}
+.streamed-content { animation: content-fade-in 0.1s ease-out; }
+
+/* Enhanced prose styling for AI responses */
+.prose-ai {
+  line-height: 1.75;
+  letter-spacing: -0.01em;
+}
+.prose-ai h2:first-child { margin-top: 0; }
+.prose-ai > *:first-child { margin-top: 0; }
+.prose-ai > *:last-child { margin-bottom: 0; }
+.prose-ai p { margin-bottom: 0.75em; }
+
+/* Typing indicator dots */
+.typing-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: hsl(var(--muted-foreground));
+  animation: typing-bounce 1.2s ease-in-out infinite;
+  will-change: transform, opacity;
 }
 
-/* Fade out animation for shimmer */
-@keyframes shimmer-fade-out {
-  0% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(0);
-  }
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-6px); opacity: 1; }
 }
 
- /* Streaming text animation */
- @keyframes typing-cursor {
-   0%, 50% { opacity: 1; }
-   51%, 100% { opacity: 0; }
- }
- 
- .typing-cursor {
-   animation: typing-cursor 1s ease-in-out infinite;
- }
- 
- /* Smooth fade-in for streamed content */
- @keyframes content-fade-in {
-   from {
-     opacity: 0.7;
-   }
-   to {
-     opacity: 1;
-   }
- }
- 
- .streamed-content {
-   animation: content-fade-in 0.1s ease-out;
- }
- 
- /* Enhanced prose styling for AI responses */
- .prose-ai h2:first-child {
-   margin-top: 0;
- }
- 
- .prose-ai > *:first-child {
-   margin-top: 0;
- }
- 
- .prose-ai > *:last-child {
-   margin-bottom: 0;
- }
+/* GPU-accelerated smooth animations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+}
 
- /* Typing indicator dots */
- .typing-dot {
-   display: inline-block;
-   width: 8px;
-   height: 8px;
-   border-radius: 50%;
-   background-color: hsl(var(--muted-foreground));
-   animation: typing-bounce 1.2s ease-in-out infinite;
-   will-change: transform, opacity;
- }
+.touch-target {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
 
- @keyframes typing-bounce {
-   0%, 60%, 100% {
-     transform: translateY(0);
-     opacity: 0.4;
-   }
-   30% {
-     transform: translateY(-6px);
-     opacity: 1;
-   }
- }
-
- /* GPU-accelerated smooth animations */
- .gpu-accelerated {
-   transform: translateZ(0);
-   will-change: transform;
-   backface-visibility: hidden;
- }
-
- /* Native-feel touch targets */
- .touch-target {
-   -webkit-tap-highlight-color: transparent;
-   touch-action: manipulation;
- }
-
- /* Smooth message entry */
- @keyframes message-slide-in {
-   from {
-     opacity: 0;
-     transform: translateY(12px) translateZ(0);
-   }
-   to {
-     opacity: 1;
-     transform: translateY(0) translateZ(0);
-   }
- }
-
- .message-enter {
-   animation: message-slide-in 0.25s cubic-bezier(0.2, 0, 0, 1) forwards;
-   will-change: transform, opacity;
- }
+@keyframes message-slide-in {
+  from { opacity: 0; transform: translateY(12px) translateZ(0); }
+  to { opacity: 1; transform: translateY(0) translateZ(0); }
+}
+.message-enter {
+  animation: message-slide-in 0.25s cubic-bezier(0.2, 0, 0, 1) forwards;
+  will-change: transform, opacity;
+}
 
 @layer base {
   * {
@@ -296,34 +231,23 @@ body, html {
   }
 
   body {
-    @apply bg-background text-foreground font-sen;
+    @apply bg-background text-foreground;
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    line-height: 1.6;
+    letter-spacing: -0.011em;
   }
 
-  /* Minimal transition — only colors, not transforms (prevents jank) */
   * {
     transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   }
 
-  /* Custom scrollbar */
-  ::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: hsl(var(--muted));
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
-    border-radius: 3px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground));
-  }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: hsl(var(--muted)); }
+  ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
 }
 
 @layer utilities {
@@ -337,84 +261,50 @@ body, html {
   }
 
   @keyframes ripple-animation {
-    to {
-      transform: scale(4);
-      opacity: 0;
-    }
+    to { transform: scale(4); opacity: 0; }
   }
- 
-   /* Actions reveal animation - smooth slide up with fade */
-   @keyframes actions-reveal {
-     0% {
-       opacity: 0;
-       transform: translateY(8px) scale(0.96);
-     }
-     100% {
-       opacity: 1;
-       transform: translateY(0) scale(1);
-     }
-   }
 
-   .actions-reveal {
-     animation: actions-reveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-     will-change: transform, opacity;
-   }
+  @keyframes actions-reveal {
+    0% { opacity: 0; transform: translateY(8px) scale(0.96); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .actions-reveal {
+    animation: actions-reveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    will-change: transform, opacity;
+  }
 
-   /* Staggered action button reveal */
-   @keyframes action-stagger-in {
-     0% {
-       opacity: 0;
-       transform: translateY(6px) scale(0.8);
-     }
-     100% {
-       opacity: 1;
-       transform: translateY(0) scale(1);
-     }
-   }
+  @keyframes action-stagger-in {
+    0% { opacity: 0; transform: translateY(6px) scale(0.8); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .action-stagger {
+    opacity: 0;
+    animation: action-stagger-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    will-change: transform, opacity;
+  }
 
-   .action-stagger {
-     opacity: 0;
-     animation: action-stagger-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-     will-change: transform, opacity;
-   }
+  @keyframes ai-content-reveal {
+    0% { opacity: 0; transform: translateY(16px); filter: blur(4px); }
+    60% { filter: blur(0px); }
+    100% { opacity: 1; transform: translateY(0); filter: blur(0px); }
+  }
+  .ai-response-reveal {
+    animation: ai-content-reveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    will-change: transform, opacity, filter;
+  }
 
-   /* AI response content reveal */
-   @keyframes ai-content-reveal {
-     0% {
-       opacity: 0;
-       transform: translateY(16px);
-       filter: blur(4px);
-     }
-     60% {
-       filter: blur(0px);
-     }
-     100% {
-       opacity: 1;
-       transform: translateY(0);
-       filter: blur(0px);
-     }
-   }
+  @keyframes settings-item-enter {
+    0% { opacity: 0; transform: translateY(8px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .settings-item-enter {
+    opacity: 0;
+    animation: settings-item-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    will-change: transform, opacity;
+  }
 
-   .ai-response-reveal {
-     animation: ai-content-reveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-     will-change: transform, opacity, filter;
-   }
-
-   /* Settings item staggered entry */
-   @keyframes settings-item-enter {
-     0% {
-       opacity: 0;
-       transform: translateY(8px);
-     }
-     100% {
-       opacity: 1;
-       transform: translateY(0);
-     }
-   }
-
-   .settings-item-enter {
-     opacity: 0;
-     animation: settings-item-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-     will-change: transform, opacity;
-   }
+  @keyframes shimmer-fade-out {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+  }
 }
