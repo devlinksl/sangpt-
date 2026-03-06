@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sen: ['Sen', 'sans-serif'],
+        sans: ['IBM Plex Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
