@@ -277,6 +277,8 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     }
 
     setIsStoppable(true);
+    setIsLoading(true);
+    setIsTyping(true);
 
     try {
       let convId = currentConversationId;
