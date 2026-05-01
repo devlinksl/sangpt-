@@ -574,7 +574,10 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           <Menu className="h-5 w-5" />
         </Button>
 
-        <button className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent/60 hover:bg-accent transition-colors max-w-[45%]">
+        <button
+          onClick={() => { if (currentConversationId && chatTitle) setShowTitleModal(true); }}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent/60 hover:bg-accent transition-colors max-w-[45%]"
+        >
           <span className="text-sm font-semibold truncate">
             {currentConversationId ? (chatTitle || 'SanGPT') : 'SanGPT'}
           </span>
@@ -639,33 +642,36 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
       {/* ─── Messages ─── */}
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto relative overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
-        {messages.length === 0 ? (
+        {offlineUnavailable ? (
+          <div className="h-full flex flex-col items-center justify-center px-6 text-center">
+            <div className="h-14 w-14 rounded-full bg-accent/60 flex items-center justify-center mb-4">
+              <X className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <p className="text-base font-medium">Chat not available offline</p>
+            <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+              This conversation hasn't been cached on this device. Reconnect to load it.
+            </p>
+          </div>
+        ) : messages.length === 0 ? (
           <HomeScreen
             onPromptSelect={(text) => setInput(text)}
             onConversationSelect={(id) => loadConversation(id)}
             user={user}
           />
         ) : (
-          <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+          <div className="max-w-3xl mx-auto px-4 py-6 messages-stack">
             {messages.map((message) => (
               <div key={message.id} className="animate-fade-in">
                 {message.role === 'user' ? (
-                  <div className="flex items-start gap-3 justify-end">
-                    <div className="bg-primary/90 backdrop-blur-sm text-primary-foreground px-4 py-3 rounded-2xl max-w-[80%] shadow-md">
-                      <p className="whitespace-pre-wrap break-words">{message.content.split('[Attached Files]')[0]}</p>
-                      {message.metadata?.files && (
-                        <div className="mt-2 space-y-2">
-                          {message.metadata.files.map((file: any, idx: number) => (
-                            <div key={idx} className="flex items-center gap-2 bg-background/10 px-3 py-2 rounded-lg text-sm">
-                              <Paperclip className="h-4 w-4" />
-                              <span className="flex-1 truncate">{file.name}</span>
-                              <span className="text-xs">{(file.size / 1024).toFixed(1)}KB</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <UserBubble
+                    message={message}
+                    isEditing={editingMessageId === message.id}
+                    editingDraft={editingDraft}
+                    setEditingDraft={setEditingDraft}
+                    onSubmitEdit={submitEdit}
+                    onCancelEdit={cancelEdit}
+                    onLongPress={() => openMessageMenu(message.id)}
+                  />
                 ) : (
                   <div className="flex items-start gap-3">
                     <div className="flex-1 space-y-2 prose-ai">
