@@ -126,6 +126,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
   const loadConversation = async (id: string) => {
     try {
+      setOfflineUnavailable(false);
       // Instant load from cache
       const cached = await getCachedMessages(id);
       if (cached.length > 0) {
@@ -136,10 +137,17 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           created_at: msg.created_at,
           rating: msg.rating || 0,
           metadata: msg.metadata,
+          edited_at: (msg as any).edited_at ?? null,
         })));
+      } else if (!navigator.onLine) {
+        // No cache + offline → show empty state
+        setMessages([]);
+        setOfflineUnavailable(true);
       }
       setCurrentConversationId(id);
       onConversationChange?.(id);
+
+      if (!navigator.onLine) return;
 
       // Background sync from server
       const [{ data: msgData }, { data: convData }] = await Promise.all([
@@ -157,6 +165,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           created_at: msg.created_at,
           rating: msg.rating || 0,
           metadata: msg.metadata,
+          edited_at: (msg as any).edited_at ?? null,
         }));
         setMessages(serverMessages);
         cacheMessages(msgData.map(msg => ({
