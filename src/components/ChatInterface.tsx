@@ -803,8 +803,127 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         </div>
       )}
 
+      {/* ─── Title Modal ─── */}
+      {showTitleModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowTitleModal(false)}>
+          <div className="bg-background rounded-2xl p-6 mx-4 max-w-sm w-full shadow-2xl border border-border/30 animate-scale-in" onClick={e => e.stopPropagation()}>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Chat Title</p>
+            <h3 className="text-lg font-semibold mb-6 break-words">{chatTitle}</h3>
+            <Button onClick={() => setShowTitleModal(false)} className="w-full rounded-xl">Close</Button>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Message context menu (long press own message) ─── */}
+      {messageMenuId && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/30 backdrop-blur-sm" onClick={() => setMessageMenuId(null)}>
+          <div className="bg-background rounded-t-2xl w-full max-w-lg pb-safe shadow-2xl border-t border-border/30 animate-slide-in-bottom" onClick={e => e.stopPropagation()}>
+            <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted my-3" />
+            <div className="px-2 pb-4">
+              <button onClick={handleStartEdit} className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-left">
+                <Pencil className="h-4 w-4" />
+                <span className="text-sm font-medium">Edit</span>
+              </button>
+              <button onClick={handleCopyMessage} className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-left">
+                <Copy className="h-4 w-4" />
+                <span className="text-sm font-medium">Copy</span>
+              </button>
+              <button onClick={handleDeleteMessage} className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-left text-destructive">
+                <Trash2 className="h-4 w-4" />
+                <span className="text-sm font-medium">Delete</span>
+              </button>
+              <button onClick={() => setMessageMenuId(null)} className="w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-muted-foreground">
+                <span className="text-sm font-medium">Cancel</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
       <ModelSelectorModal isOpen={showModelSelector} onClose={() => setShowModelSelector(false)} selectedModel={selectedModel} onSelectModel={setSelectedModel} />
     </div>
   );
 };
+
+// ─── User message bubble with long-press + inline editing ───
+interface UserBubbleProps {
+  message: Message;
+  isEditing: boolean;
+  editingDraft: string;
+  setEditingDraft: (v: string) => void;
+  onSubmitEdit: () => void;
+  onCancelEdit: () => void;
+  onLongPress: () => void;
+}
+
+const UserBubble = ({
+  message, isEditing, editingDraft, setEditingDraft, onSubmitEdit, onCancelEdit, onLongPress,
+}: UserBubbleProps) => {
+  const longPressTimer = useRef<number | null>(null);
+  const movedRef = useRef(false);
+
+  const onTouchStart = () => {
+    movedRef.current = false;
+    longPressTimer.current = window.setTimeout(() => {
+      if (!movedRef.current) onLongPress();
+    }, 500);
+  };
+  const onTouchMove = () => {
+    movedRef.current = true;
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+  };
+  const onTouchEnd = () => {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+  };
+  const onContextMenu = (e: React.MouseEvent) => { e.preventDefault(); onLongPress(); };
+
+  if (isEditing) {
+    return (
+      <div className="flex items-start gap-3 justify-end">
+        <div className="bg-primary/10 border border-primary/30 rounded-2xl p-3 max-w-[85%] w-full">
+          <textarea
+            value={editingDraft}
+            onChange={(e) => setEditingDraft(e.target.value)}
+            autoFocus
+            rows={Math.min(8, Math.max(2, editingDraft.split('\n').length))}
+            className="w-full bg-transparent outline-none resize-none text-foreground"
+          />
+          <div className="flex justify-end gap-2 mt-2">
+            <Button size="sm" variant="ghost" onClick={onCancelEdit} className="rounded-lg h-8">Cancel</Button>
+            <Button size="sm" onClick={onSubmitEdit} className="rounded-lg h-8">Save & regenerate</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-start gap-3 justify-end">
+      <div
+        className="chat-bubble-user bg-primary/90 backdrop-blur-sm text-primary-foreground max-w-[80%] shadow-md select-none"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onContextMenu={onContextMenu}
+      >
+        <p className="whitespace-pre-wrap break-words">{message.content.split('[Attached Files]')[0]}</p>
+        {message.metadata?.files && (
+          <div className="mt-2 space-y-2">
+            {message.metadata.files.map((file: any, idx: number) => (
+              <div key={idx} className="flex items-center gap-2 bg-background/10 px-3 py-2 rounded-lg text-sm">
+                <Paperclip className="h-4 w-4" />
+                <span className="flex-1 truncate">{file.name}</span>
+                <span className="text-xs">{(file.size / 1024).toFixed(1)}KB</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {message.edited_at && (
+          <p className="text-[10px] opacity-70 mt-1">Edited</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
