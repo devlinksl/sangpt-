@@ -39,6 +39,7 @@ interface Message {
   created_at: string;
   rating: number;
   metadata?: any;
+  edited_at?: string | null;
 }
 
 interface ChatInterfaceProps {
