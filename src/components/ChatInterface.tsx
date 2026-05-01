@@ -39,6 +39,7 @@ interface Message {
   created_at: string;
   rating: number;
   metadata?: any;
+  edited_at?: string | null;
 }
 
 interface ChatInterfaceProps {
@@ -71,9 +72,23 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showTitleModal, setShowTitleModal] = useState(false);
+  const [messageMenuId, setMessageMenuId] = useState<string | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingDraft, setEditingDraft] = useState('');
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const [offlineUnavailable, setOfflineUnavailable] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const userScrolledRef = useRef(false);
+
+  useEffect(() => {
+    const on = () => setIsOnline(true);
+    const off = () => setIsOnline(false);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+  }, []);
 
   // Auto-scroll: scroll to bottom during streaming
   const scrollToBottom = useCallback((smooth = true) => {
@@ -111,6 +126,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
   const loadConversation = async (id: string) => {
     try {
+      setOfflineUnavailable(false);
       // Instant load from cache
       const cached = await getCachedMessages(id);
       if (cached.length > 0) {
@@ -121,10 +137,17 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           created_at: msg.created_at,
           rating: msg.rating || 0,
           metadata: msg.metadata,
+          edited_at: (msg as any).edited_at ?? null,
         })));
+      } else if (!navigator.onLine) {
+        // No cache + offline → show empty state
+        setMessages([]);
+        setOfflineUnavailable(true);
       }
       setCurrentConversationId(id);
       onConversationChange?.(id);
+
+      if (!navigator.onLine) return;
 
       // Background sync from server
       const [{ data: msgData }, { data: convData }] = await Promise.all([
@@ -142,6 +165,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           created_at: msg.created_at,
           rating: msg.rating || 0,
           metadata: msg.metadata,
+          edited_at: (msg as any).edited_at ?? null,
         }));
         setMessages(serverMessages);
         cacheMessages(msgData.map(msg => ({
@@ -253,6 +277,8 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     }
 
     setIsStoppable(true);
+    setIsLoading(true);
+    setIsTyping(true);
 
     try {
       let convId = currentConversationId;
@@ -408,6 +434,68 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     if (lastUserMessage) sendMessage(lastUserMessage.content, true);
   };
 
+  // ─── Message context-menu (long press own message) ───
+  const openMessageMenu = (id: string) => setMessageMenuId(id);
+
+  const handleCopyMessage = async () => {
+    const msg = messages.find(m => m.id === messageMenuId);
+    setMessageMenuId(null);
+    if (msg) await navigator.clipboard.writeText(msg.content);
+  };
+
+  const handleDeleteMessage = async () => {
+    const id = messageMenuId;
+    setMessageMenuId(null);
+    if (!id) return;
+    setMessages(prev => prev.filter(m => m.id !== id));
+    // Note: messages table currently disallows deletes via RLS; removed locally only.
+  };
+
+  const handleStartEdit = () => {
+    const id = messageMenuId;
+    setMessageMenuId(null);
+    if (!id) return;
+    const msg = messages.find(m => m.id === id);
+    if (!msg || msg.role !== 'user') return;
+    setEditingMessageId(id);
+    setEditingDraft(msg.content.split('[Attached Files]')[0]);
+  };
+
+  const cancelEdit = () => {
+    setEditingMessageId(null);
+    setEditingDraft('');
+  };
+
+  const submitEdit = async () => {
+    const id = editingMessageId;
+    const newContent = editingDraft.trim();
+    if (!id || !newContent) { cancelEdit(); return; }
+
+    // Find message + cut subsequent messages
+    const idx = messages.findIndex(m => m.id === id);
+    if (idx === -1) { cancelEdit(); return; }
+
+    const editedAt = new Date().toISOString();
+    const truncated = messages.slice(0, idx + 1).map((m, i) =>
+      i === idx ? { ...m, content: newContent, edited_at: editedAt } : m
+    );
+    setMessages(truncated);
+    setEditingMessageId(null);
+    setEditingDraft('');
+
+    // Persist edit on server (best-effort) for non-temp messages
+    if (!id.startsWith('temp-') && currentConversationId) {
+      supabase
+        .from('messages')
+        .update({ content: newContent, edited_at: editedAt } as any)
+        .eq('id', id)
+        .then(({ error }) => { if (error) console.error('Edit save failed:', error); });
+    }
+
+    // Regenerate AI reply from edited point
+    sendMessage(newContent, true);
+  };
+
   // ─── 3-dot menu actions ───
   const handleRename = () => {
     setShowOverflowMenu(false);
@@ -488,7 +576,10 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           <Menu className="h-5 w-5" />
         </Button>
 
-        <button className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent/60 hover:bg-accent transition-colors max-w-[45%]">
+        <button
+          onClick={() => { if (currentConversationId && chatTitle) setShowTitleModal(true); }}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent/60 hover:bg-accent transition-colors max-w-[45%]"
+        >
           <span className="text-sm font-semibold truncate">
             {currentConversationId ? (chatTitle || 'SanGPT') : 'SanGPT'}
           </span>
@@ -553,33 +644,36 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
       {/* ─── Messages ─── */}
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto relative overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
-        {messages.length === 0 ? (
+        {offlineUnavailable ? (
+          <div className="h-full flex flex-col items-center justify-center px-6 text-center">
+            <div className="h-14 w-14 rounded-full bg-accent/60 flex items-center justify-center mb-4">
+              <X className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <p className="text-base font-medium">Chat not available offline</p>
+            <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+              This conversation hasn't been cached on this device. Reconnect to load it.
+            </p>
+          </div>
+        ) : messages.length === 0 ? (
           <HomeScreen
             onPromptSelect={(text) => setInput(text)}
             onConversationSelect={(id) => loadConversation(id)}
             user={user}
           />
         ) : (
-          <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+          <div className="max-w-3xl mx-auto px-4 py-6 messages-stack">
             {messages.map((message) => (
               <div key={message.id} className="animate-fade-in">
                 {message.role === 'user' ? (
-                  <div className="flex items-start gap-3 justify-end">
-                    <div className="bg-primary/90 backdrop-blur-sm text-primary-foreground px-4 py-3 rounded-2xl max-w-[80%] shadow-md">
-                      <p className="whitespace-pre-wrap break-words">{message.content.split('[Attached Files]')[0]}</p>
-                      {message.metadata?.files && (
-                        <div className="mt-2 space-y-2">
-                          {message.metadata.files.map((file: any, idx: number) => (
-                            <div key={idx} className="flex items-center gap-2 bg-background/10 px-3 py-2 rounded-lg text-sm">
-                              <Paperclip className="h-4 w-4" />
-                              <span className="flex-1 truncate">{file.name}</span>
-                              <span className="text-xs">{(file.size / 1024).toFixed(1)}KB</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <UserBubble
+                    message={message}
+                    isEditing={editingMessageId === message.id}
+                    editingDraft={editingDraft}
+                    setEditingDraft={setEditingDraft}
+                    onSubmitEdit={submitEdit}
+                    onCancelEdit={cancelEdit}
+                    onLongPress={() => openMessageMenu(message.id)}
+                  />
                 ) : (
                   <div className="flex items-start gap-3">
                     <div className="flex-1 space-y-2 prose-ai">
@@ -711,8 +805,127 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         </div>
       )}
 
+      {/* ─── Title Modal ─── */}
+      {showTitleModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowTitleModal(false)}>
+          <div className="bg-background rounded-2xl p-6 mx-4 max-w-sm w-full shadow-2xl border border-border/30 animate-scale-in" onClick={e => e.stopPropagation()}>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Chat Title</p>
+            <h3 className="text-lg font-semibold mb-6 break-words">{chatTitle}</h3>
+            <Button onClick={() => setShowTitleModal(false)} className="w-full rounded-xl">Close</Button>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Message context menu (long press own message) ─── */}
+      {messageMenuId && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/30 backdrop-blur-sm" onClick={() => setMessageMenuId(null)}>
+          <div className="bg-background rounded-t-2xl w-full max-w-lg pb-safe shadow-2xl border-t border-border/30 animate-slide-in-bottom" onClick={e => e.stopPropagation()}>
+            <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted my-3" />
+            <div className="px-2 pb-4">
+              <button onClick={handleStartEdit} className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-left">
+                <Pencil className="h-4 w-4" />
+                <span className="text-sm font-medium">Edit</span>
+              </button>
+              <button onClick={handleCopyMessage} className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-left">
+                <Copy className="h-4 w-4" />
+                <span className="text-sm font-medium">Copy</span>
+              </button>
+              <button onClick={handleDeleteMessage} className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-left text-destructive">
+                <Trash2 className="h-4 w-4" />
+                <span className="text-sm font-medium">Delete</span>
+              </button>
+              <button onClick={() => setMessageMenuId(null)} className="w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-muted-foreground">
+                <span className="text-sm font-medium">Cancel</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
       <ModelSelectorModal isOpen={showModelSelector} onClose={() => setShowModelSelector(false)} selectedModel={selectedModel} onSelectModel={setSelectedModel} />
     </div>
   );
 };
+
+// ─── User message bubble with long-press + inline editing ───
+interface UserBubbleProps {
+  message: Message;
+  isEditing: boolean;
+  editingDraft: string;
+  setEditingDraft: (v: string) => void;
+  onSubmitEdit: () => void;
+  onCancelEdit: () => void;
+  onLongPress: () => void;
+}
+
+const UserBubble = ({
+  message, isEditing, editingDraft, setEditingDraft, onSubmitEdit, onCancelEdit, onLongPress,
+}: UserBubbleProps) => {
+  const longPressTimer = useRef<number | null>(null);
+  const movedRef = useRef(false);
+
+  const onTouchStart = () => {
+    movedRef.current = false;
+    longPressTimer.current = window.setTimeout(() => {
+      if (!movedRef.current) onLongPress();
+    }, 500);
+  };
+  const onTouchMove = () => {
+    movedRef.current = true;
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+  };
+  const onTouchEnd = () => {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+  };
+  const onContextMenu = (e: React.MouseEvent) => { e.preventDefault(); onLongPress(); };
+
+  if (isEditing) {
+    return (
+      <div className="flex items-start gap-3 justify-end">
+        <div className="bg-primary/10 border border-primary/30 rounded-2xl p-3 max-w-[85%] w-full">
+          <textarea
+            value={editingDraft}
+            onChange={(e) => setEditingDraft(e.target.value)}
+            autoFocus
+            rows={Math.min(8, Math.max(2, editingDraft.split('\n').length))}
+            className="w-full bg-transparent outline-none resize-none text-foreground"
+          />
+          <div className="flex justify-end gap-2 mt-2">
+            <Button size="sm" variant="ghost" onClick={onCancelEdit} className="rounded-lg h-8">Cancel</Button>
+            <Button size="sm" onClick={onSubmitEdit} className="rounded-lg h-8">Save & regenerate</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-start gap-3 justify-end">
+      <div
+        className="chat-bubble-user bg-primary/90 backdrop-blur-sm text-primary-foreground max-w-[80%] shadow-md select-none"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onContextMenu={onContextMenu}
+      >
+        <p className="whitespace-pre-wrap break-words">{message.content.split('[Attached Files]')[0]}</p>
+        {message.metadata?.files && (
+          <div className="mt-2 space-y-2">
+            {message.metadata.files.map((file: any, idx: number) => (
+              <div key={idx} className="flex items-center gap-2 bg-background/10 px-3 py-2 rounded-lg text-sm">
+                <Paperclip className="h-4 w-4" />
+                <span className="flex-1 truncate">{file.name}</span>
+                <span className="text-xs">{(file.size / 1024).toFixed(1)}KB</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {message.edited_at && (
+          <p className="text-[10px] opacity-70 mt-1">Edited</p>
+        )}
+      </div>
+    </div>
+  );
+};
+

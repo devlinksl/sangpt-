@@ -164,6 +164,7 @@ export type Database = {
           content: string
           conversation_id: string
           created_at: string
+          edited_at: string | null
           id: string
           metadata: Json | null
           rating: number | null
@@ -174,6 +175,7 @@ export type Database = {
           content: string
           conversation_id: string
           created_at?: string
+          edited_at?: string | null
           id?: string
           metadata?: Json | null
           rating?: number | null
@@ -184,6 +186,7 @@ export type Database = {
           content?: string
           conversation_id?: string
           created_at?: string
+          edited_at?: string | null
           id?: string
           metadata?: Json | null
           rating?: number | null
@@ -232,9 +235,12 @@ export type Database = {
           analytics_opt_out: boolean | null
           animations: boolean | null
           auto_speech: boolean | null
+          bubble_style: string | null
+          chat_density: string | null
           created_at: string
           custom_instructions: string | null
           data_mode: string | null
+          font_style: string | null
           id: string
           new_chat_auto: boolean | null
           notifications: boolean | null
@@ -250,9 +256,12 @@ export type Database = {
           analytics_opt_out?: boolean | null
           animations?: boolean | null
           auto_speech?: boolean | null
+          bubble_style?: string | null
+          chat_density?: string | null
           created_at?: string
           custom_instructions?: string | null
           data_mode?: string | null
+          font_style?: string | null
           id?: string
           new_chat_auto?: boolean | null
           notifications?: boolean | null
@@ -268,9 +277,12 @@ export type Database = {
           analytics_opt_out?: boolean | null
           animations?: boolean | null
           auto_speech?: boolean | null
+          bubble_style?: string | null
+          chat_density?: string | null
           created_at?: string
           custom_instructions?: string | null
           data_mode?: string | null
+          font_style?: string | null
           id?: string
           new_chat_auto?: boolean | null
           notifications?: boolean | null

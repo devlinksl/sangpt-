@@ -15,6 +15,9 @@ export interface UserPreferences {
   auto_speech: boolean;
   voice_preference: string;
   custom_instructions: string;
+  font_style: string;
+  chat_density: string;
+  bubble_style: string;
 }
 
 const DEFAULT_PREFS: UserPreferences = {
@@ -30,17 +33,36 @@ const DEFAULT_PREFS: UserPreferences = {
   auto_speech: false,
   voice_preference: 'alloy',
   custom_instructions: '',
+  font_style: 'sans',
+  chat_density: 'comfortable',
+  bubble_style: 'rounded',
 };
+
+const LOCAL_KEY = 'sangpt-prefs-cache';
+
+function readLocalPrefs(): UserPreferences {
+  try {
+    const raw = localStorage.getItem(LOCAL_KEY);
+    if (!raw) return DEFAULT_PREFS;
+    return { ...DEFAULT_PREFS, ...JSON.parse(raw) };
+  } catch {
+    return DEFAULT_PREFS;
+  }
+}
+
+function writeLocalPrefs(p: UserPreferences) {
+  try { localStorage.setItem(LOCAL_KEY, JSON.stringify(p)); } catch {}
+}
 
 export function useUserPreferences() {
   const { user } = useAuth();
-  const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFS);
+  const [preferences, setPreferences] = useState<UserPreferences>(() => readLocalPrefs());
   const [loading, setLoading] = useState(true);
 
   // Load preferences from DB
   useEffect(() => {
     if (!user) {
-      setPreferences(DEFAULT_PREFS);
+      setPreferences(readLocalPrefs());
       setLoading(false);
       return;
     }
@@ -56,7 +78,7 @@ export function useUserPreferences() {
         if (error) throw error;
 
         if (data) {
-          setPreferences({
+          const next: UserPreferences = {
             theme: data.theme ?? DEFAULT_PREFS.theme,
             response_style: (data as any).response_style ?? DEFAULT_PREFS.response_style,
             typing_speed: (data as any).typing_speed ?? DEFAULT_PREFS.typing_speed,
@@ -69,7 +91,12 @@ export function useUserPreferences() {
             auto_speech: data.auto_speech ?? DEFAULT_PREFS.auto_speech,
             voice_preference: data.voice_preference ?? DEFAULT_PREFS.voice_preference,
             custom_instructions: (data as any).custom_instructions ?? DEFAULT_PREFS.custom_instructions,
-          });
+            font_style: (data as any).font_style ?? DEFAULT_PREFS.font_style,
+            chat_density: (data as any).chat_density ?? DEFAULT_PREFS.chat_density,
+            bubble_style: (data as any).bubble_style ?? DEFAULT_PREFS.bubble_style,
+          };
+          setPreferences(next);
+          writeLocalPrefs(next);
         }
       } catch (err) {
         console.error('Failed to load preferences:', err);
@@ -85,7 +112,11 @@ export function useUserPreferences() {
   const updatePreference = useCallback(
     async <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => {
       // Optimistic update
-      setPreferences((prev) => ({ ...prev, [key]: value }));
+      setPreferences((prev) => {
+        const next = { ...prev, [key]: value };
+        writeLocalPrefs(next);
+        return next;
+      });
 
       if (!user) return;
 

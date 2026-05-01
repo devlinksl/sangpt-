@@ -1,38 +1,38 @@
-import { useState } from 'react';
 import { SettingsSubPage } from './SettingsSubPage';
 import { SettingsSection } from './SettingsSection';
 import { SettingsItem } from './SettingsItem';
-import { useAlert } from '@/hooks/useAlert';
+import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { Type, AlignVerticalSpaceAround, LayoutGrid } from 'lucide-react';
 
 interface Props {
   onBack: () => void;
 }
 
+const FONTS = ['sans', 'serif', 'mono', 'rounded'] as const;
+const DENSITIES = ['compact', 'comfortable', 'spacious'] as const;
+const BUBBLES = ['rounded', 'flat', 'minimal'] as const;
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 export function ChatAppearanceSubPage({ onBack }: Props) {
-  const { alert } = useAlert();
-  const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium');
-  const [density, setDensity] = useState<'compact' | 'comfortable' | 'spacious'>('comfortable');
+  const { preferences, updatePreference } = useUserPreferences();
 
-  const cycleFontSize = () => {
-    const next = fontSize === 'small' ? 'medium' : fontSize === 'medium' ? 'large' : 'small';
-    setFontSize(next);
-  };
+  const cycle = <T extends string>(arr: readonly T[], current: T): T =>
+    arr[(arr.indexOf(current) + 1) % arr.length];
 
-  const cycleDensity = () => {
-    const next = density === 'compact' ? 'comfortable' : density === 'comfortable' ? 'spacious' : 'compact';
-    setDensity(next);
-  };
+  const cycleFont = () => updatePreference('font_style', cycle(FONTS, (preferences.font_style || 'sans') as any));
+  const cycleDensity = () => updatePreference('chat_density', cycle(DENSITIES, (preferences.chat_density || 'comfortable') as any));
+  const cycleBubble = () => updatePreference('bubble_style', cycle(BUBBLES, (preferences.bubble_style || 'rounded') as any));
 
   return (
     <SettingsSubPage title="Chat Appearance" onBack={onBack}>
       <SettingsSection title="Text">
         <SettingsItem
           icon={<Type className="h-[18px] w-[18px]" />}
-          label="Font Size"
-          description="Adjust chat text size"
-          onClick={cycleFontSize}
-          trailing={fontSize.charAt(0).toUpperCase() + fontSize.slice(1)}
+          label="Font Style"
+          description="Typography for chat content"
+          onClick={cycleFont}
+          trailing={cap(preferences.font_style || 'sans')}
           index={0}
         />
       </SettingsSection>
@@ -43,21 +43,22 @@ export function ChatAppearanceSubPage({ onBack }: Props) {
           label="Chat Density"
           description="Spacing between messages"
           onClick={cycleDensity}
-          trailing={density.charAt(0).toUpperCase() + density.slice(1)}
+          trailing={cap(preferences.chat_density || 'comfortable')}
           index={1}
         />
         <SettingsItem
           icon={<LayoutGrid className="h-[18px] w-[18px]" />}
           label="Bubble Style"
           description="Chat bubble appearance"
-          onClick={() => alert({ title: 'Coming Soon', description: 'Bubble style customization coming soon.' })}
+          onClick={cycleBubble}
+          trailing={cap(preferences.bubble_style || 'rounded')}
           index={2}
         />
       </SettingsSection>
 
       <div className="glass-card rounded-2xl p-4 mt-2">
         <p className="text-xs text-muted-foreground">
-          Changes to chat appearance will apply to all conversations.
+          Changes apply instantly to all conversations and persist across devices.
         </p>
       </div>
     </SettingsSubPage>
