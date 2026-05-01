@@ -308,3 +308,38 @@ body, html {
     100% { opacity: 0; }
   }
 }
+
+/* ─── Chat Appearance: applied via data-* on <html> ─── */
+:root {
+  --chat-msg-gap: 1.5rem;
+  --chat-msg-padding-y: 0.75rem;
+  --chat-msg-padding-x: 1rem;
+  --chat-bubble-radius: 1rem;
+}
+html[data-chat-density="compact"]     { --chat-msg-gap: 0.75rem; --chat-msg-padding-y: 0.5rem;  --chat-msg-padding-x: 0.85rem; }
+html[data-chat-density="comfortable"] { --chat-msg-gap: 1.5rem;  --chat-msg-padding-y: 0.75rem; --chat-msg-padding-x: 1rem;    }
+html[data-chat-density="spacious"]    { --chat-msg-gap: 2.25rem; --chat-msg-padding-y: 1rem;    --chat-msg-padding-x: 1.15rem; }
+
+html[data-bubble-style="rounded"] { --chat-bubble-radius: 1rem; }
+html[data-bubble-style="flat"]    { --chat-bubble-radius: 0.375rem; }
+html[data-bubble-style="minimal"] { --chat-bubble-radius: 0.25rem; }
+html[data-bubble-style="minimal"] .chat-bubble-user {
+  background: transparent !important;
+  color: hsl(var(--foreground)) !important;
+  border: 1px solid hsl(var(--border));
+  box-shadow: none !important;
+}
+
+html[data-font-style="sans"]    { --chat-font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif; }
+html[data-font-style="serif"]   { --chat-font-family: 'IBM Plex Serif', ui-serif, Georgia, serif; }
+html[data-font-style="mono"]    { --chat-font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+html[data-font-style="rounded"] { --chat-font-family: 'Nunito', ui-rounded, system-ui, sans-serif; }
+
+.chat-surface, .chat-surface * { font-family: var(--chat-font-family, inherit); }
+.chat-surface .messages-stack > * + * { margin-top: var(--chat-msg-gap); }
+.chat-bubble-user {
+  border-radius: var(--chat-bubble-radius);
+  padding: var(--chat-msg-padding-y) var(--chat-msg-padding-x);
+  transition: border-radius 0.2s ease, padding 0.2s ease;
+}
+
