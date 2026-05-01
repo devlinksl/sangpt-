@@ -15,6 +15,9 @@ export interface UserPreferences {
   auto_speech: boolean;
   voice_preference: string;
   custom_instructions: string;
+  font_style: string;
+  chat_density: string;
+  bubble_style: string;
 }
 
 const DEFAULT_PREFS: UserPreferences = {
@@ -30,17 +33,36 @@ const DEFAULT_PREFS: UserPreferences = {
   auto_speech: false,
   voice_preference: 'alloy',
   custom_instructions: '',
+  font_style: 'sans',
+  chat_density: 'comfortable',
+  bubble_style: 'rounded',
 };
+
+const LOCAL_KEY = 'sangpt-prefs-cache';
+
+function readLocalPrefs(): UserPreferences {
+  try {
+    const raw = localStorage.getItem(LOCAL_KEY);
+    if (!raw) return DEFAULT_PREFS;
+    return { ...DEFAULT_PREFS, ...JSON.parse(raw) };
+  } catch {
+    return DEFAULT_PREFS;
+  }
+}
+
+function writeLocalPrefs(p: UserPreferences) {
+  try { localStorage.setItem(LOCAL_KEY, JSON.stringify(p)); } catch {}
+}
 
 export function useUserPreferences() {
   const { user } = useAuth();
-  const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFS);
+  const [preferences, setPreferences] = useState<UserPreferences>(() => readLocalPrefs());
   const [loading, setLoading] = useState(true);
 
   // Load preferences from DB
   useEffect(() => {
     if (!user) {
-      setPreferences(DEFAULT_PREFS);
+      setPreferences(readLocalPrefs());
       setLoading(false);
       return;
     }
