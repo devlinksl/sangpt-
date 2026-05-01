@@ -432,6 +432,68 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     if (lastUserMessage) sendMessage(lastUserMessage.content, true);
   };
 
+  // ─── Message context-menu (long press own message) ───
+  const openMessageMenu = (id: string) => setMessageMenuId(id);
+
+  const handleCopyMessage = async () => {
+    const msg = messages.find(m => m.id === messageMenuId);
+    setMessageMenuId(null);
+    if (msg) await navigator.clipboard.writeText(msg.content);
+  };
+
+  const handleDeleteMessage = async () => {
+    const id = messageMenuId;
+    setMessageMenuId(null);
+    if (!id) return;
+    setMessages(prev => prev.filter(m => m.id !== id));
+    // Note: messages table currently disallows deletes via RLS; removed locally only.
+  };
+
+  const handleStartEdit = () => {
+    const id = messageMenuId;
+    setMessageMenuId(null);
+    if (!id) return;
+    const msg = messages.find(m => m.id === id);
+    if (!msg || msg.role !== 'user') return;
+    setEditingMessageId(id);
+    setEditingDraft(msg.content.split('[Attached Files]')[0]);
+  };
+
+  const cancelEdit = () => {
+    setEditingMessageId(null);
+    setEditingDraft('');
+  };
+
+  const submitEdit = async () => {
+    const id = editingMessageId;
+    const newContent = editingDraft.trim();
+    if (!id || !newContent) { cancelEdit(); return; }
+
+    // Find message + cut subsequent messages
+    const idx = messages.findIndex(m => m.id === id);
+    if (idx === -1) { cancelEdit(); return; }
+
+    const editedAt = new Date().toISOString();
+    const truncated = messages.slice(0, idx + 1).map((m, i) =>
+      i === idx ? { ...m, content: newContent, edited_at: editedAt } : m
+    );
+    setMessages(truncated);
+    setEditingMessageId(null);
+    setEditingDraft('');
+
+    // Persist edit on server (best-effort) for non-temp messages
+    if (!id.startsWith('temp-') && currentConversationId) {
+      supabase
+        .from('messages')
+        .update({ content: newContent, edited_at: editedAt } as any)
+        .eq('id', id)
+        .then(({ error }) => { if (error) console.error('Edit save failed:', error); });
+    }
+
+    // Regenerate AI reply from edited point
+    sendMessage(newContent, true);
+  };
+
   // ─── 3-dot menu actions ───
   const handleRename = () => {
     setShowOverflowMenu(false);
