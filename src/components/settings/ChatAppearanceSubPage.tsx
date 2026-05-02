@@ -2,7 +2,7 @@ import { SettingsSubPage } from './SettingsSubPage';
 import { SettingsSection } from './SettingsSection';
 import { SettingsItem } from './SettingsItem';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
-import { Type, AlignVerticalSpaceAround, LayoutGrid } from 'lucide-react';
+import { Type, AlignVerticalSpaceAround, LayoutGrid, ALargeSmall } from 'lucide-react';
 
 interface Props {
   onBack: () => void;
@@ -11,6 +11,10 @@ interface Props {
 const FONTS = ['sans', 'serif', 'mono', 'rounded'] as const;
 const DENSITIES = ['compact', 'comfortable', 'spacious'] as const;
 const BUBBLES = ['rounded', 'flat', 'minimal'] as const;
+const SIZES = ['small', 'default', 'large', 'xlarge'] as const;
+const SIZE_LABEL: Record<typeof SIZES[number], string> = {
+  small: 'Small', default: 'Default', large: 'Large', xlarge: 'Extra Large',
+};
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
