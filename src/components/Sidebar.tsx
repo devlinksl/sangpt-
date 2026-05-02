@@ -158,21 +158,31 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
   const dateGroups = groupByDate(filteredConversations);
 
   const isDragging = dragOffset != null;
-  if (!isOpen && !isDragging) return null;
-
-  // Width of the sidebar in px (must match the w-80 = 320px tailwind class)
+  // Width of the sidebar in px (must match w-80 = 320px tailwind)
   const W = 320;
-  // Translate: when dragging we follow finger; otherwise rest at 0 (open) or off-screen via animation
-  const translateX = isDragging ? dragOffset! : 0;
+
+  // Always render so open/close animates. When closed and not dragging → off-screen.
+  // When dragging → follow finger (dragOffset is signed; closed→opening uses positive offset, open→closing uses negative).
+  let translateX: number;
+  if (isDragging) {
+    translateX = isOpen ? dragOffset! : -W + dragOffset!;
+  } else {
+    translateX = isOpen ? 0 : -W;
+  }
+  const visibility = isOpen || isDragging ? 1 : 0;
   const computedBackdropOpacity =
-    backdropOpacity != null ? backdropOpacity : (isOpen ? 1 : 0);
+    backdropOpacity != null ? backdropOpacity : visibility;
 
   return (
     <>
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/25 backdrop-blur-sm z-40"
-        style={{ opacity: computedBackdropOpacity, transition: isDragging ? 'none' : 'opacity 0.25s ease-out' }}
+        style={{
+          opacity: computedBackdropOpacity,
+          pointerEvents: visibility ? 'auto' : 'none',
+          transition: isDragging ? 'none' : 'opacity 0.25s ease-out',
+        }}
         onClick={onClose}
       />
 
