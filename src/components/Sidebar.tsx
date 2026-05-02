@@ -340,7 +340,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
   );
 };
 
-// ── Swipeable Conversation Item ──
+// ── Conversation Item (long-press only — swipe-to-delete removed) ──
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -353,105 +353,87 @@ interface ConversationItemProps {
   onSelect: () => void;
 }
 
-const SWIPE_THRESHOLD = 80;
-
 const ConversationItem = ({
   conversation,
   editingId,
   editTitle,
   setEditTitle,
   onSubmitEdit,
-  onDelete,
   onLongPress,
   onSelect,
 }: ConversationItemProps) => {
   const isEditing = editingId === conversation.id;
-  const [swipeX, setSwipeX] = useState(0);
-  const [isSwiping, setIsSwiping] = useState(false);
-  const startXRef = useRef(0);
-  const startYRef = useRef(0);
-  const currentXRef = useRef(0);
-  const isHorizontalRef = useRef<boolean | null>(null);
   const longPressTimerRef = useRef<number | null>(null);
   const movedRef = useRef(false);
+  const longPressFiredRef = useRef(false);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    startXRef.current = e.touches[0].clientX;
-    startYRef.current = e.touches[0].clientY;
-    currentXRef.current = 0;
-    isHorizontalRef.current = null;
+  const startLongPress = useCallback(() => {
     movedRef.current = false;
-    setIsSwiping(false);
+    longPressFiredRef.current = false;
     longPressTimerRef.current = window.setTimeout(() => {
-      movedRef.current = true;
-      onLongPress();
-    }, 600);
+      if (!movedRef.current) {
+        longPressFiredRef.current = true;
+        onLongPress();
+      }
+    }, 500);
   }, [onLongPress]);
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    const dx = e.touches[0].clientX - startXRef.current;
-    const dy = e.touches[0].clientY - startYRef.current;
-    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) movedRef.current = true;
-    if (isHorizontalRef.current === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
-      isHorizontalRef.current = Math.abs(dx) > Math.abs(dy);
-      if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
+  const cancelLongPress = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
     }
-    if (!isHorizontalRef.current) return;
-    const clampedX = Math.min(0, Math.max(dx, -140));
-    currentXRef.current = clampedX;
-    setSwipeX(clampedX);
-    setIsSwiping(true);
   }, []);
 
+  const handleTouchMove = useCallback(() => {
+    movedRef.current = true;
+    cancelLongPress();
+  }, [cancelLongPress]);
+
   const handleTouchEnd = useCallback(() => {
-    if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
-    if (!isSwiping && !movedRef.current) { onSelect(); return; }
-    if (isSwiping && currentXRef.current < -SWIPE_THRESHOLD) { setSwipeX(0); onDelete(conversation.id); }
-    else { setSwipeX(0); }
-    setIsSwiping(false);
-  }, [isSwiping, onSelect, onDelete, conversation.id]);
+    cancelLongPress();
+    // Only fire select if no long-press menu was opened
+    if (!longPressFiredRef.current && !movedRef.current && !isEditing) {
+      onSelect();
+    }
+  }, [cancelLongPress, onSelect, isEditing]);
 
-  const handleContextMenu = useCallback((e: React.MouseEvent) => { e.preventDefault(); onLongPress(); }, [onLongPress]);
-
-  useEffect(() => { if (isEditing) setSwipeX(0); }, [isEditing]);
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => { e.preventDefault(); onLongPress(); },
+    [onLongPress]
+  );
 
   return (
-    <div className="relative overflow-hidden rounded-lg">
-      <div className="absolute inset-y-0 right-0 flex items-center justify-end pr-4 bg-destructive rounded-lg w-full">
-        <div className={`flex items-center gap-2 transition-opacity duration-150 ${Math.abs(swipeX) > 30 ? 'opacity-100' : 'opacity-0'}`}>
-          <Trash2 className="h-4 w-4 text-destructive-foreground" />
-          <span className="text-xs font-medium text-destructive-foreground">Delete</span>
-        </div>
-      </div>
-
-      <div
-        className="relative flex items-center gap-3 p-2.5 bg-background rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
-        style={{
-          transform: `translateX(${swipeX}px)`,
-          transition: isSwiping ? 'none' : 'transform 0.25s cubic-bezier(0.2, 0, 0, 1)',
-        }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onContextMenu={handleContextMenu}
-        onClick={(e) => { if (!('ontouchstart' in window)) onSelect(); }}
-      >
-        <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-        <div className="flex-1 min-w-0">
-          {isEditing ? (
-            <input
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') onSubmitEdit(conversation.id); }}
-              onBlur={() => onSubmitEdit(conversation.id)}
-              onClick={(e) => e.stopPropagation()}
-              className="h-7 text-sm w-full bg-background border border-input rounded px-2 outline-none focus:ring-1 focus:ring-ring"
-              autoFocus
-            />
-          ) : (
-            <p className="text-sm truncate">{conversation.title}</p>
-          )}
-        </div>
+    <div
+      className="relative flex items-center gap-3 p-2.5 rounded-lg cursor-pointer hover:bg-accent/50 transition-colors active:bg-accent/70"
+      onTouchStart={startLongPress}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={cancelLongPress}
+      onMouseDown={startLongPress}
+      onMouseUp={cancelLongPress}
+      onMouseLeave={cancelLongPress}
+      onContextMenu={handleContextMenu}
+      onClick={(e) => {
+        // Desktop click (no touch) — touch handles its own select
+        if (!('ontouchstart' in window) && !isEditing) onSelect();
+      }}
+    >
+      <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        {isEditing ? (
+          <input
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') onSubmitEdit(conversation.id); }}
+            onBlur={() => onSubmitEdit(conversation.id)}
+            onClick={(e) => e.stopPropagation()}
+            className="h-7 text-sm w-full bg-background border border-input rounded px-2 outline-none focus:ring-1 focus:ring-ring"
+            autoFocus
+          />
+        ) : (
+          <p className="text-sm truncate">{conversation.title}</p>
+        )}
       </div>
     </div>
   );
