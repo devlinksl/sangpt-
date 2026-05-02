@@ -68,7 +68,7 @@ function groupByDate(conversations: Conversation[]): { label: string; items: Con
   return groups.filter(g => g.items.length > 0);
 }
 
-export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: SidebarProps) => {
+export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, dragOffset, backdropOpacity }: SidebarProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
