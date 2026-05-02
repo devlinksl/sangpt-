@@ -16,10 +16,13 @@ import {
   Search,
   Loader2,
   Trash2,
-  ChevronRight,
   X,
   ArrowLeft,
   Settings,
+  Pencil,
+  Share2,
+  Archive,
+  Pin,
 } from 'lucide-react';
 
 interface SidebarProps {
