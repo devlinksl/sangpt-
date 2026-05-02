@@ -37,6 +37,7 @@ const DEFAULT_PREFS: UserPreferences = {
   font_style: 'sans',
   chat_density: 'comfortable',
   bubble_style: 'rounded',
+  font_size: 'default',
 };
 
 const LOCAL_KEY = 'sangpt-prefs-cache';
