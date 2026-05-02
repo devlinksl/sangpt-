@@ -40,6 +40,14 @@ export function ChatAppearanceSubPage({ onBack }: Props) {
           trailing={cap(preferences.font_style || 'sans')}
           index={0}
         />
+        <SettingsItem
+          icon={<ALargeSmall className="h-[18px] w-[18px]" />}
+          label="Font Size"
+          description="Text size across the app"
+          onClick={cycleSize}
+          trailing={SIZE_LABEL[(preferences.font_size || 'default') as typeof SIZES[number]] || 'Default'}
+          index={1}
+        />
       </SettingsSection>
 
       <SettingsSection title="Layout">
