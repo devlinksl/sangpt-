@@ -16,10 +16,13 @@ import {
   Search,
   Loader2,
   Trash2,
-  ChevronRight,
   X,
   ArrowLeft,
   Settings,
+  Pencil,
+  Share2,
+  Archive,
+  Pin,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -27,6 +30,10 @@ interface SidebarProps {
   onClose: () => void;
   onNewChat?: () => void;
   onConversationSelect?: (id: string) => void;
+  /** When set (during a drag), overrides translateX so the panel follows the finger. */
+  dragOffset?: number | null;
+  /** Backdrop opacity 0..1 during drag. */
+  backdropOpacity?: number;
 }
 
 interface Conversation {
@@ -61,7 +68,7 @@ function groupByDate(conversations: Conversation[]): { label: string; items: Con
   return groups.filter(g => g.items.length > 0);
 }
 
-export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: SidebarProps) => {
+export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, dragOffset, backdropOpacity }: SidebarProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -150,18 +157,48 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
   );
   const dateGroups = groupByDate(filteredConversations);
 
-  if (!isOpen) return null;
+  const isDragging = dragOffset != null;
+  // Width of the sidebar in px (must match w-80 = 320px tailwind)
+  const W = 320;
+
+  // Always render so open/close animates. When closed and not dragging → off-screen.
+  // When dragging → follow finger (dragOffset is signed; closed→opening uses positive offset, open→closing uses negative).
+  let translateX: number;
+  if (isDragging) {
+    translateX = isOpen ? dragOffset! : -W + dragOffset!;
+  } else {
+    translateX = isOpen ? 0 : -W;
+  }
+  const visibility = isOpen || isDragging ? 1 : 0;
+  const computedBackdropOpacity =
+    backdropOpacity != null ? backdropOpacity : visibility;
 
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/25 backdrop-blur-sm z-40" onClick={onClose} />
+      <div
+        className="fixed inset-0 bg-black/25 backdrop-blur-sm z-40"
+        style={{
+          opacity: computedBackdropOpacity,
+          pointerEvents: visibility ? 'auto' : 'none',
+          transition: isDragging ? 'none' : 'opacity 0.25s ease-out',
+        }}
+        onClick={onClose}
+      />
 
       {/* Sidebar */}
       <div
-        className={`fixed left-0 top-0 h-full bg-background/95 backdrop-blur-2xl border-r border-border/30 z-50 transform transition-all duration-300 ease-out animate-slide-in-left shadow-2xl flex flex-col ${
+        className={`fixed left-0 top-0 h-full bg-background/95 backdrop-blur-2xl border-r border-border/30 z-50 shadow-2xl flex flex-col ${
           isSearchExpanded ? 'w-full' : 'w-80'
         }`}
+        style={{
+          transform: `translateX(${translateX}px)`,
+          transition: isDragging
+            ? 'none'
+            : 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)',
+          willChange: 'transform',
+          width: isSearchExpanded ? undefined : W,
+        }}
       >
         {/* ─── TOP: Search ─── */}
         <div className="px-4 pt-4 pb-2">
@@ -281,44 +318,63 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
         </div>
       )}
 
-      {/* ─── Context Menu (Long Press) ─── */}
-      {contextMenuId && (
-        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/30 backdrop-blur-sm" onClick={() => setContextMenuId(null)}>
-          <div className="bg-background rounded-t-2xl w-full max-w-lg pb-safe shadow-2xl border-t border-border/30 animate-slide-in-bottom" onClick={(e) => e.stopPropagation()}>
-            <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted my-3" />
-            <div className="px-2 pb-4">
-              <button
-                onClick={() => {
-                  const conv = conversations.find(c => c.id === contextMenuId);
-                  if (conv) { setEditingId(conv.id); setEditTitle(conv.title); }
-                  setContextMenuId(null);
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-left"
-              >
-                <span className="text-sm font-medium">Rename</span>
-              </button>
-              <button
-                onClick={() => { setDeleteConfirmId(contextMenuId); setContextMenuId(null); }}
-                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-left text-destructive"
-              >
-                <Trash2 className="h-4 w-4" />
-                <span className="text-sm font-medium">Delete</span>
-              </button>
-              <button
-                onClick={() => setContextMenuId(null)}
-                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-left text-muted-foreground"
-              >
-                <span className="text-sm font-medium">Cancel</span>
-              </button>
+      {contextMenuId && (() => {
+        const conv = conversations.find(c => c.id === contextMenuId);
+        const handleShare = async () => {
+          setContextMenuId(null);
+          if (!conv) return;
+          const url = `${window.location.origin}/?c=${conv.id}`;
+          try {
+            if (navigator.share) await navigator.share({ title: conv.title, url });
+            else await navigator.clipboard.writeText(url);
+          } catch {}
+        };
+        const handleArchive = () => {
+          setContextMenuId(null);
+          // Soft-hide locally; full archive backend can extend later
+          setConversations(prev => prev.filter(c => c.id !== contextMenuId));
+        };
+        const handlePin = () => { setContextMenuId(null); };
+
+        const items = [
+          { icon: Pencil, label: 'Rename', onClick: () => { if (conv) { setEditingId(conv.id); setEditTitle(conv.title); } setContextMenuId(null); } },
+          { icon: Share2, label: 'Share', onClick: handleShare },
+          { icon: Pin,    label: 'Pin / Unpin', onClick: handlePin },
+          { icon: Archive,label: 'Archive', onClick: handleArchive },
+          { icon: Trash2, label: 'Delete', onClick: () => { setDeleteConfirmId(contextMenuId); setContextMenuId(null); }, destructive: true },
+        ];
+
+        return (
+          <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/30 backdrop-blur-sm" onClick={() => setContextMenuId(null)}>
+            <div className="bg-background rounded-t-2xl w-full max-w-lg pb-safe shadow-2xl border-t border-border/30 animate-slide-in-bottom" onClick={(e) => e.stopPropagation()}>
+              <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted my-3" />
+              <div className="px-2 pb-4">
+                {items.map((it) => (
+                  <button
+                    key={it.label}
+                    onClick={it.onClick}
+                    className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-left ${it.destructive ? 'text-destructive' : ''}`}
+                  >
+                    <it.icon className="h-4 w-4" />
+                    <span className="text-sm font-medium">{it.label}</span>
+                  </button>
+                ))}
+                <button
+                  onClick={() => setContextMenuId(null)}
+                  className="w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-muted-foreground"
+                >
+                  <span className="text-sm font-medium">Cancel</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </>
   );
 };
 
-// ── Swipeable Conversation Item ──
+// ── Conversation Item (long-press only — swipe-to-delete removed) ──
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -331,105 +387,87 @@ interface ConversationItemProps {
   onSelect: () => void;
 }
 
-const SWIPE_THRESHOLD = 80;
-
 const ConversationItem = ({
   conversation,
   editingId,
   editTitle,
   setEditTitle,
   onSubmitEdit,
-  onDelete,
   onLongPress,
   onSelect,
 }: ConversationItemProps) => {
   const isEditing = editingId === conversation.id;
-  const [swipeX, setSwipeX] = useState(0);
-  const [isSwiping, setIsSwiping] = useState(false);
-  const startXRef = useRef(0);
-  const startYRef = useRef(0);
-  const currentXRef = useRef(0);
-  const isHorizontalRef = useRef<boolean | null>(null);
   const longPressTimerRef = useRef<number | null>(null);
   const movedRef = useRef(false);
+  const longPressFiredRef = useRef(false);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    startXRef.current = e.touches[0].clientX;
-    startYRef.current = e.touches[0].clientY;
-    currentXRef.current = 0;
-    isHorizontalRef.current = null;
+  const startLongPress = useCallback(() => {
     movedRef.current = false;
-    setIsSwiping(false);
+    longPressFiredRef.current = false;
     longPressTimerRef.current = window.setTimeout(() => {
-      movedRef.current = true;
-      onLongPress();
-    }, 600);
+      if (!movedRef.current) {
+        longPressFiredRef.current = true;
+        onLongPress();
+      }
+    }, 500);
   }, [onLongPress]);
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    const dx = e.touches[0].clientX - startXRef.current;
-    const dy = e.touches[0].clientY - startYRef.current;
-    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) movedRef.current = true;
-    if (isHorizontalRef.current === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
-      isHorizontalRef.current = Math.abs(dx) > Math.abs(dy);
-      if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
+  const cancelLongPress = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
     }
-    if (!isHorizontalRef.current) return;
-    const clampedX = Math.min(0, Math.max(dx, -140));
-    currentXRef.current = clampedX;
-    setSwipeX(clampedX);
-    setIsSwiping(true);
   }, []);
 
+  const handleTouchMove = useCallback(() => {
+    movedRef.current = true;
+    cancelLongPress();
+  }, [cancelLongPress]);
+
   const handleTouchEnd = useCallback(() => {
-    if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
-    if (!isSwiping && !movedRef.current) { onSelect(); return; }
-    if (isSwiping && currentXRef.current < -SWIPE_THRESHOLD) { setSwipeX(0); onDelete(conversation.id); }
-    else { setSwipeX(0); }
-    setIsSwiping(false);
-  }, [isSwiping, onSelect, onDelete, conversation.id]);
+    cancelLongPress();
+    // Only fire select if no long-press menu was opened
+    if (!longPressFiredRef.current && !movedRef.current && !isEditing) {
+      onSelect();
+    }
+  }, [cancelLongPress, onSelect, isEditing]);
 
-  const handleContextMenu = useCallback((e: React.MouseEvent) => { e.preventDefault(); onLongPress(); }, [onLongPress]);
-
-  useEffect(() => { if (isEditing) setSwipeX(0); }, [isEditing]);
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => { e.preventDefault(); onLongPress(); },
+    [onLongPress]
+  );
 
   return (
-    <div className="relative overflow-hidden rounded-lg">
-      <div className="absolute inset-y-0 right-0 flex items-center justify-end pr-4 bg-destructive rounded-lg w-full">
-        <div className={`flex items-center gap-2 transition-opacity duration-150 ${Math.abs(swipeX) > 30 ? 'opacity-100' : 'opacity-0'}`}>
-          <Trash2 className="h-4 w-4 text-destructive-foreground" />
-          <span className="text-xs font-medium text-destructive-foreground">Delete</span>
-        </div>
-      </div>
-
-      <div
-        className="relative flex items-center gap-3 p-2.5 bg-background rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
-        style={{
-          transform: `translateX(${swipeX}px)`,
-          transition: isSwiping ? 'none' : 'transform 0.25s cubic-bezier(0.2, 0, 0, 1)',
-        }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onContextMenu={handleContextMenu}
-        onClick={(e) => { if (!('ontouchstart' in window)) onSelect(); }}
-      >
-        <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-        <div className="flex-1 min-w-0">
-          {isEditing ? (
-            <input
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') onSubmitEdit(conversation.id); }}
-              onBlur={() => onSubmitEdit(conversation.id)}
-              onClick={(e) => e.stopPropagation()}
-              className="h-7 text-sm w-full bg-background border border-input rounded px-2 outline-none focus:ring-1 focus:ring-ring"
-              autoFocus
-            />
-          ) : (
-            <p className="text-sm truncate">{conversation.title}</p>
-          )}
-        </div>
+    <div
+      className="relative flex items-center gap-3 p-2.5 rounded-lg cursor-pointer hover:bg-accent/50 transition-colors active:bg-accent/70"
+      onTouchStart={startLongPress}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={cancelLongPress}
+      onMouseDown={startLongPress}
+      onMouseUp={cancelLongPress}
+      onMouseLeave={cancelLongPress}
+      onContextMenu={handleContextMenu}
+      onClick={(e) => {
+        // Desktop click (no touch) — touch handles its own select
+        if (!('ontouchstart' in window) && !isEditing) onSelect();
+      }}
+    >
+      <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        {isEditing ? (
+          <input
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') onSubmitEdit(conversation.id); }}
+            onBlur={() => onSubmitEdit(conversation.id)}
+            onClick={(e) => e.stopPropagation()}
+            className="h-7 text-sm w-full bg-background border border-input rounded px-2 outline-none focus:ring-1 focus:ring-ring"
+            autoFocus
+          />
+        ) : (
+          <p className="text-sm truncate">{conversation.title}</p>
+        )}
       </div>
     </div>
   );

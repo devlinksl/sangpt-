@@ -18,6 +18,7 @@ export interface UserPreferences {
   font_style: string;
   chat_density: string;
   bubble_style: string;
+  font_size: string;
 }
 
 const DEFAULT_PREFS: UserPreferences = {
@@ -36,6 +37,7 @@ const DEFAULT_PREFS: UserPreferences = {
   font_style: 'sans',
   chat_density: 'comfortable',
   bubble_style: 'rounded',
+  font_size: 'default',
 };
 
 const LOCAL_KEY = 'sangpt-prefs-cache';
@@ -94,6 +96,7 @@ export function useUserPreferences() {
             font_style: (data as any).font_style ?? DEFAULT_PREFS.font_style,
             chat_density: (data as any).chat_density ?? DEFAULT_PREFS.chat_density,
             bubble_style: (data as any).bubble_style ?? DEFAULT_PREFS.bubble_style,
+            font_size: (data as any).font_size ?? DEFAULT_PREFS.font_size,
           };
           setPreferences(next);
           writeLocalPrefs(next);

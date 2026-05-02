@@ -187,20 +187,20 @@ body, html {
 .prose-ai > *:last-child { margin-bottom: 0; }
 .prose-ai p { margin-bottom: 0.75em; }
 
-/* Typing indicator dots */
+/* Subtle pulsing single-dot loading indicator */
 .typing-dot {
   display: inline-block;
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background-color: hsl(var(--muted-foreground));
-  animation: typing-bounce 1.2s ease-in-out infinite;
+  background-color: hsl(var(--foreground));
+  animation: typing-pulse 1.4s ease-in-out infinite;
   will-change: transform, opacity;
 }
 
-@keyframes typing-bounce {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-  30% { transform: translateY(-6px); opacity: 1; }
+@keyframes typing-pulse {
+  0%, 100% { transform: scale(0.85); opacity: 0.35; }
+  50%      { transform: scale(1);    opacity: 1;    }
 }
 
 /* GPU-accelerated smooth animations */
@@ -342,4 +342,13 @@ html[data-font-style="rounded"] { --chat-font-family: 'Nunito', ui-rounded, syst
   padding: var(--chat-msg-padding-y) var(--chat-msg-padding-x);
   transition: border-radius 0.2s ease, padding 0.2s ease;
 }
+
+/* ─── Font size accessibility scale ─── */
+:root { --app-font-scale: 1; }
+html[data-font-size="small"]   { --app-font-scale: 0.9; }
+html[data-font-size="default"] { --app-font-scale: 1;   }
+html[data-font-size="large"]   { --app-font-scale: 1.125; }
+html[data-font-size="xlarge"]  { --app-font-scale: 1.25;  }
+
+html { font-size: calc(16px * var(--app-font-scale)); }
 

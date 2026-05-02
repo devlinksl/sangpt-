@@ -240,6 +240,7 @@ export type Database = {
           created_at: string
           custom_instructions: string | null
           data_mode: string | null
+          font_size: string
           font_style: string | null
           id: string
           new_chat_auto: boolean | null
@@ -261,6 +262,7 @@ export type Database = {
           created_at?: string
           custom_instructions?: string | null
           data_mode?: string | null
+          font_size?: string
           font_style?: string | null
           id?: string
           new_chat_auto?: boolean | null
@@ -282,6 +284,7 @@ export type Database = {
           created_at?: string
           custom_instructions?: string | null
           data_mode?: string | null
+          font_size?: string
           font_style?: string | null
           id?: string
           new_chat_auto?: boolean | null
