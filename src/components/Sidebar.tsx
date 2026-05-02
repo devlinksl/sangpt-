@@ -30,6 +30,10 @@ interface SidebarProps {
   onClose: () => void;
   onNewChat?: () => void;
   onConversationSelect?: (id: string) => void;
+  /** When set (during a drag), overrides translateX so the panel follows the finger. */
+  dragOffset?: number | null;
+  /** Backdrop opacity 0..1 during drag. */
+  backdropOpacity?: number;
 }
 
 interface Conversation {
