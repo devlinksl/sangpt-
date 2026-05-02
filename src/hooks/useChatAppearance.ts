@@ -13,5 +13,6 @@ export function useChatAppearance() {
     root.setAttribute('data-font-style', preferences.font_style || 'sans');
     root.setAttribute('data-chat-density', preferences.chat_density || 'comfortable');
     root.setAttribute('data-bubble-style', preferences.bubble_style || 'rounded');
-  }, [preferences.font_style, preferences.chat_density, preferences.bubble_style]);
+    root.setAttribute('data-font-size', preferences.font_size || 'default');
+  }, [preferences.font_style, preferences.chat_density, preferences.bubble_style, preferences.font_size]);
 }
