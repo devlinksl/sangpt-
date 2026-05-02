@@ -157,18 +157,38 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
   );
   const dateGroups = groupByDate(filteredConversations);
 
-  if (!isOpen) return null;
+  const isDragging = dragOffset != null;
+  if (!isOpen && !isDragging) return null;
+
+  // Width of the sidebar in px (must match the w-80 = 320px tailwind class)
+  const W = 320;
+  // Translate: when dragging we follow finger; otherwise rest at 0 (open) or off-screen via animation
+  const translateX = isDragging ? dragOffset! : 0;
+  const computedBackdropOpacity =
+    backdropOpacity != null ? backdropOpacity : (isOpen ? 1 : 0);
 
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/25 backdrop-blur-sm z-40" onClick={onClose} />
+      <div
+        className="fixed inset-0 bg-black/25 backdrop-blur-sm z-40"
+        style={{ opacity: computedBackdropOpacity, transition: isDragging ? 'none' : 'opacity 0.25s ease-out' }}
+        onClick={onClose}
+      />
 
       {/* Sidebar */}
       <div
-        className={`fixed left-0 top-0 h-full bg-background/95 backdrop-blur-2xl border-r border-border/30 z-50 transform transition-all duration-300 ease-out animate-slide-in-left shadow-2xl flex flex-col ${
+        className={`fixed left-0 top-0 h-full bg-background/95 backdrop-blur-2xl border-r border-border/30 z-50 shadow-2xl flex flex-col ${
           isSearchExpanded ? 'w-full' : 'w-80'
         }`}
+        style={{
+          transform: `translateX(${translateX}px)`,
+          transition: isDragging
+            ? 'none'
+            : 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)',
+          willChange: 'transform',
+          width: isSearchExpanded ? undefined : W,
+        }}
       >
         {/* ─── TOP: Search ─── */}
         <div className="px-4 pt-4 pb-2">
