@@ -30,8 +30,323 @@ import {
   Flag,
   Copy,
   X,
+  WifiOff,
+  Sparkles,
 } from 'lucide-react';
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const styles = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500&display=swap');
+
+  .san-root {
+    font-family: 'Inter', sans-serif;
+  }
+
+  .san-header {
+    background: hsl(var(--background) / 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid hsl(var(--border) / 0.2);
+  }
+
+  .san-logo-pill {
+    font-family: 'Sora', sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.6));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .san-logo-pill-wrapper {
+    background: hsl(var(--primary) / 0.08);
+    border: 1px solid hsl(var(--primary) / 0.2);
+    border-radius: 999px;
+    padding: 6px 16px;
+    transition: all 0.2s ease;
+  }
+
+  .san-logo-pill-wrapper:hover {
+    background: hsl(var(--primary) / 0.14);
+    border-color: hsl(var(--primary) / 0.35);
+  }
+
+  /* User message bubble */
+  .san-bubble-user {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8));
+    color: hsl(var(--primary-foreground));
+    border-radius: 18px 18px 4px 18px;
+    padding: 12px 16px;
+    max-width: 80%;
+    box-shadow: 0 4px 20px hsl(var(--primary) / 0.25);
+    position: relative;
+    user-select: none;
+    transition: box-shadow 0.2s ease;
+  }
+
+  .san-bubble-user:active {
+    box-shadow: 0 2px 10px hsl(var(--primary) / 0.3);
+  }
+
+  /* AI message area */
+  .san-ai-wrap {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .san-ai-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.15), hsl(var(--primary) / 0.05));
+    border: 1px solid hsl(var(--primary) / 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+    position: relative;
+  }
+
+  .san-ai-avatar-dot {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: hsl(var(--primary));
+    border: 2px solid hsl(var(--background));
+    animation: san-pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes san-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.75); }
+  }
+
+  /* Message stack spacing */
+  .san-messages-stack > * + * {
+    margin-top: 20px;
+  }
+
+  /* Scroll button */
+  .san-scroll-btn {
+    position: fixed;
+    bottom: 96px;
+    right: 20px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 24px hsl(var(--primary) / 0.4);
+    cursor: pointer;
+    z-index: 50;
+    animation: san-bounce-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .san-scroll-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 28px hsl(var(--primary) / 0.5);
+  }
+
+  @keyframes san-bounce-in {
+    from { opacity: 0; transform: scale(0.6) translateY(10px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  /* Offline banner */
+  .san-offline-banner {
+    background: hsl(var(--destructive) / 0.1);
+    border-bottom: 1px solid hsl(var(--destructive) / 0.25);
+    color: hsl(var(--destructive));
+    font-size: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 16px;
+    animation: san-slide-down 0.25s ease;
+  }
+
+  @keyframes san-slide-down {
+    from { opacity: 0; transform: translateY(-100%); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Glassmorphism modal backdrop */
+  .san-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .san-modal-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  .san-modal-card {
+    background: hsl(var(--background) / 0.92);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid hsl(var(--border) / 0.35);
+    border-radius: 20px;
+    padding: 24px;
+    margin: 16px;
+    max-width: 360px;
+    width: 100%;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+    animation: san-scale-in 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes san-scale-in {
+    from { opacity: 0; transform: scale(0.92); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  .san-modal-sheet {
+    background: hsl(var(--background) / 0.95);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid hsl(var(--border) / 0.25);
+    border-top-left-radius: 22px;
+    border-top-right-radius: 22px;
+    width: 100%;
+    max-width: 480px;
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+    box-shadow: 0 -12px 40px rgba(0,0,0,0.18);
+    animation: san-slide-up 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes san-slide-up {
+    from { opacity: 0; transform: translateY(60px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Overflow dropdown */
+  .san-overflow-dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    width: 210px;
+    background: hsl(var(--background) / 0.96);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid hsl(var(--border) / 0.3);
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+    z-index: 50;
+    overflow: hidden;
+    animation: san-scale-in 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-origin: top right;
+  }
+
+  /* Input area gradient */
+  .san-input-area {
+    background: linear-gradient(to top, hsl(var(--background)) 60%, hsl(var(--background) / 0));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* Offline empty state icon */
+  .san-offline-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: hsl(var(--accent) / 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+
+  /* Edited badge */
+  .san-edited-badge {
+    font-size: 10px;
+    opacity: 0.65;
+    margin-top: 4px;
+    font-style: italic;
+  }
+
+  /* File chip */
+  .san-file-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: hsl(var(--accent) / 0.8);
+    backdrop-filter: blur(8px);
+    padding: 6px 12px;
+    border-radius: 10px;
+    font-size: 12px;
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+
+  /* Message attachment in bubble */
+  .san-bubble-attachment {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.12);
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    margin-top: 8px;
+  }
+
+  /* Smooth fade in for each message */
+  .san-msg-appear {
+    animation: san-fade-up 0.25s ease;
+  }
+
+  @keyframes san-fade-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Icon button */
+  .san-icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    color: hsl(var(--foreground));
+  }
+
+  .san-icon-btn:hover {
+    background: hsl(var(--accent) / 0.7);
+  }
+`;
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -48,6 +363,7 @@ interface ChatInterfaceProps {
   onConversationChange?: (id: string | null) => void;
 }
 
+// ─── Main Component ───────────────────────────────────────────────────────────
 export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationChange }: ChatInterfaceProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -90,7 +406,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
   }, []);
 
-  // Auto-scroll: scroll to bottom during streaming
   const scrollToBottom = useCallback((smooth = true) => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
@@ -99,7 +414,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     }
   }, []);
 
-  // Auto-scroll on new content during streaming
   useEffect(() => {
     if (!userScrolledRef.current) scrollToBottom();
   }, [messages, isTyping, isLoading, scrollToBottom]);
@@ -117,7 +431,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     return () => container.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Load conversation — instant from cache, background sync
   useEffect(() => {
     if (conversationId && conversationId !== currentConversationId) {
       loadConversation(conversationId);
@@ -127,7 +440,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const loadConversation = async (id: string) => {
     try {
       setOfflineUnavailable(false);
-      // Instant load from cache
       const cached = await getCachedMessages(id);
       if (cached.length > 0) {
         setMessages(cached.map(msg => ({
@@ -140,7 +452,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           edited_at: (msg as any).edited_at ?? null,
         })));
       } else if (!navigator.onLine) {
-        // No cache + offline → show empty state
         setMessages([]);
         setOfflineUnavailable(true);
       }
@@ -149,7 +460,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
       if (!navigator.onLine) return;
 
-      // Background sync from server
       const [{ data: msgData }, { data: convData }] = await Promise.all([
         supabase.from('messages').select('*').eq('conversation_id', id).order('created_at', { ascending: true }),
         supabase.from('conversations').select('title').eq('id', id).single(),
@@ -198,8 +508,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const createNewConversation = async (firstMessage?: string): Promise<string | null> => {
     if (!user) return null;
     try {
-      // Optimistic: create row immediately with a placeholder title.
-      // The real AI-generated title is filled in afterwards in the background.
       const placeholder = firstMessage
         ? firstMessage.substring(0, 40).trim() || 'New conversation'
         : 'New conversation';
@@ -211,7 +519,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
       if (error) throw error;
       setChatTitle(placeholder);
 
-      // Background: generate a nicer title and update the row + UI.
       if (firstMessage) {
         generateConversationTitle(firstMessage).then(async (title) => {
           if (!title || title === placeholder) return;
@@ -401,7 +708,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         setIsLoading(false);
       }
 
-      // Save AI response
       if (aiResponse) {
         if (imagineMatch) {
           const assistantMessage: Message = {
@@ -447,7 +753,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     if (lastUserMessage) sendMessage(lastUserMessage.content, true);
   };
 
-  // ─── Message context-menu (long press own message) ───
   const openMessageMenu = (id: string) => setMessageMenuId(id);
 
   const handleCopyMessage = async () => {
@@ -461,7 +766,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     setMessageMenuId(null);
     if (!id) return;
     setMessages(prev => prev.filter(m => m.id !== id));
-    // Note: messages table currently disallows deletes via RLS; removed locally only.
   };
 
   const handleStartEdit = () => {
@@ -484,7 +788,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     const newContent = editingDraft.trim();
     if (!id || !newContent) { cancelEdit(); return; }
 
-    // Find message + cut subsequent messages
     const idx = messages.findIndex(m => m.id === id);
     if (idx === -1) { cancelEdit(); return; }
 
@@ -496,7 +799,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     setEditingMessageId(null);
     setEditingDraft('');
 
-    // Persist edit on server (best-effort) for non-temp messages
     if (!id.startsWith('temp-') && currentConversationId) {
       supabase
         .from('messages')
@@ -505,11 +807,9 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         .then(({ error }) => { if (error) console.error('Edit save failed:', error); });
     }
 
-    // Regenerate AI reply from edited point
     sendMessage(newContent, true);
   };
 
-  // ─── 3-dot menu actions ───
   const handleRename = () => {
     setShowOverflowMenu(false);
     setRenameValue(chatTitle);
@@ -556,312 +856,351 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
   const handleArchiveChat = async () => {
     setShowOverflowMenu(false);
-    // Archive = soft delete for now (remove from view)
     if (!currentConversationId) return;
     handleNewChat();
   };
 
   const handleReport = () => {
     setShowOverflowMenu(false);
-    // Could open a report form
   };
 
   const overflowMenuItems = [
-    { icon: Pencil, label: 'Rename', action: handleRename },
-    { icon: Share2, label: 'Share', action: handleShareChat },
-    { icon: Copy, label: 'Copy Conversation', action: handleCopyConversation },
-    { icon: Archive, label: 'Archive', action: handleArchiveChat },
-    { icon: Pin, label: 'Pin Chat', action: () => setShowOverflowMenu(false) },
-    { icon: Trash2, label: 'Delete', action: handleDeleteChat, destructive: true },
-    { icon: Flag, label: 'Report', action: handleReport },
+    { icon: Pencil,  label: 'Rename',            action: handleRename },
+    { icon: Share2,  label: 'Share',              action: handleShareChat },
+    { icon: Copy,    label: 'Copy Conversation',  action: handleCopyConversation },
+    { icon: Archive, label: 'Archive',            action: handleArchiveChat },
+    { icon: Pin,     label: 'Pin Chat',           action: () => setShowOverflowMenu(false) },
+    { icon: Trash2,  label: 'Delete',             action: handleDeleteChat, destructive: true },
+    { icon: Flag,    label: 'Report',             action: handleReport },
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-background">
-      {/* ─── Header ─── */}
-      <header className="flex items-center justify-between px-2 py-2 bg-background sticky top-0 z-10">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onOpenSidebar}
-          className="h-10 w-10 rounded-full bg-accent/60 hover:bg-accent"
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
+    <>
+      <style>{styles}</style>
 
-        <button
-          onClick={() => { if (currentConversationId && chatTitle) setShowTitleModal(true); }}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent/60 hover:bg-accent transition-colors max-w-[45%]"
-        >
-          <span className="text-sm font-semibold truncate">
-            {currentConversationId ? (chatTitle || 'SanGPT') : 'SanGPT'}
-          </span>
-        </button>
+      <div className="san-root flex flex-col h-screen bg-background">
 
-        <div className="flex items-center gap-0.5">
-          {user ? (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleNewChat}
-                className="h-10 w-10 rounded-full hover:bg-accent"
-              >
-                <Edit3 className="h-[18px] w-[18px]" />
-              </Button>
-              {currentConversationId && (
-                <div className="relative">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setShowOverflowMenu(!showOverflowMenu)}
-                    className="h-10 w-10 rounded-full hover:bg-accent"
-                  >
-                    <MoreVertical className="h-[18px] w-[18px]" />
-                  </Button>
-
-                  {showOverflowMenu && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setShowOverflowMenu(false)} />
-                      <div className="absolute right-0 top-full mt-1 w-52 bg-background/95 backdrop-blur-2xl rounded-xl border border-border/30 shadow-2xl z-50 overflow-hidden animate-scale-in">
-                        {overflowMenuItems.map((item) => (
-                          <button
-                            key={item.label}
-                            onClick={item.action}
-                            className={`w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent/50 transition-colors ${
-                              item.destructive ? 'text-destructive' : 'text-foreground'
-                            }`}
-                          >
-                            <item.icon className="h-4 w-4" />
-                            {item.label}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-            </>
-          ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowAuthModal(true)}
-              className="hover:bg-accent text-sm font-medium rounded-full px-4"
-            >
-              Sign in
-            </Button>
-          )}
-        </div>
-      </header>
-
-      {/* ─── Messages ─── */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto relative overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
-        {offlineUnavailable ? (
-          <div className="h-full flex flex-col items-center justify-center px-6 text-center">
-            <div className="h-14 w-14 rounded-full bg-accent/60 flex items-center justify-center mb-4">
-              <X className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <p className="text-base font-medium">Chat not available offline</p>
-            <p className="text-sm text-muted-foreground mt-1 max-w-xs">
-              This conversation hasn't been cached on this device. Reconnect to load it.
-            </p>
+        {/* ─── Offline Banner ─── */}
+        {!isOnline && (
+          <div className="san-offline-banner">
+            <WifiOff size={13} />
+            <span>You're offline — messages may not be sent</span>
           </div>
-        ) : messages.length === 0 ? (
-          <HomeScreen
-            onPromptSelect={(text) => setInput(text)}
-            onConversationSelect={(id) => loadConversation(id)}
-            user={user}
-          />
-        ) : (
-          <div className="max-w-3xl mx-auto px-4 py-6 messages-stack">
-            {messages.map((message) => (
-              <div key={message.id} className="animate-fade-in">
-                {message.role === 'user' ? (
-                  <UserBubble
-                    message={message}
-                    isEditing={editingMessageId === message.id}
-                    editingDraft={editingDraft}
-                    setEditingDraft={setEditingDraft}
-                    onSubmitEdit={submitEdit}
-                    onCancelEdit={cancelEdit}
-                    onLongPress={() => openMessageMenu(message.id)}
-                  />
-                ) : (
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1 space-y-2 prose-ai">
-                      <StreamingMarkdown
-                        content={message.content}
-                        isStreaming={streamingMessageId === message.id}
-                      />
-                      {streamingMessageId !== message.id && (
-                        <MessageActions
-                          messageId={message.id}
-                          content={message.content}
-                          role={message.role}
-                          rating={message.rating}
-                          onRegenerate={handleRegenerate}
-                          onRatingChange={(r) => setMessages(p => p.map(m => m.id === message.id ? { ...m, rating: r } : m))}
-                        />
-                      )}
-                    </div>
+        )}
+
+        {/* ─── Header ─── */}
+        <header className="san-header flex items-center justify-between px-3 py-2 sticky top-0 z-10">
+          <button
+            className="san-icon-btn"
+            onClick={onOpenSidebar}
+          >
+            <Menu size={20} />
+          </button>
+
+          {/* Logo / Title pill */}
+          <button
+            onClick={() => { if (currentConversationId && chatTitle) setShowTitleModal(true); }}
+            className="san-logo-pill-wrapper flex items-center gap-1.5 max-w-[45%]"
+          >
+            {!currentConversationId && (
+              <Sparkles size={13} style={{ color: 'hsl(var(--primary))' }} />
+            )}
+            <span className="san-logo-pill text-sm truncate">
+              {currentConversationId ? (chatTitle || 'SanGPT') : 'SanGPT'}
+            </span>
+          </button>
+
+          <div className="flex items-center gap-0.5">
+            {user ? (
+              <>
+                <button className="san-icon-btn" onClick={handleNewChat}>
+                  <Edit3 size={18} />
+                </button>
+                {currentConversationId && (
+                  <div className="relative">
+                    <button
+                      className="san-icon-btn"
+                      onClick={() => setShowOverflowMenu(!showOverflowMenu)}
+                    >
+                      <MoreVertical size={18} />
+                    </button>
+
+                    {showOverflowMenu && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowOverflowMenu(false)} />
+                        <div className="san-overflow-dropdown">
+                          {overflowMenuItems.map((item) => (
+                            <button
+                              key={item.label}
+                              onClick={item.action}
+                              className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-accent/50 ${
+                                item.destructive ? 'text-destructive' : 'text-foreground'
+                              }`}
+                            >
+                              <item.icon size={15} />
+                              {item.label}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
+              </>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAuthModal(true)}
+                className="hover:bg-accent text-sm font-medium rounded-full px-4"
+              >
+                Sign in
+              </Button>
+            )}
+          </div>
+        </header>
+
+        {/* ─── Messages ─── */}
+        <div
+          ref={messagesContainerRef}
+          className="flex-1 overflow-y-auto relative overscroll-contain"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          {offlineUnavailable ? (
+            <div className="h-full flex flex-col items-center justify-center px-6 text-center">
+              <div className="san-offline-icon">
+                <WifiOff size={26} style={{ color: 'hsl(var(--muted-foreground))' }} />
               </div>
-            ))}
-
-            {isLoading && !streamingMessageId && <TypingIndicator />}
-            <div ref={messagesEndRef} />
-          </div>
-        )}
-
-        {showScrollButton && (
-          <Button
-            onClick={() => scrollToBottom()}
-            className="fixed bottom-24 right-6 rounded-full shadow-xl z-50 h-11 w-11 bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-110 transition-all duration-300 animate-fade-in border-0"
-            size="icon"
-          >
-            <ArrowDown className="h-5 w-5" />
-          </Button>
-        )}
-      </div>
-
-      {/* ─── Input ─── */}
-      <div className="sticky bottom-0 pb-4 pt-2 bg-gradient-to-t from-background/90 via-background/70 to-transparent backdrop-blur-xl">
-        {isRecording && (
-          <div className="mb-3 flex items-center justify-center">
-            <WaveformAnimation />
-          </div>
-        )}
-
-        {attachedFiles.length > 0 && (
-          <div className="max-w-3xl mx-auto px-3 mb-2">
-            <div className="flex flex-wrap gap-2">
-              {attachedFiles.map((file, idx) => (
-                <div key={idx} className="flex items-center gap-2 bg-accent/80 backdrop-blur-sm px-3 py-1.5 rounded-lg text-sm border border-border/50">
-                  {file.type.startsWith('image/') ? (
-                    <img src={URL.createObjectURL(file)} alt={file.name} className="h-8 w-8 object-cover rounded" />
+              <p className="text-base font-semibold">Chat not available offline</p>
+              <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+                This conversation hasn't been cached on this device. Reconnect to load it.
+              </p>
+            </div>
+          ) : messages.length === 0 ? (
+            <HomeScreen
+              onPromptSelect={(text) => setInput(text)}
+              onConversationSelect={(id) => loadConversation(id)}
+              user={user}
+            />
+          ) : (
+            <div className="max-w-3xl mx-auto px-4 py-6 san-messages-stack">
+              {messages.map((message) => (
+                <div key={message.id} className="san-msg-appear">
+                  {message.role === 'user' ? (
+                    <UserBubble
+                      message={message}
+                      isEditing={editingMessageId === message.id}
+                      editingDraft={editingDraft}
+                      setEditingDraft={setEditingDraft}
+                      onSubmitEdit={submitEdit}
+                      onCancelEdit={cancelEdit}
+                      onLongPress={() => openMessageMenu(message.id)}
+                    />
                   ) : (
-                    <Paperclip className="h-3 w-3" />
+                    <div className="san-ai-wrap">
+                      {/* AI Avatar */}
+                      <div className="san-ai-avatar">
+                        <Sparkles size={14} style={{ color: 'hsl(var(--primary))' }} />
+                        {streamingMessageId === message.id && (
+                          <div className="san-ai-avatar-dot" />
+                        )}
+                      </div>
+
+                      <div className="flex-1 space-y-2 prose-ai min-w-0">
+                        <StreamingMarkdown
+                          content={message.content}
+                          isStreaming={streamingMessageId === message.id}
+                        />
+                        {streamingMessageId !== message.id && (
+                          <MessageActions
+                            messageId={message.id}
+                            content={message.content}
+                            role={message.role}
+                            rating={message.rating}
+                            onRegenerate={handleRegenerate}
+                            onRatingChange={(r) => setMessages(p => p.map(m => m.id === message.id ? { ...m, rating: r } : m))}
+                          />
+                        )}
+                      </div>
+                    </div>
                   )}
-                  <span className="truncate max-w-[120px] text-xs">{file.name}</span>
-                  <button
-                    onClick={() => setAttachedFiles(prev => prev.filter((_, i) => i !== idx))}
-                    className="text-destructive hover:text-destructive/80 text-xs font-medium"
-                  >
-                    ✕
-                  </button>
                 </div>
               ))}
+
+              {isLoading && !streamingMessageId && <TypingIndicator />}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+
+          {/* Scroll-to-bottom button */}
+          {showScrollButton && (
+            <button className="san-scroll-btn" onClick={() => scrollToBottom()}>
+              <ArrowDown size={18} />
+            </button>
+          )}
+        </div>
+
+        {/* ─── Input Area ─── */}
+        <div className="san-input-area sticky bottom-0 pb-4 pt-2">
+          {isRecording && (
+            <div className="mb-3 flex items-center justify-center">
+              <WaveformAnimation />
+            </div>
+          )}
+
+          {attachedFiles.length > 0 && (
+            <div className="max-w-3xl mx-auto px-3 mb-2">
+              <div className="flex flex-wrap gap-2">
+                {attachedFiles.map((file, idx) => (
+                  <div key={idx} className="san-file-chip">
+                    {file.type.startsWith('image/') ? (
+                      <img src={URL.createObjectURL(file)} alt={file.name} className="h-8 w-8 object-cover rounded" />
+                    ) : (
+                      <Paperclip size={12} />
+                    )}
+                    <span className="truncate max-w-[120px] text-xs">{file.name}</span>
+                    <button
+                      onClick={() => setAttachedFiles(prev => prev.filter((_, i) => i !== idx))}
+                      className="text-destructive hover:text-destructive/80 text-xs font-medium"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <ChatInputBar
+            value={input}
+            onChange={setInput}
+            onSend={() => sendMessage(input)}
+            onAttachment={(type) => {
+              const inp = document.createElement('input');
+              inp.type = 'file';
+              inp.accept = type === 'file' ? '.pdf,.doc,.docx,.txt' : 'image/*';
+              if (type === 'camera') inp.capture = 'environment';
+              inp.multiple = true;
+              inp.onchange = (e) => {
+                const files = Array.from((e.target as HTMLInputElement).files || []);
+                if (files.length > 0) setAttachedFiles(prev => [...prev, ...files]);
+              };
+              inp.click();
+            }}
+            onModelSelect={() => setShowModelSelector(true)}
+            onRecordingChange={setIsRecording}
+            onTranscription={(text) => setInput(text)}
+            isLoading={isLoading}
+            isRecording={isRecording}
+            isStoppable={isStoppable}
+            onStop={stopGeneration}
+            disabled={!user}
+          />
+        </div>
+
+        {/* ─── Rename Modal ─── */}
+        {showRenameModal && (
+          <div className="san-modal-backdrop" onClick={() => setShowRenameModal(false)}>
+            <div className="san-modal-card" onClick={e => e.stopPropagation()}>
+              <h3 className="text-base font-semibold mb-1" style={{ fontFamily: 'Sora, sans-serif' }}>Rename Chat</h3>
+              <p className="text-xs text-muted-foreground mb-4">Give this conversation a new name.</p>
+              <Input
+                value={renameValue}
+                onChange={e => setRenameValue(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') submitRename(); }}
+                className="mb-4 rounded-xl"
+                autoFocus
+              />
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => setShowRenameModal(false)} className="flex-1 rounded-xl">Cancel</Button>
+                <Button onClick={submitRename} className="flex-1 rounded-xl">Save</Button>
+              </div>
             </div>
           </div>
         )}
 
-        <ChatInputBar
-          value={input}
-          onChange={setInput}
-          onSend={() => sendMessage(input)}
-          onAttachment={(type) => {
-            const inp = document.createElement('input');
-            inp.type = 'file';
-            inp.accept = type === 'file' ? '.pdf,.doc,.docx,.txt' : 'image/*';
-            if (type === 'camera') inp.capture = 'environment';
-            inp.multiple = true;
-            inp.onchange = (e) => {
-              const files = Array.from((e.target as HTMLInputElement).files || []);
-              if (files.length > 0) setAttachedFiles(prev => [...prev, ...files]);
-            };
-            inp.click();
-          }}
-          onModelSelect={() => setShowModelSelector(true)}
-          onRecordingChange={setIsRecording}
-          onTranscription={(text) => setInput(text)}
-          isLoading={isLoading}
-          isRecording={isRecording}
-          isStoppable={isStoppable}
-          onStop={stopGeneration}
-          disabled={!user}
+        {/* ─── Delete Confirm Modal ─── */}
+        {showDeleteConfirm && (
+          <div className="san-modal-backdrop" onClick={() => setShowDeleteConfirm(false)}>
+            <div className="san-modal-card" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center gap-3 mb-3">
+                <div style={{
+                  width: 40, height: 40, borderRadius: '50%',
+                  background: 'hsl(var(--destructive) / 0.12)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}>
+                  <Trash2 size={18} style={{ color: 'hsl(var(--destructive))' }} />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold" style={{ fontFamily: 'Sora, sans-serif' }}>Delete this chat?</h3>
+                  <p className="text-xs text-muted-foreground">This action cannot be undone.</p>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-4">
+                <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} className="flex-1 rounded-xl">Cancel</Button>
+                <Button variant="destructive" onClick={confirmDeleteChat} className="flex-1 rounded-xl">Delete</Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Title Modal ─── */}
+        {showTitleModal && (
+          <div className="san-modal-backdrop" onClick={() => setShowTitleModal(false)}>
+            <div className="san-modal-card" onClick={e => e.stopPropagation()}>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2 font-medium">Chat Title</p>
+              <h3 className="text-lg font-semibold mb-6 break-words" style={{ fontFamily: 'Sora, sans-serif' }}>{chatTitle}</h3>
+              <Button onClick={() => setShowTitleModal(false)} className="w-full rounded-xl">Close</Button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Message context menu (long press) ─── */}
+        {messageMenuId && (
+          <div className="san-modal-sheet-backdrop" onClick={() => setMessageMenuId(null)}>
+            <div className="san-modal-sheet" onClick={e => e.stopPropagation()}>
+              <div className="mx-auto w-10 h-1 rounded-full bg-muted my-3" />
+              <div className="px-2 pb-2">
+                {[
+                  { icon: Pencil, label: 'Edit',   action: handleStartEdit,   destructive: false },
+                  { icon: Copy,   label: 'Copy',   action: handleCopyMessage, destructive: false },
+                  { icon: Trash2, label: 'Delete', action: handleDeleteMessage, destructive: true },
+                ].map(item => (
+                  <button
+                    key={item.label}
+                    onClick={item.action}
+                    className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-left ${
+                      item.destructive ? 'text-destructive' : ''
+                    }`}
+                  >
+                    <item.icon size={16} />
+                    <span className="text-sm font-medium">{item.label}</span>
+                  </button>
+                ))}
+                <button
+                  onClick={() => setMessageMenuId(null)}
+                  className="w-full flex items-center justify-center px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-muted-foreground mt-1"
+                >
+                  <span className="text-sm font-medium">Cancel</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+        <ModelSelectorModal
+          isOpen={showModelSelector}
+          onClose={() => setShowModelSelector(false)}
+          selectedModel={selectedModel}
+          onSelectModel={setSelectedModel}
         />
       </div>
-
-      {/* ─── Rename Modal ─── */}
-      {showRenameModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowRenameModal(false)}>
-          <div className="bg-background rounded-2xl p-6 mx-4 max-w-sm w-full shadow-2xl border border-border/30 animate-scale-in" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">Rename Chat</h3>
-            <Input
-              value={renameValue}
-              onChange={e => setRenameValue(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') submitRename(); }}
-              className="mb-4"
-              autoFocus
-            />
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setShowRenameModal(false)} className="flex-1 rounded-xl">Cancel</Button>
-              <Button onClick={submitRename} className="flex-1 rounded-xl">Save</Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ─── Delete Confirm Modal ─── */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(false)}>
-          <div className="bg-background rounded-2xl p-6 mx-4 max-w-sm w-full shadow-2xl border border-border/30 animate-scale-in" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-2">Delete this chat?</h3>
-            <p className="text-sm text-muted-foreground mb-6">This action cannot be undone.</p>
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} className="flex-1 rounded-xl">Cancel</Button>
-              <Button variant="destructive" onClick={confirmDeleteChat} className="flex-1 rounded-xl">Delete</Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ─── Title Modal ─── */}
-      {showTitleModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowTitleModal(false)}>
-          <div className="bg-background rounded-2xl p-6 mx-4 max-w-sm w-full shadow-2xl border border-border/30 animate-scale-in" onClick={e => e.stopPropagation()}>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Chat Title</p>
-            <h3 className="text-lg font-semibold mb-6 break-words">{chatTitle}</h3>
-            <Button onClick={() => setShowTitleModal(false)} className="w-full rounded-xl">Close</Button>
-          </div>
-        </div>
-      )}
-
-      {/* ─── Message context menu (long press own message) ─── */}
-      {messageMenuId && (
-        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/30 backdrop-blur-sm" onClick={() => setMessageMenuId(null)}>
-          <div className="bg-background rounded-t-2xl w-full max-w-lg pb-safe shadow-2xl border-t border-border/30 animate-slide-in-bottom" onClick={e => e.stopPropagation()}>
-            <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted my-3" />
-            <div className="px-2 pb-4">
-              <button onClick={handleStartEdit} className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-left">
-                <Pencil className="h-4 w-4" />
-                <span className="text-sm font-medium">Edit</span>
-              </button>
-              <button onClick={handleCopyMessage} className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-left">
-                <Copy className="h-4 w-4" />
-                <span className="text-sm font-medium">Copy</span>
-              </button>
-              <button onClick={handleDeleteMessage} className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-left text-destructive">
-                <Trash2 className="h-4 w-4" />
-                <span className="text-sm font-medium">Delete</span>
-              </button>
-              <button onClick={() => setMessageMenuId(null)} className="w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-muted-foreground">
-                <span className="text-sm font-medium">Cancel</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
-      <ModelSelectorModal isOpen={showModelSelector} onClose={() => setShowModelSelector(false)} selectedModel={selectedModel} onSelectModel={setSelectedModel} />
-    </div>
+    </>
   );
 };
 
-// ─── User message bubble with long-press + inline editing ───
+// ─── User Bubble ──────────────────────────────────────────────────────────────
 interface UserBubbleProps {
   message: Message;
   isEditing: boolean;
@@ -896,17 +1235,24 @@ const UserBubble = ({
   if (isEditing) {
     return (
       <div className="flex items-start gap-3 justify-end">
-        <div className="bg-primary/10 border border-primary/30 rounded-2xl p-3 max-w-[85%] w-full">
+        <div style={{
+          background: 'hsl(var(--primary) / 0.08)',
+          border: '1px solid hsl(var(--primary) / 0.3)',
+          borderRadius: '18px 18px 4px 18px',
+          padding: '12px 14px',
+          maxWidth: '85%',
+          width: '100%',
+        }}>
           <textarea
             value={editingDraft}
             onChange={(e) => setEditingDraft(e.target.value)}
             autoFocus
             rows={Math.min(8, Math.max(2, editingDraft.split('\n').length))}
-            className="w-full bg-transparent outline-none resize-none text-foreground"
+            className="w-full bg-transparent outline-none resize-none text-foreground text-sm"
           />
           <div className="flex justify-end gap-2 mt-2">
-            <Button size="sm" variant="ghost" onClick={onCancelEdit} className="rounded-lg h-8">Cancel</Button>
-            <Button size="sm" onClick={onSubmitEdit} className="rounded-lg h-8">Save & regenerate</Button>
+            <Button size="sm" variant="ghost" onClick={onCancelEdit} className="rounded-lg h-8 text-xs">Cancel</Button>
+            <Button size="sm" onClick={onSubmitEdit} className="rounded-lg h-8 text-xs">Save & regenerate</Button>
           </div>
         </div>
       </div>
@@ -916,29 +1262,30 @@ const UserBubble = ({
   return (
     <div className="flex items-start gap-3 justify-end">
       <div
-        className="chat-bubble-user bg-primary/90 backdrop-blur-sm text-primary-foreground max-w-[80%] shadow-md select-none"
+        className="san-bubble-user"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
         onContextMenu={onContextMenu}
       >
-        <p className="whitespace-pre-wrap break-words">{message.content.split('[Attached Files]')[0]}</p>
+        <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+          {message.content.split('[Attached Files]')[0]}
+        </p>
         {message.metadata?.files && (
           <div className="mt-2 space-y-2">
             {message.metadata.files.map((file: any, idx: number) => (
-              <div key={idx} className="flex items-center gap-2 bg-background/10 px-3 py-2 rounded-lg text-sm">
-                <Paperclip className="h-4 w-4" />
-                <span className="flex-1 truncate">{file.name}</span>
-                <span className="text-xs">{(file.size / 1024).toFixed(1)}KB</span>
+              <div key={idx} className="san-bubble-attachment">
+                <Paperclip size={13} />
+                <span className="flex-1 truncate text-xs">{file.name}</span>
+                <span className="text-xs opacity-70">{(file.size / 1024).toFixed(1)}KB</span>
               </div>
             ))}
           </div>
         )}
         {message.edited_at && (
-          <p className="text-[10px] opacity-70 mt-1">Edited</p>
+          <p className="san-edited-badge">Edited</p>
         )}
       </div>
     </div>
   );
 };
-
