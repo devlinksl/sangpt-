@@ -27,6 +27,7 @@ export function ChatAppearanceSubPage({ onBack }: Props) {
   const cycleFont = () => updatePreference('font_style', cycle(FONTS, (preferences.font_style || 'sans') as any));
   const cycleDensity = () => updatePreference('chat_density', cycle(DENSITIES, (preferences.chat_density || 'comfortable') as any));
   const cycleBubble = () => updatePreference('bubble_style', cycle(BUBBLES, (preferences.bubble_style || 'rounded') as any));
+  const cycleSize = () => updatePreference('font_size', cycle(SIZES, (preferences.font_size || 'default') as any));
 
   return (
     <SettingsSubPage title="Chat Appearance" onBack={onBack}>
