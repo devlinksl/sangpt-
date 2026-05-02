@@ -31,7 +31,6 @@ import {
   Copy,
   X,
   WifiOff,
-  Sparkles,
 } from 'lucide-react';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -93,38 +92,6 @@ const styles = `
   .san-ai-wrap {
     display: flex;
     align-items: flex-start;
-    gap: 10px;
-  }
-
-  .san-ai-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, hsl(var(--primary) / 0.15), hsl(var(--primary) / 0.05));
-    border: 1px solid hsl(var(--primary) / 0.25);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    margin-top: 2px;
-    position: relative;
-  }
-
-  .san-ai-avatar-dot {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: hsl(var(--primary));
-    border: 2px solid hsl(var(--background));
-    animation: san-pulse 1.4s ease-in-out infinite;
-  }
-
-  @keyframes san-pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(0.75); }
   }
 
   /* Message stack spacing */
@@ -902,9 +869,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
             onClick={() => { if (currentConversationId && chatTitle) setShowTitleModal(true); }}
             className="san-logo-pill-wrapper flex items-center gap-1.5 max-w-[45%]"
           >
-            {!currentConversationId && (
-              <Sparkles size={13} style={{ color: 'hsl(var(--primary))' }} />
-            )}
             <span className="san-logo-pill text-sm truncate">
               {currentConversationId ? (chatTitle || 'SanGPT') : 'SanGPT'}
             </span>
@@ -998,14 +962,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                     />
                   ) : (
                     <div className="san-ai-wrap">
-                      {/* AI Avatar */}
-                      <div className="san-ai-avatar">
-                        <Sparkles size={14} style={{ color: 'hsl(var(--primary))' }} />
-                        {streamingMessageId === message.id && (
-                          <div className="san-ai-avatar-dot" />
-                        )}
-                      </div>
-
                       <div className="flex-1 space-y-2 prose-ai min-w-0">
                         <StreamingMarkdown
                           content={message.content}
