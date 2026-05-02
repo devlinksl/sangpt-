@@ -284,39 +284,58 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: Si
         </div>
       )}
 
-      {/* ─── Context Menu (Long Press) ─── */}
-      {contextMenuId && (
-        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/30 backdrop-blur-sm" onClick={() => setContextMenuId(null)}>
-          <div className="bg-background rounded-t-2xl w-full max-w-lg pb-safe shadow-2xl border-t border-border/30 animate-slide-in-bottom" onClick={(e) => e.stopPropagation()}>
-            <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted my-3" />
-            <div className="px-2 pb-4">
-              <button
-                onClick={() => {
-                  const conv = conversations.find(c => c.id === contextMenuId);
-                  if (conv) { setEditingId(conv.id); setEditTitle(conv.title); }
-                  setContextMenuId(null);
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-left"
-              >
-                <span className="text-sm font-medium">Rename</span>
-              </button>
-              <button
-                onClick={() => { setDeleteConfirmId(contextMenuId); setContextMenuId(null); }}
-                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-left text-destructive"
-              >
-                <Trash2 className="h-4 w-4" />
-                <span className="text-sm font-medium">Delete</span>
-              </button>
-              <button
-                onClick={() => setContextMenuId(null)}
-                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-left text-muted-foreground"
-              >
-                <span className="text-sm font-medium">Cancel</span>
-              </button>
+      {contextMenuId && (() => {
+        const conv = conversations.find(c => c.id === contextMenuId);
+        const handleShare = async () => {
+          setContextMenuId(null);
+          if (!conv) return;
+          const url = `${window.location.origin}/?c=${conv.id}`;
+          try {
+            if (navigator.share) await navigator.share({ title: conv.title, url });
+            else await navigator.clipboard.writeText(url);
+          } catch {}
+        };
+        const handleArchive = () => {
+          setContextMenuId(null);
+          // Soft-hide locally; full archive backend can extend later
+          setConversations(prev => prev.filter(c => c.id !== contextMenuId));
+        };
+        const handlePin = () => { setContextMenuId(null); };
+
+        const items = [
+          { icon: Pencil, label: 'Rename', onClick: () => { if (conv) { setEditingId(conv.id); setEditTitle(conv.title); } setContextMenuId(null); } },
+          { icon: Share2, label: 'Share', onClick: handleShare },
+          { icon: Pin,    label: 'Pin / Unpin', onClick: handlePin },
+          { icon: Archive,label: 'Archive', onClick: handleArchive },
+          { icon: Trash2, label: 'Delete', onClick: () => { setDeleteConfirmId(contextMenuId); setContextMenuId(null); }, destructive: true },
+        ];
+
+        return (
+          <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/30 backdrop-blur-sm" onClick={() => setContextMenuId(null)}>
+            <div className="bg-background rounded-t-2xl w-full max-w-lg pb-safe shadow-2xl border-t border-border/30 animate-slide-in-bottom" onClick={(e) => e.stopPropagation()}>
+              <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted my-3" />
+              <div className="px-2 pb-4">
+                {items.map((it) => (
+                  <button
+                    key={it.label}
+                    onClick={it.onClick}
+                    className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-left ${it.destructive ? 'text-destructive' : ''}`}
+                  >
+                    <it.icon className="h-4 w-4" />
+                    <span className="text-sm font-medium">{it.label}</span>
+                  </button>
+                ))}
+                <button
+                  onClick={() => setContextMenuId(null)}
+                  className="w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl hover:bg-accent/50 transition-colors text-muted-foreground"
+                >
+                  <span className="text-sm font-medium">Cancel</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </>
   );
 };
