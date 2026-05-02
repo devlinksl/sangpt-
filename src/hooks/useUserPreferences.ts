@@ -96,6 +96,7 @@ export function useUserPreferences() {
             font_style: (data as any).font_style ?? DEFAULT_PREFS.font_style,
             chat_density: (data as any).chat_density ?? DEFAULT_PREFS.chat_density,
             bubble_style: (data as any).bubble_style ?? DEFAULT_PREFS.bubble_style,
+            font_size: (data as any).font_size ?? DEFAULT_PREFS.font_size,
           };
           setPreferences(next);
           writeLocalPrefs(next);
