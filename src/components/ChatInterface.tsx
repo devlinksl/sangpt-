@@ -198,14 +198,27 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const createNewConversation = async (firstMessage?: string): Promise<string | null> => {
     if (!user) return null;
     try {
-      const title = firstMessage ? await generateConversationTitle(firstMessage) : 'New conversation';
+      // Optimistic: create row immediately with a placeholder title.
+      // The real AI-generated title is filled in afterwards in the background.
+      const placeholder = firstMessage
+        ? firstMessage.substring(0, 40).trim() || 'New conversation'
+        : 'New conversation';
       const { data, error } = await supabase
         .from('conversations')
-        .insert([{ user_id: user.id, title }])
+        .insert([{ user_id: user.id, title: placeholder }])
         .select()
         .single();
       if (error) throw error;
-      setChatTitle(title);
+      setChatTitle(placeholder);
+
+      // Background: generate a nicer title and update the row + UI.
+      if (firstMessage) {
+        generateConversationTitle(firstMessage).then(async (title) => {
+          if (!title || title === placeholder) return;
+          setChatTitle(title);
+          await supabase.from('conversations').update({ title }).eq('id', data.id);
+        }).catch(() => {});
+      }
       return data.id;
     } catch (error) {
       console.error('Error creating conversation:', error);
