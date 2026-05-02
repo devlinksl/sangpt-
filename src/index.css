@@ -343,3 +343,12 @@ html[data-font-style="rounded"] { --chat-font-family: 'Nunito', ui-rounded, syst
   transition: border-radius 0.2s ease, padding 0.2s ease;
 }
 
+/* ─── Font size accessibility scale ─── */
+:root { --app-font-scale: 1; }
+html[data-font-size="small"]   { --app-font-scale: 0.9; }
+html[data-font-size="default"] { --app-font-scale: 1;   }
+html[data-font-size="large"]   { --app-font-scale: 1.125; }
+html[data-font-size="xlarge"]  { --app-font-scale: 1.25;  }
+
+html { font-size: calc(16px * var(--app-font-scale)); }
+
