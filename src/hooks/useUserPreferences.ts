@@ -18,6 +18,7 @@ export interface UserPreferences {
   font_style: string;
   chat_density: string;
   bubble_style: string;
+  font_size: string;
 }
 
 const DEFAULT_PREFS: UserPreferences = {
