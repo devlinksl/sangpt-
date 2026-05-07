@@ -52,35 +52,38 @@ const App = () => (
              <BrowserRouter>
                <Routes>
                  <Route path="/reset-password" element={<ResetPassword />} />
-                 <Route path="/" element={<AuthGate><Index /></AuthGate>} />
-                 <Route path="/settings" element={<Settings />} />
-                 <Route path="/explore" element={<Explore />} />
-                 <Route path="/help" element={<Help />} />
-                 <Route path="/account" element={<Account />} />
-                 <Route path="/text-selection" element={<TextSelection />} />
-                 <Route path="/image-generation" element={<ImageGeneration />} />
-                 <Route path="/deep-research" element={<DeepResearch />} />
-                 <Route path="/create-podcast" element={<CreatePodcast />} />
-                 <Route path="/interactive-quiz" element={<InteractiveQuiz />} />
-                 <Route path="/summarize-text" element={<SummarizeText />} />
-                 <Route path="/code-helper" element={<CodeHelper />} />
-                 <Route path="/creative-writing" element={<CreativeWriting />} />
-                 <Route path="/contact" element={<Contact />} />
-                 <Route path="/email-writer" element={<EmailWriter />} />
-                 <Route path="/video-script" element={<VideoScript />} />
-                 <Route path="/social-media-post" element={<SocialMediaPost />} />
-                 <Route path="/language-translator" element={<LanguageTranslator />} />
-                 <Route path="/math-solver" element={<MathSolver />} />
-                 <Route path="/data-analyzer" element={<DataAnalyzer />} />
-                 <Route path="/resume-builder" element={<ResumeBuilder />} />
-                 <Route path="/business-plan" element={<BusinessPlan />} />
-                 <Route path="/seo-optimizer" element={<SEOOptimizer />} />
-                 <Route path="/music-composer" element={<MusicComposer />} />
-                 <Route path="/recipe-generator" element={<RecipeGenerator />} />
-                  <Route path="/fitness-planner" element={<FitnessPlanner />} />
-                  <Route path="/license" element={<License />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                 <Route path="*" element={<NotFound />} />
+                 <Route path="/*" element={<AuthGate>
+                   <Routes>
+                     <Route path="/" element={<Index />} />
+                     <Route path="/settings" element={<Settings />} />
+                     <Route path="/explore" element={<Explore />} />
+                     <Route path="/help" element={<Help />} />
+                     <Route path="/account" element={<Account />} />
+                     <Route path="/text-selection" element={<TextSelection />} />
+                     <Route path="/image-generation" element={<ImageGeneration />} />
+                     <Route path="/deep-research" element={<DeepResearch />} />
+                     <Route path="/create-podcast" element={<CreatePodcast />} />
+                     <Route path="/interactive-quiz" element={<InteractiveQuiz />} />
+                     <Route path="/summarize-text" element={<SummarizeText />} />
+                     <Route path="/code-helper" element={<CodeHelper />} />
+                     <Route path="/creative-writing" element={<CreativeWriting />} />
+                     <Route path="/contact" element={<Contact />} />
+                     <Route path="/email-writer" element={<EmailWriter />} />
+                     <Route path="/video-script" element={<VideoScript />} />
+                     <Route path="/social-media-post" element={<SocialMediaPost />} />
+                     <Route path="/language-translator" element={<LanguageTranslator />} />
+                     <Route path="/math-solver" element={<MathSolver />} />
+                     <Route path="/data-analyzer" element={<DataAnalyzer />} />
+                     <Route path="/resume-builder" element={<ResumeBuilder />} />
+                     <Route path="/business-plan" element={<BusinessPlan />} />
+                     <Route path="/seo-optimizer" element={<SEOOptimizer />} />
+                     <Route path="/music-composer" element={<MusicComposer />} />
+                     <Route path="/recipe-generator" element={<RecipeGenerator />} />
+                     <Route path="/fitness-planner" element={<FitnessPlanner />} />
+                     <Route path="/license" element={<License />} />
+                     <Route path="*" element={<NotFound />} />
+                   </Routes>
+                 </AuthGate>} />
                </Routes>
              </BrowserRouter>
            </TooltipProvider>
