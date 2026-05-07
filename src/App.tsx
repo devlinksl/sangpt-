@@ -5,9 +5,11 @@ import { ConnectivityBanner } from "@/components/ConnectivityBanner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/AuthContext";
+import { AuthGate } from "@/components/AuthGate";
 import { ThemeProvider } from "@/components/ThemeProvider";
  import { AlertProvider } from "@/hooks/useAlert";
 import Index from "./pages/Index";
+import ResetPassword from "./pages/ResetPassword";
 import Settings from "./pages/Settings";
 import Explore from "./pages/Explore";
 import Help from "./pages/Help";
@@ -49,7 +51,8 @@ const App = () => (
              <Sonner />
              <BrowserRouter>
                <Routes>
-                 <Route path="/" element={<Index />} />
+                 <Route path="/reset-password" element={<ResetPassword />} />
+                 <Route path="/" element={<AuthGate><Index /></AuthGate>} />
                  <Route path="/settings" element={<Settings />} />
                  <Route path="/explore" element={<Explore />} />
                  <Route path="/help" element={<Help />} />
