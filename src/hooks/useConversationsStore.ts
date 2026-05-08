@@ -131,7 +131,8 @@ export function useConversations() {
 export function useConversationsLoading() {
   const [loading, setLoading] = useState(isLoading);
   useEffect(() => {
-    return conversationsStore.subscribe(() => setLoading(conversationsStore.getLoading()));
+    const unsub = conversationsStore.subscribe(() => setLoading(conversationsStore.getLoading()));
+    return () => { unsub; };
   }, []);
   return loading;
 }
