@@ -790,9 +790,11 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
   const submitRename = async () => {
     if (!renameValue.trim() || !currentConversationId) return;
-    setChatTitle(renameValue.trim());
+    const t = renameValue.trim();
+    setChatTitle(t);
     setShowRenameModal(false);
-    await supabase.from('conversations').update({ title: renameValue.trim() }).eq('id', currentConversationId);
+    conversationsStore.updateTitle(currentConversationId, t);
+    await supabase.from('conversations').update({ title: t }).eq('id', currentConversationId);
   };
 
   const handleDeleteChat = () => {
