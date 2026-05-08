@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/components/ThemeProvider';
 import { useStreamChat } from '@/hooks/useStreamChat';
 import { getCachedMessages, cacheMessages, removeCachedConversation } from '@/lib/chatCache';
+import { conversationsStore } from '@/hooks/useConversationsStore';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import {
   Menu,
