@@ -320,7 +320,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
         const handleArchive = () => {
           setContextMenuId(null);
           // Soft-hide locally; full archive backend can extend later
-          setConversations(prev => prev.filter(c => c.id !== contextMenuId));
+          if (contextMenuId) conversationsStore.remove(contextMenuId);
         };
         const handlePin = () => { setContextMenuId(null); };
 
