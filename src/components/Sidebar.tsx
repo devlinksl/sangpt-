@@ -191,8 +191,9 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
           WebkitTapHighlightColor: 'transparent',
         }}
       >
-        {/* ─── TOP: Search ─── */}
-        <div className="px-4 pt-4 pb-2">
+        {/* ─── Sticky Header: Search ─── */}
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-2xl px-4 pt-4 pb-2 border-b border-border/10">
+
           {isSearchExpanded ? (
             <div className="flex items-center gap-2 animate-fade-in">
               <Button
