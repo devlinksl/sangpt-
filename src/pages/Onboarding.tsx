@@ -767,9 +767,9 @@ export const Onboarding = () => {
 
   return (
     <>
-      <style>{styles}
+      <style>{styles + `
         @keyframes ob-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      </style>
+      `}</style>
 
       <div className="ob-root">
         {/* Ambient background */}
