@@ -70,54 +70,46 @@ function groupByDate(conversations: Conversation[]): { label: string; items: Con
 export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, dragOffset, backdropOpacity }: SidebarProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const conversations = useConversations();
+  const isLoadingConversations = useConversationsLoading();
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
-  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [contextMenuId, setContextMenuId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Preload + realtime subscribe (independent of sidebar open state)
   useEffect(() => {
-    if (user && isOpen) loadConversations();
-  }, [user, isOpen]);
+    if (!user) { conversationsStore.reset(); return; }
+    conversationsStore.load(user.id);
+
+    const channel = supabase
+      .channel(`conv-rt-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'conversations', filter: `user_id=eq.${user.id}` },
+        (payload: any) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            conversationsStore.upsert(payload.new);
+          } else if (payload.eventType === 'DELETE') {
+            conversationsStore.remove(payload.old.id);
+          }
+        },
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id]);
 
   useEffect(() => {
     if (isSearchExpanded) setTimeout(() => searchInputRef.current?.focus(), 300);
     else setSearchTerm('');
   }, [isSearchExpanded]);
 
-  const loadConversations = async () => {
-    if (!user) return;
-    // Instant from cache
-    try {
-      const cached = await getCachedConversations(user.id);
-      if (cached.length > 0) setConversations(cached);
-    } catch {}
-
-    setIsLoadingConversations(true);
-    try {
-      const { data, error } = await supabase
-        .from('conversations')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false });
-      if (error) throw error;
-      const serverData = data || [];
-      setConversations(serverData);
-      cacheConversations(serverData).catch(() => {});
-    } catch (error) {
-      console.error('Error fetching conversations:', error);
-    } finally {
-      setIsLoadingConversations(false);
-    }
-  };
-
   const deleteConversation = (id: string) => {
-    setConversations(prev => prev.filter(conv => conv.id !== id));
-    removeCachedConversation(id).catch(() => {});
+    conversationsStore.remove(id);
     setDeleteConfirmId(null);
     setContextMenuId(null);
     supabase.from('conversations').delete().eq('id', id).then(({ error }) => {
@@ -126,10 +118,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
   };
 
   const updateConversationTitle = async (id: string, newTitle: string) => {
-    setConversations(prev => prev.map(conv =>
-      conv.id === id ? { ...conv, title: newTitle } : conv
-    ));
-    updateCachedConversationTitle(id, newTitle).catch(() => {});
+    conversationsStore.updateTitle(id, newTitle);
     setEditingId(null);
     supabase.from('conversations').update({ title: newTitle }).eq('id', id).then(({ error }) => {
       if (error) console.error('Error updating title:', error);
