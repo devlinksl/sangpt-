@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { 
-  Image, 
-  Camera, 
-  FileText, 
+import {
+  Image,
+  Camera,
+  FileText,
   Send,
   Sparkles,
   Square,
@@ -12,10 +12,15 @@ import { SpeechToText } from '@/components/SpeechToText';
 import { cn } from '@/lib/utils';
 import { useHaptics } from '@/hooks/useHaptics';
 
+export interface ChatInputBarHandle {
+  setText: (text: string) => void;
+  getText: () => string;
+  focus: () => void;
+}
+
 interface ChatInputBarProps {
-  value: string;
-  onChange: (value: string) => void;
-  onSend: () => void;
+  initialValue?: string;
+  onSend: (text: string) => void;
   onAttachment: (type: 'image' | 'camera' | 'file') => void;
   onModelSelect: () => void;
   onRecordingChange: (isRecording: boolean) => void;
@@ -27,9 +32,8 @@ interface ChatInputBarProps {
   disabled?: boolean;
 }
 
-export const ChatInputBar = ({
-  value,
-  onChange,
+export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
+  initialValue = '',
   onSend,
   onAttachment,
   onModelSelect,
@@ -39,39 +43,69 @@ export const ChatInputBar = ({
   isRecording,
   isStoppable,
   onStop,
-  disabled
-}: ChatInputBarProps) => {
+  disabled,
+}, ref) => {
+  // Local state — keystrokes do NOT re-render parent
+  const [text, setText] = useState(initialValue);
   const [isFocused, setIsFocused] = useState(false);
+  const [hasContent, setHasContent] = useState(initialValue.length > 0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const sendLockRef = useRef(false);
   const { lightTap, mediumTap } = useHaptics();
-  
-  const showActions = isFocused || value.length > 0;
+
+  const showActions = isFocused || hasContent;
+
+  useImperativeHandle(ref, () => ({
+    setText: (t: string) => {
+      setText(t);
+      setHasContent(t.length > 0);
+      // Resize after value change
+      requestAnimationFrame(() => {
+        if (textareaRef.current) {
+          textareaRef.current.style.height = 'auto';
+          textareaRef.current.style.height =
+            Math.min(textareaRef.current.scrollHeight, 150) + 'px';
+        }
+      });
+    },
+    getText: () => text,
+    focus: () => textareaRef.current?.focus(),
+  }), [text]);
 
   // Unlock send when loading finishes
   useEffect(() => {
-    if (!isLoading) {
-      sendLockRef.current = false;
-    }
+    if (!isLoading) sendLockRef.current = false;
   }, [isLoading]);
-  
-  // Auto-resize textarea
-  useEffect(() => {
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const v = e.target.value;
+    setText(v);
+    if ((v.length > 0) !== hasContent) setHasContent(v.length > 0);
+    // Auto-resize inline
+    e.target.style.height = 'auto';
+    e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px';
+  }, [hasContent]);
+
+  const performSend = useCallback(() => {
+    const t = textareaRef.current?.value ?? text;
+    if (!t.trim() || sendLockRef.current) return;
+    sendLockRef.current = true;
+    mediumTap();
+    onSend(t);
+    setText('');
+    setHasContent(false);
     if (textareaRef.current) {
+      textareaRef.current.value = '';
       textareaRef.current.style.height = 'auto';
-      const newHeight = Math.min(textareaRef.current.scrollHeight, 150);
-      textareaRef.current.style.height = newHeight + 'px';
     }
-  }, [value]);
+  }, [onSend, text, mediumTap]);
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (value.trim() && !sendLockRef.current) {
-        handleSendClick();
-      }
+      performSend();
     }
-  }, [value]);
+  }, [performSend]);
 
   const handleFileInput = (type: 'image' | 'camera' | 'file') => {
     lightTap();
@@ -79,29 +113,25 @@ export const ChatInputBar = ({
   };
 
   const handleSendClick = () => {
-    mediumTap();
     if (isLoading && isStoppable) {
+      mediumTap();
       onStop();
-    } else if (value.trim() && !sendLockRef.current) {
-      // Lock via ref (no re-render, instant)
-      sendLockRef.current = true;
-      onSend();
+    } else {
+      performSend();
     }
   };
 
   const isInputDisabled = disabled || isRecording;
-  const isSendDisabled = (!value.trim() && !isLoading) || (isLoading && !isStoppable);
+  const isSendDisabled = (!hasContent && !isLoading) || (isLoading && !isStoppable);
 
   return (
     <div className="w-full max-w-3xl mx-auto px-3">
-      {/* Main glass container */}
       <div className="relative rounded-[28px] bg-card/80 dark:bg-card/60 backdrop-blur-xl border border-border/50 shadow-lg shadow-black/5 dark:shadow-black/20 overflow-hidden gpu-accelerated">
-        {/* Textarea area */}
         <div className="px-4 pt-4 pb-2">
           <textarea
             ref={textareaRef}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
+            defaultValue={initialValue}
+            onChange={handleChange}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setTimeout(() => setIsFocused(false), 150)}
             onKeyPress={handleKeyPress}
@@ -111,17 +141,15 @@ export const ChatInputBar = ({
             rows={1}
           />
         </div>
-        
-        {/* Action bar */}
+
         <div className="px-3 pb-3 pt-1">
           <div className="flex items-center justify-between">
-            {/* Left side - action buttons */}
-            <div 
+            <div
               className={cn(
-                "flex items-center gap-1 transition-all duration-200 ease-out",
-                showActions 
-                  ? "opacity-100 translate-y-0" 
-                  : "opacity-0 translate-y-2 pointer-events-none"
+                'flex items-center gap-1 transition-all duration-200 ease-out',
+                showActions
+                  ? 'opacity-100 translate-y-0'
+                  : 'opacity-0 translate-y-2 pointer-events-none',
               )}
             >
               <button
@@ -132,7 +160,7 @@ export const ChatInputBar = ({
               >
                 <Image className="h-5 w-5" />
               </button>
-              
+
               <button
                 onClick={() => handleFileInput('camera')}
                 disabled={isInputDisabled}
@@ -141,7 +169,7 @@ export const ChatInputBar = ({
               >
                 <Camera className="h-5 w-5" />
               </button>
-              
+
               <button
                 onClick={() => handleFileInput('file')}
                 disabled={isInputDisabled}
@@ -150,18 +178,25 @@ export const ChatInputBar = ({
               >
                 <FileText className="h-5 w-5" />
               </button>
-              
+
               <div className="flex items-center justify-center">
-                <SpeechToText 
-                  onTranscription={(text) => {
-                    onTranscription(text);
+                <SpeechToText
+                  onTranscription={(t) => {
+                    onTranscription(t);
+                    if (textareaRef.current) {
+                      textareaRef.current.value = t;
+                      setText(t);
+                      setHasContent(t.length > 0);
+                      textareaRef.current.style.height = 'auto';
+                      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 150) + 'px';
+                    }
                     onRecordingChange(false);
                   }}
                   disabled={isInputDisabled}
                   onRecordingChange={onRecordingChange}
                 />
               </div>
-              
+
               <button
                 onClick={() => { lightTap(); onModelSelect(); }}
                 disabled={isInputDisabled}
@@ -172,19 +207,18 @@ export const ChatInputBar = ({
                 <span>SanGPT</span>
               </button>
             </div>
-            
-            {/* Right side - send button: NEVER shows spinner */}
+
             <Button
               onClick={handleSendClick}
               disabled={isSendDisabled}
               size="icon"
               className={cn(
-                "h-10 w-10 rounded-full shadow-md touch-target transition-transform duration-150",
+                'h-10 w-10 rounded-full shadow-md touch-target transition-transform duration-150',
                 isLoading && isStoppable
-                  ? "bg-destructive hover:bg-destructive/90"
-                  : value.trim()
-                    ? "bg-primary hover:bg-primary/90 scale-100"
-                    : "bg-primary/50 scale-95 opacity-60"
+                  ? 'bg-destructive hover:bg-destructive/90'
+                  : hasContent
+                    ? 'bg-primary hover:bg-primary/90 scale-100'
+                    : 'bg-primary/50 scale-95 opacity-60',
               )}
             >
               {isLoading && isStoppable ? (
@@ -198,4 +232,6 @@ export const ChatInputBar = ({
       </div>
     </div>
   );
-};
+});
+
+ChatInputBar.displayName = 'ChatInputBar';
