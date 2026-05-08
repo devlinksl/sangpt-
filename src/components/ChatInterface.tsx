@@ -1036,9 +1036,9 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           )}
 
           <ChatInputBar
-            value={input}
-            onChange={setInput}
-            onSend={() => sendMessage(input)}
+            ref={inputBarRef}
+            initialValue={input}
+            onSend={(text) => { setInput(''); sendMessage(text); }}
             onAttachment={(type) => {
               const inp = document.createElement('input');
               inp.type = 'file';
@@ -1053,7 +1053,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
             }}
             onModelSelect={() => setShowModelSelector(true)}
             onRecordingChange={setIsRecording}
-            onTranscription={(text) => setInput(text)}
+            onTranscription={(text) => inputBarRef.current?.setText(text)}
             isLoading={isLoading}
             isRecording={isRecording}
             isStoppable={isStoppable}
