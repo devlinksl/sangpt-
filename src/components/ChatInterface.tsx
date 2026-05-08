@@ -487,10 +487,14 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
       if (error) throw error;
       setChatTitle(placeholder);
 
+      // Push to global store immediately so the sidebar reflects it everywhere
+      conversationsStore.upsert(data as any);
+
       if (firstMessage) {
         generateConversationTitle(firstMessage).then(async (title) => {
           if (!title || title === placeholder) return;
           setChatTitle(title);
+          conversationsStore.updateTitle(data.id, title);
           await supabase.from('conversations').update({ title }).eq('id', data.id);
         }).catch(() => {});
       }
