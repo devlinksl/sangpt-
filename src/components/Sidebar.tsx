@@ -6,11 +6,10 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/components/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  cacheConversations,
-  getCachedConversations,
-  removeCachedConversation,
-  updateCachedConversationTitle,
-} from '@/lib/chatCache';
+  conversationsStore,
+  useConversations,
+  useConversationsLoading,
+} from '@/hooks/useConversationsStore';
 import {
   MessageSquare,
   Search,
