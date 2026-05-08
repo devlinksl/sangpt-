@@ -8,7 +8,7 @@ import { StreamingMarkdown } from '@/components/StreamingMarkdown';
 import { HomeScreen } from '@/components/HomeScreen';
 import { TypingIndicator } from '@/components/TypingIndicator';
 import { ModelSelectorModal } from '@/components/ModelSelectorModal';
-import { ChatInputBar } from '@/components/ChatInputBar';
+import { ChatInputBar, type ChatInputBarHandle } from '@/components/ChatInputBar';
 import { WaveformAnimation } from '@/components/WaveformAnimation';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -364,6 +364,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const [offlineUnavailable, setOfflineUnavailable] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const inputBarRef = useRef<ChatInputBarHandle>(null);
   const userScrolledRef = useRef(false);
 
   useEffect(() => {
