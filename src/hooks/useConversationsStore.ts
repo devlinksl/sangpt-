@@ -40,7 +40,7 @@ function sortByUpdated(list: Conversation[]) {
 export const conversationsStore = {
   subscribe(l: Listener) {
     listeners.add(l);
-    return () => listeners.delete(l);
+    return () => { listeners.delete(l); };
   },
   getSnapshot() {
     return conversations;
@@ -131,8 +131,7 @@ export function useConversations() {
 export function useConversationsLoading() {
   const [loading, setLoading] = useState(isLoading);
   useEffect(() => {
-    const unsub = conversationsStore.subscribe(() => setLoading(conversationsStore.getLoading()));
-    return () => { unsub; };
+    return conversationsStore.subscribe(() => setLoading(conversationsStore.getLoading()));
   }, []);
   return loading;
 }
