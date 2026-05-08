@@ -805,6 +805,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     const id = currentConversationId;
     setShowDeleteConfirm(false);
     handleNewChat();
+    conversationsStore.remove(id);
     removeCachedConversation(id).catch(() => {});
     await supabase.from('conversations').delete().eq('id', id);
   };
