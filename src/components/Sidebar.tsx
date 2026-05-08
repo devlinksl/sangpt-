@@ -6,11 +6,10 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/components/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  cacheConversations,
-  getCachedConversations,
-  removeCachedConversation,
-  updateCachedConversationTitle,
-} from '@/lib/chatCache';
+  conversationsStore,
+  useConversations,
+  useConversationsLoading,
+} from '@/hooks/useConversationsStore';
 import {
   MessageSquare,
   Search,
@@ -71,54 +70,46 @@ function groupByDate(conversations: Conversation[]): { label: string; items: Con
 export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, dragOffset, backdropOpacity }: SidebarProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const conversations = useConversations();
+  const isLoadingConversations = useConversationsLoading();
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
-  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [contextMenuId, setContextMenuId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Preload + realtime subscribe (independent of sidebar open state)
   useEffect(() => {
-    if (user && isOpen) loadConversations();
-  }, [user, isOpen]);
+    if (!user) { conversationsStore.reset(); return; }
+    conversationsStore.load(user.id);
+
+    const channel = supabase
+      .channel(`conv-rt-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'conversations', filter: `user_id=eq.${user.id}` },
+        (payload: any) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            conversationsStore.upsert(payload.new);
+          } else if (payload.eventType === 'DELETE') {
+            conversationsStore.remove(payload.old.id);
+          }
+        },
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id]);
 
   useEffect(() => {
     if (isSearchExpanded) setTimeout(() => searchInputRef.current?.focus(), 300);
     else setSearchTerm('');
   }, [isSearchExpanded]);
 
-  const loadConversations = async () => {
-    if (!user) return;
-    // Instant from cache
-    try {
-      const cached = await getCachedConversations(user.id);
-      if (cached.length > 0) setConversations(cached);
-    } catch {}
-
-    setIsLoadingConversations(true);
-    try {
-      const { data, error } = await supabase
-        .from('conversations')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false });
-      if (error) throw error;
-      const serverData = data || [];
-      setConversations(serverData);
-      cacheConversations(serverData).catch(() => {});
-    } catch (error) {
-      console.error('Error fetching conversations:', error);
-    } finally {
-      setIsLoadingConversations(false);
-    }
-  };
-
   const deleteConversation = (id: string) => {
-    setConversations(prev => prev.filter(conv => conv.id !== id));
-    removeCachedConversation(id).catch(() => {});
+    conversationsStore.remove(id);
     setDeleteConfirmId(null);
     setContextMenuId(null);
     supabase.from('conversations').delete().eq('id', id).then(({ error }) => {
@@ -127,10 +118,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
   };
 
   const updateConversationTitle = async (id: string, newTitle: string) => {
-    setConversations(prev => prev.map(conv =>
-      conv.id === id ? { ...conv, title: newTitle } : conv
-    ));
-    updateCachedConversationTitle(id, newTitle).catch(() => {});
+    conversationsStore.updateTitle(id, newTitle);
     setEditingId(null);
     supabase.from('conversations').update({ title: newTitle }).eq('id', id).then(({ error }) => {
       if (error) console.error('Error updating title:', error);
@@ -188,7 +176,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
 
       {/* Sidebar */}
       <div
-        className={`fixed left-0 top-0 h-full bg-background/95 backdrop-blur-2xl border-r border-border/30 z-50 shadow-2xl flex flex-col ${
+        className={`fixed left-0 top-0 h-full bg-background/95 backdrop-blur-2xl border-r border-border/30 z-50 shadow-2xl flex flex-col select-none ${
           isSearchExpanded ? 'w-full' : 'w-80'
         }`}
         style={{
@@ -198,10 +186,14 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
             : 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)',
           willChange: 'transform',
           width: isSearchExpanded ? undefined : W,
+          WebkitUserSelect: 'none',
+          userSelect: 'none',
+          WebkitTapHighlightColor: 'transparent',
         }}
       >
-        {/* ─── TOP: Search ─── */}
-        <div className="px-4 pt-4 pb-2">
+        {/* ─── Sticky Header: Search ─── */}
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-2xl px-4 pt-4 pb-2 border-b border-border/10">
+
           {isSearchExpanded ? (
             <div className="flex items-center gap-2 animate-fade-in">
               <Button
@@ -332,7 +324,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
         const handleArchive = () => {
           setContextMenuId(null);
           // Soft-hide locally; full archive backend can extend later
-          setConversations(prev => prev.filter(c => c.id !== contextMenuId));
+          if (contextMenuId) conversationsStore.remove(contextMenuId);
         };
         const handlePin = () => { setContextMenuId(null); };
 

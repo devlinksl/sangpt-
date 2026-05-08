@@ -8,13 +8,14 @@ import { StreamingMarkdown } from '@/components/StreamingMarkdown';
 import { HomeScreen } from '@/components/HomeScreen';
 import { TypingIndicator } from '@/components/TypingIndicator';
 import { ModelSelectorModal } from '@/components/ModelSelectorModal';
-import { ChatInputBar } from '@/components/ChatInputBar';
+import { ChatInputBar, type ChatInputBarHandle } from '@/components/ChatInputBar';
 import { WaveformAnimation } from '@/components/WaveformAnimation';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/components/ThemeProvider';
 import { useStreamChat } from '@/hooks/useStreamChat';
 import { getCachedMessages, cacheMessages, removeCachedConversation } from '@/lib/chatCache';
+import { conversationsStore } from '@/hooks/useConversationsStore';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import {
   Menu,
@@ -363,6 +364,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const [offlineUnavailable, setOfflineUnavailable] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const inputBarRef = useRef<ChatInputBarHandle>(null);
   const userScrolledRef = useRef(false);
 
   useEffect(() => {
@@ -486,10 +488,14 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
       if (error) throw error;
       setChatTitle(placeholder);
 
+      // Push to global store immediately so the sidebar reflects it everywhere
+      conversationsStore.upsert(data as any);
+
       if (firstMessage) {
         generateConversationTitle(firstMessage).then(async (title) => {
           if (!title || title === placeholder) return;
           setChatTitle(title);
+          conversationsStore.updateTitle(data.id, title);
           await supabase.from('conversations').update({ title }).eq('id', data.id);
         }).catch(() => {});
       }
@@ -785,9 +791,11 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
   const submitRename = async () => {
     if (!renameValue.trim() || !currentConversationId) return;
-    setChatTitle(renameValue.trim());
+    const t = renameValue.trim();
+    setChatTitle(t);
     setShowRenameModal(false);
-    await supabase.from('conversations').update({ title: renameValue.trim() }).eq('id', currentConversationId);
+    conversationsStore.updateTitle(currentConversationId, t);
+    await supabase.from('conversations').update({ title: t }).eq('id', currentConversationId);
   };
 
   const handleDeleteChat = () => {
@@ -800,6 +808,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     const id = currentConversationId;
     setShowDeleteConfirm(false);
     handleNewChat();
+    conversationsStore.remove(id);
     removeCachedConversation(id).catch(() => {});
     await supabase.from('conversations').delete().eq('id', id);
   };
@@ -942,7 +951,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
             </div>
           ) : messages.length === 0 ? (
             <HomeScreen
-              onPromptSelect={(text) => setInput(text)}
+              onPromptSelect={(text) => { setInput(text); inputBarRef.current?.setText(text); inputBarRef.current?.focus(); }}
               onConversationSelect={(id) => loadConversation(id)}
               user={user}
             />
@@ -1028,9 +1037,9 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           )}
 
           <ChatInputBar
-            value={input}
-            onChange={setInput}
-            onSend={() => sendMessage(input)}
+            ref={inputBarRef}
+            initialValue={input}
+            onSend={(text) => { setInput(''); sendMessage(text); }}
             onAttachment={(type) => {
               const inp = document.createElement('input');
               inp.type = 'file';
@@ -1045,7 +1054,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
             }}
             onModelSelect={() => setShowModelSelector(true)}
             onRecordingChange={setIsRecording}
-            onTranscription={(text) => setInput(text)}
+            onTranscription={(text) => inputBarRef.current?.setText(text)}
             isLoading={isLoading}
             isRecording={isRecording}
             isStoppable={isStoppable}

@@ -126,13 +126,35 @@ const Index = () => {
     };
   }, [sidebarOpen, dragOffset]);
 
+  // Compute main-content shift/scale (ChatGPT-iOS feel)
+  const W = SIDEBAR_WIDTH;
+  let progress = sidebarOpen ? 1 : 0;
+  if (dragOffset != null) {
+    if (sidebarOpen) progress = Math.max(0, 1 + dragOffset / W);
+    else progress = Math.max(0, Math.min(1, dragOffset / W));
+  }
+  const mainScale = 1 - progress * 0.06;
+  const mainTranslate = progress * (W * 0.18);
+  const mainRadius = progress * 18;
+
   return (
-    <div className="min-h-screen bg-background chat-surface">
-      <ChatInterface
-        onOpenSidebar={() => setSidebarOpen(true)}
-        conversationId={selectedConversationId}
-        onConversationChange={setSelectedConversationId}
-      />
+    <div className="min-h-screen bg-background chat-surface overflow-hidden">
+      <div
+        style={{
+          transform: `translateX(${mainTranslate}px) scale(${mainScale})`,
+          transformOrigin: 'left center',
+          borderRadius: mainRadius ? `${mainRadius}px` : undefined,
+          overflow: 'hidden',
+          transition: dragOffset != null ? 'none' : 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-radius 0.28s',
+          willChange: 'transform',
+        }}
+      >
+        <ChatInterface
+          onOpenSidebar={() => setSidebarOpen(true)}
+          conversationId={selectedConversationId}
+          onConversationChange={setSelectedConversationId}
+        />
+      </div>
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
