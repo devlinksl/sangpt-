@@ -951,7 +951,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
             </div>
           ) : messages.length === 0 ? (
             <HomeScreen
-              onPromptSelect={(text) => setInput(text)}
+              onPromptSelect={(text) => { setInput(text); inputBarRef.current?.setText(text); inputBarRef.current?.focus(); }}
               onConversationSelect={(id) => loadConversation(id)}
               user={user}
             />
