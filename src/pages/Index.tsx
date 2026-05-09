@@ -5,8 +5,8 @@ import { Sidebar } from '@/components/Sidebar';
 import { useChatAppearance } from '@/hooks/useChatAppearance';
 
 const SIDEBAR_WIDTH = 320;
-const EDGE_GRAB_PX = 28; // distance from left edge that initiates open-drag
-const OPEN_THRESHOLD_RATIO = 0.4; // 40% of screen width
+const OPEN_THRESHOLD_RATIO = 0.35;
+const VELOCITY_THRESHOLD = 0.5; // px/ms — flick to open/close
 
 const Index = () => {
   const location = useLocation();
@@ -34,95 +34,93 @@ const Index = () => {
     setSidebarOpen(false);
   }, []);
 
-  // ─── Native finger-following drag gesture ───
+  // ─── Native finger-following drag gesture (swipe-from-anywhere + mouse) ───
   const startXRef = useRef(0);
-  const startYRef = useRef(0);
+  const lastXRef = useRef(0);
+  const lastTRef = useRef(0);
+  const velRef = useRef(0);
   const dragModeRef = useRef<'opening' | 'closing' | null>(null);
-  const lockedAxisRef = useRef<'h' | 'v' | null>(null);
+  const activePointerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const onTouchStart = (e: TouchEvent) => {
-      const t = e.touches[0];
-      startXRef.current = t.clientX;
-      startYRef.current = t.clientY;
-      lockedAxisRef.current = null;
-
-      if (sidebarOpen) {
-        dragModeRef.current = 'closing';
-      } else if (t.clientX <= EDGE_GRAB_PX) {
-        dragModeRef.current = 'opening';
-      } else {
-        dragModeRef.current = null;
+    const isInteractive = (el: EventTarget | null): boolean => {
+      let n = el as HTMLElement | null;
+      while (n && n !== document.body) {
+        const tag = n.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || n.isContentEditable) return true;
+        if (n.dataset && n.dataset.noSwipe === 'true') return true;
+        n = n.parentElement;
       }
+      return false;
     };
 
-    const onTouchMove = (e: TouchEvent) => {
-      if (!dragModeRef.current) return;
-      const t = e.touches[0];
-      const dx = t.clientX - startXRef.current;
-      const dy = t.clientY - startYRef.current;
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (isInteractive(e.target)) return;
+      activePointerRef.current = e.pointerId;
+      startXRef.current = e.clientX;
+      lastXRef.current = e.clientX;
+      lastTRef.current = performance.now();
+      velRef.current = 0;
+      dragModeRef.current = sidebarOpen ? 'closing' : 'opening';
+    };
 
-      // Lock axis after small movement
-      if (lockedAxisRef.current === null) {
-        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
-        lockedAxisRef.current = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
-        if (lockedAxisRef.current === 'v') {
-          dragModeRef.current = null;
-          return;
-        }
-      }
+    const onPointerMove = (e: PointerEvent) => {
+      if (activePointerRef.current !== e.pointerId || !dragModeRef.current) return;
+      const dx = e.clientX - startXRef.current;
+      const now = performance.now();
+      const dt = Math.max(1, now - lastTRef.current);
+      velRef.current = (e.clientX - lastXRef.current) / dt;
+      lastXRef.current = e.clientX;
+      lastTRef.current = now;
 
       const W = SIDEBAR_WIDTH;
       if (dragModeRef.current === 'opening') {
-        // Only positive (rightward) drag opens
         if (dx <= 0) { setDragOffset(0); setBackdropOpacity(0); return; }
-        const offset = Math.min(dx, W); // 0..W
-        setDragOffset(offset); // sidebar shows from -W + offset
+        const offset = Math.min(dx, W);
+        setDragOffset(offset);
         setBackdropOpacity(Math.min(1, offset / W));
-      } else if (dragModeRef.current === 'closing') {
-        // Only negative (leftward) drag closes
+      } else {
         if (dx >= 0) { setDragOffset(0); setBackdropOpacity(1); return; }
-        const offset = Math.max(dx, -W); // -W..0
+        const offset = Math.max(dx, -W);
         setDragOffset(offset);
         setBackdropOpacity(Math.max(0, 1 + offset / W));
       }
     };
 
-    const onTouchEnd = () => {
+    const onPointerEnd = (e: PointerEvent) => {
+      if (activePointerRef.current !== e.pointerId) return;
+      activePointerRef.current = null;
       if (!dragModeRef.current) {
-        setDragOffset(null);
-        setBackdropOpacity(undefined);
-        return;
+        setDragOffset(null); setBackdropOpacity(undefined); return;
       }
       const W = SIDEBAR_WIDTH;
       const threshold = window.innerWidth * OPEN_THRESHOLD_RATIO;
       const offset = (typeof dragOffset === 'number' ? dragOffset : 0);
+      const v = velRef.current; // px/ms
 
       if (dragModeRef.current === 'opening') {
-        // offset is 0..W (how far user has dragged)
-        if (offset >= threshold || offset >= W * 0.5) setSidebarOpen(true);
+        if (v > VELOCITY_THRESHOLD || offset >= threshold) setSidebarOpen(true);
         else setSidebarOpen(false);
-      } else if (dragModeRef.current === 'closing') {
-        // offset is -W..0 (how far user has dragged left)
-        if (Math.abs(offset) >= threshold || Math.abs(offset) >= W * 0.5) setSidebarOpen(false);
+      } else {
+        if (v < -VELOCITY_THRESHOLD || Math.abs(offset) >= threshold) setSidebarOpen(false);
         else setSidebarOpen(true);
       }
 
       dragModeRef.current = null;
-      lockedAxisRef.current = null;
       setDragOffset(null);
       setBackdropOpacity(undefined);
     };
 
-    window.addEventListener('touchstart', onTouchStart, { passive: true });
-    window.addEventListener('touchmove', onTouchMove, { passive: true });
-    window.addEventListener('touchend', onTouchEnd, { passive: true });
-    window.addEventListener('touchcancel', onTouchEnd, { passive: true });
+    window.addEventListener('pointerdown', onPointerDown, { passive: true });
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    window.addEventListener('pointerup', onPointerEnd, { passive: true });
+    window.addEventListener('pointercancel', onPointerEnd, { passive: true });
     return () => {
-      window.removeEventListener('touchstart', onTouchStart);
-      window.removeEventListener('touchmove', onTouchMove);
-      window.removeEventListener('touchend', onTouchEnd);
-      window.removeEventListener('touchcancel', onTouchEnd);
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerEnd);
+      window.removeEventListener('pointercancel', onPointerEnd);
     };
   }, [sidebarOpen, dragOffset]);
 
