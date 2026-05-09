@@ -352,3 +352,93 @@ html[data-font-size="xlarge"]  { --app-font-scale: 1.25;  }
 
 html { font-size: calc(16px * var(--app-font-scale)); }
 
+/* ─── Response width ─── */
+:root { --response-max-width: 48rem; }
+html[data-response-width="narrow"]   { --response-max-width: 36rem; }
+html[data-response-width="standard"] { --response-max-width: 48rem; }
+html[data-response-width="full"]     { --response-max-width: 100%; }
+.chat-surface .messages-stack,
+.chat-surface .response-container { max-width: var(--response-max-width); margin-left: auto; margin-right: auto; }
+
+/* ─── Animation intensity ─── */
+html[data-anim="off"] *,
+html[data-anim="off"] *::before,
+html[data-anim="off"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+html[data-anim="low"] * { transition-duration: 0.08s !important; }
+html[data-anim="high"] .ai-response-reveal { animation-duration: 0.7s; }
+
+/* ─── AI response style presets ─── */
+:root {
+  --ai-h1-size: 1.5rem; --ai-h2-size: 1.25rem; --ai-h3-size: 1.125rem;
+  --ai-p-mb: 1rem; --ai-p-leading: 1.75;
+  --ai-list-gap: 0.5rem; --ai-list-mb: 1rem;
+  --ai-code-radius: 0.75rem; --ai-code-bg: hsl(var(--muted));
+  --ai-block-mt: 1.25rem;
+}
+.ai-response { font-family: var(--chat-font-family, inherit); }
+.ai-response h1 { font-size: var(--ai-h1-size); font-weight: 700; margin: var(--ai-block-mt) 0 0.75rem; }
+.ai-response h2 { font-size: var(--ai-h2-size); font-weight: 700; margin: var(--ai-block-mt) 0 0.6rem; }
+.ai-response h3 { font-size: var(--ai-h3-size); font-weight: 600; margin: 1rem 0 0.5rem; }
+.ai-response p  { margin-bottom: var(--ai-p-mb); line-height: var(--ai-p-leading); }
+.ai-response ul, .ai-response ol { margin-bottom: var(--ai-list-mb); }
+.ai-response li + li { margin-top: var(--ai-list-gap); }
+
+/* ChatGPT (default) — already covered above */
+
+/* Gemini — structured, bullet-heavy, compact */
+html[data-ai-style="gemini"] {
+  --ai-p-mb: 0.6rem; --ai-p-leading: 1.55;
+  --ai-list-gap: 0.25rem; --ai-list-mb: 0.75rem;
+  --ai-h2-size: 1.15rem;
+}
+html[data-ai-style="gemini"] .ai-response ul { list-style: square; }
+html[data-ai-style="gemini"] .ai-response h2 {
+  border-left: 3px solid hsl(var(--primary)); padding-left: 0.6rem;
+}
+
+/* Claude — long-form, essay-like */
+html[data-ai-style="claude"] {
+  --ai-p-mb: 1.25rem; --ai-p-leading: 1.95;
+  --ai-h1-size: 1.75rem; --ai-h2-size: 1.4rem;
+}
+html[data-ai-style="claude"] .ai-response { font-family: 'IBM Plex Serif', Georgia, serif; }
+html[data-ai-style="claude"] .ai-response p { text-align: justify; hyphens: auto; }
+
+/* Developer — heavy code, strict */
+html[data-ai-style="dev"] {
+  --ai-p-leading: 1.5; --ai-code-radius: 0.375rem;
+}
+html[data-ai-style="dev"] .ai-response { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.92em; }
+html[data-ai-style="dev"] .ai-response code { background: rgba(120,120,120,0.18); }
+
+/* Minimal */
+html[data-ai-style="minimal"] {
+  --ai-p-mb: 0.5rem; --ai-p-leading: 1.45;
+  --ai-list-gap: 0.15rem; --ai-list-mb: 0.5rem;
+  --ai-block-mt: 0.75rem;
+}
+html[data-ai-style="minimal"] .ai-response-reveal { animation: none !important; }
+
+/* Educational */
+html[data-ai-style="edu"] {
+  --ai-p-mb: 0.9rem; --ai-p-leading: 1.7; --ai-list-gap: 0.6rem;
+}
+html[data-ai-style="edu"] .ai-response strong { background: hsl(var(--primary) / 0.15); padding: 0 0.2rem; border-radius: 0.25rem; }
+html[data-ai-style="edu"] .ai-response ol > li::marker { font-weight: 700; color: hsl(var(--primary)); }
+
+/* Creative */
+html[data-ai-style="creative"] {
+  --ai-p-mb: 1.15rem; --ai-p-leading: 1.85;
+  --ai-h1-size: 2rem; --ai-h2-size: 1.5rem;
+}
+html[data-ai-style="creative"] .ai-response { font-family: 'IBM Plex Serif', Georgia, serif; letter-spacing: 0.005em; }
+html[data-ai-style="creative"] .ai-response h1,
+html[data-ai-style="creative"] .ai-response h2 {
+  background: linear-gradient(135deg, hsl(var(--ai-blue)), hsl(var(--ai-purple)));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
