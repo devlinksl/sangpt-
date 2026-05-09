@@ -244,7 +244,9 @@ export type Database = {
       }
       user_preferences: {
         Row: {
+          ai_response_style: string
           analytics_opt_out: boolean | null
+          animation_intensity: string
           animations: boolean | null
           auto_speech: boolean | null
           bubble_style: string | null
@@ -258,6 +260,7 @@ export type Database = {
           new_chat_auto: boolean | null
           notifications: boolean | null
           response_style: string | null
+          response_width: string
           sound_haptics: boolean | null
           theme: string | null
           typing_speed: string | null
@@ -266,7 +269,9 @@ export type Database = {
           voice_preference: string | null
         }
         Insert: {
+          ai_response_style?: string
           analytics_opt_out?: boolean | null
+          animation_intensity?: string
           animations?: boolean | null
           auto_speech?: boolean | null
           bubble_style?: string | null
@@ -280,6 +285,7 @@ export type Database = {
           new_chat_auto?: boolean | null
           notifications?: boolean | null
           response_style?: string | null
+          response_width?: string
           sound_haptics?: boolean | null
           theme?: string | null
           typing_speed?: string | null
@@ -288,7 +294,9 @@ export type Database = {
           voice_preference?: string | null
         }
         Update: {
+          ai_response_style?: string
           analytics_opt_out?: boolean | null
+          animation_intensity?: string
           animations?: boolean | null
           auto_speech?: boolean | null
           bubble_style?: string | null
@@ -302,6 +310,7 @@ export type Database = {
           new_chat_auto?: boolean | null
           notifications?: boolean | null
           response_style?: string | null
+          response_width?: string
           sound_haptics?: boolean | null
           theme?: string | null
           typing_speed?: string | null
