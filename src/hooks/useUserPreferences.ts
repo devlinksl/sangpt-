@@ -19,6 +19,9 @@ export interface UserPreferences {
   chat_density: string;
   bubble_style: string;
   font_size: string;
+  ai_response_style: string;
+  animation_intensity: string;
+  response_width: string;
 }
 
 const DEFAULT_PREFS: UserPreferences = {
@@ -38,6 +41,9 @@ const DEFAULT_PREFS: UserPreferences = {
   chat_density: 'comfortable',
   bubble_style: 'rounded',
   font_size: 'default',
+  ai_response_style: 'chatgpt',
+  animation_intensity: 'medium',
+  response_width: 'standard',
 };
 
 const LOCAL_KEY = 'sangpt-prefs-cache';
@@ -97,6 +103,9 @@ export function useUserPreferences() {
             chat_density: (data as any).chat_density ?? DEFAULT_PREFS.chat_density,
             bubble_style: (data as any).bubble_style ?? DEFAULT_PREFS.bubble_style,
             font_size: (data as any).font_size ?? DEFAULT_PREFS.font_size,
+            ai_response_style: (data as any).ai_response_style ?? DEFAULT_PREFS.ai_response_style,
+            animation_intensity: (data as any).animation_intensity ?? DEFAULT_PREFS.animation_intensity,
+            response_width: (data as any).response_width ?? DEFAULT_PREFS.response_width,
           };
           setPreferences(next);
           writeLocalPrefs(next);
