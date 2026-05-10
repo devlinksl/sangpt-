@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { ChatInterface } from '@/components/ChatInterface';
 import { Sidebar } from '@/components/Sidebar';
 import { useChatAppearance } from '@/hooks/useChatAppearance';
