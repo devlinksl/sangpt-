@@ -10,6 +10,7 @@ import {
   useConversations,
   useConversationsLoading,
 } from '@/hooks/useConversationsStore';
+import { pinnedStore, usePinned } from '@/lib/pinnedConversations';
 import {
   MessageSquare,
   Search,
@@ -22,6 +23,7 @@ import {
   Share2,
   Archive,
   Pin,
+  PinOff,
 } from 'lucide-react';
 
 interface SidebarProps {
