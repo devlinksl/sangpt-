@@ -719,11 +719,13 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           });
         }
 
-        await supabase.from('messages').insert([{
-          conversation_id: convId,
-          role: 'assistant',
-          content: aiResponse,
-        }]);
+        if (!temporaryMode && convId) {
+          await supabase.from('messages').insert([{
+            conversation_id: convId,
+            role: 'assistant',
+            content: aiResponse,
+          }]);
+        }
       }
     } catch (error: any) {
       console.error('Error in sendMessage:', error);
