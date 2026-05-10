@@ -437,6 +437,7 @@ const ConversationItem = ({
   onLongPress,
   onSelect,
   isLoading,
+  isPinned,
 }: ConversationItemProps) => {
   const isEditing = editingId === conversation.id;
   const longPressTimerRef = useRef<number | null>(null);
