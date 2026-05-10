@@ -74,6 +74,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
   const { user } = useAuth();
   const conversations = useConversations();
   const isLoadingConversations = useConversationsLoading();
+  const pinnedSet = usePinned();
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
