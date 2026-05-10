@@ -158,7 +158,9 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
   const filteredConversations = conversations.filter(conv =>
     conv.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  const dateGroups = groupByDate(filteredConversations);
+  const pinnedConversations = filteredConversations.filter(c => pinnedSet.has(c.id));
+  const unpinnedConversations = filteredConversations.filter(c => !pinnedSet.has(c.id));
+  const dateGroups = groupByDate(unpinnedConversations);
 
   const isDragging = dragOffset != null;
   // Width of the sidebar in px (must match w-80 = 320px tailwind)
