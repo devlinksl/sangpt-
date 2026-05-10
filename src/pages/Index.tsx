@@ -162,6 +162,19 @@ const Index = () => {
           onConversationChange={setSelectedConversationId}
         />
       </div>
+
+      {/* Smooth chat-load overlay */}
+      <div
+        className="fixed inset-0 z-[55] flex items-center justify-center bg-background/40 backdrop-blur-md pointer-events-none transition-opacity duration-200"
+        style={{ opacity: chatLoading ? 1 : 0 }}
+        aria-hidden={!chatLoading}
+      >
+        <div className="flex flex-col items-center gap-3 animate-fade-in">
+          <Loader2 className="h-7 w-7 text-primary animate-spin" />
+          <p className="text-xs text-muted-foreground tracking-wide">Loading chat…</p>
+        </div>
+      </div>
+
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
