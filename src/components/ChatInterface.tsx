@@ -17,6 +17,7 @@ import { useStreamChat } from '@/hooks/useStreamChat';
 import { getCachedMessages, cacheMessages, removeCachedConversation } from '@/lib/chatCache';
 import { conversationsStore } from '@/hooks/useConversationsStore';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
+import { loadTempChat, saveTempChat, clearTempChat, purgeIfExpired, type TempMessage } from '@/lib/tempChat';
 import {
   Menu,
   Edit3,
@@ -32,6 +33,7 @@ import {
   Copy,
   X,
   WifiOff,
+  Ghost,
 } from 'lucide-react';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
