@@ -1,6 +1,7 @@
 import { SettingsSubPage } from './SettingsSubPage';
 import { SettingsSection } from './SettingsSection';
 import { SettingsItem } from './SettingsItem';
+import { AIStylePreview } from './AIStylePreview';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { Type, AlignVerticalSpaceAround, LayoutGrid, ALargeSmall, Sparkles, Zap, Maximize2 } from 'lucide-react';
 
