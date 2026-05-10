@@ -369,12 +369,16 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
           // Soft-hide locally; full archive backend can extend later
           if (contextMenuId) conversationsStore.remove(contextMenuId);
         };
-        const handlePin = () => { setContextMenuId(null); };
+        const isAlreadyPinned = contextMenuId ? pinnedSet.has(contextMenuId) : false;
+        const handlePin = () => {
+          if (contextMenuId) pinnedStore.toggle(contextMenuId);
+          setContextMenuId(null);
+        };
 
         const items = [
           { icon: Pencil, label: 'Rename', onClick: () => { if (conv) { setEditingId(conv.id); setEditTitle(conv.title); } setContextMenuId(null); } },
           { icon: Share2, label: 'Share', onClick: handleShare },
-          { icon: Pin,    label: 'Pin / Unpin', onClick: handlePin },
+          { icon: isAlreadyPinned ? PinOff : Pin, label: isAlreadyPinned ? 'Unpin' : 'Pin', onClick: handlePin },
           { icon: Archive,label: 'Archive', onClick: handleArchive },
           { icon: Trash2, label: 'Delete', onClick: () => { setDeleteConfirmId(contextMenuId); setContextMenuId(null); }, destructive: true },
         ];
