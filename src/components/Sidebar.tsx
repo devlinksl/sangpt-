@@ -445,7 +445,7 @@ const ConversationItem = ({
 
   return (
     <div
-      className="relative flex items-center gap-3 p-2.5 rounded-lg cursor-pointer hover:bg-accent/50 transition-colors active:bg-accent/70"
+      className={`relative flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors active:bg-accent/70 ${isLoading ? 'bg-accent/60' : 'hover:bg-accent/50'}`}
       onTouchStart={startLongPress}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -459,7 +459,11 @@ const ConversationItem = ({
         if (!('ontouchstart' in window) && !isEditing) onSelect();
       }}
     >
-      <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+      {isLoading ? (
+        <Loader2 className="h-4 w-4 text-primary flex-shrink-0 animate-spin" />
+      ) : (
+        <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+      )}
       <div className="flex-1 min-w-0">
         {isEditing ? (
           <input
