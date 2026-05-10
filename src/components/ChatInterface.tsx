@@ -561,6 +561,33 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     setCurrentConversationId(null);
     setChatTitle('');
     onConversationChange?.(null);
+    if (temporaryMode) {
+      setTemporaryMode(false);
+      clearTempChat();
+    }
+  };
+
+  const toggleTemporaryMode = () => {
+    if (temporaryMode) {
+      // Exit temp mode and discard
+      setTemporaryMode(false);
+      clearTempChat();
+      setMessages([]);
+    } else {
+      // Enter temp mode — clear current view and start fresh
+      setMessages([]);
+      setCurrentConversationId(null);
+      setChatTitle('');
+      onConversationChange?.(null);
+      const existing = loadTempChat();
+      if (existing.length > 0) {
+        setMessages(existing.map(m => ({
+          id: m.id, role: m.role, content: m.content,
+          created_at: m.created_at, rating: m.rating || 0, metadata: m.metadata,
+        })));
+      }
+      setTemporaryMode(true);
+    }
   };
 
   const sendMessage = useCallback(async (messageText: string, isRegeneration = false) => {
