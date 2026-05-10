@@ -144,8 +144,10 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
 
   const handleConversationClick = (conversationId: string) => {
     if (onConversationSelect) {
+      setLoadingId(conversationId);
+      // Brief delay so the spinner is visible & the close animation feels intentional
       onConversationSelect(conversationId);
-      onClose();
+      setTimeout(() => onClose(), 140);
     }
   };
 
