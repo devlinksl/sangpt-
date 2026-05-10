@@ -122,6 +122,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
 
   const deleteConversation = (id: string) => {
     conversationsStore.remove(id);
+    pinnedStore.remove(id);
     setDeleteConfirmId(null);
     setContextMenuId(null);
     supabase.from('conversations').delete().eq('id', id).then(({ error }) => {
