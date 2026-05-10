@@ -425,6 +425,7 @@ interface ConversationItemProps {
   onLongPress: () => void;
   onSelect: () => void;
   isLoading?: boolean;
+  isPinned?: boolean;
 }
 
 const ConversationItem = ({
