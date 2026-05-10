@@ -10,6 +10,7 @@ import {
   useConversations,
   useConversationsLoading,
 } from '@/hooks/useConversationsStore';
+import { pinnedStore, usePinned } from '@/lib/pinnedConversations';
 import {
   MessageSquare,
   Search,
@@ -22,6 +23,7 @@ import {
   Share2,
   Archive,
   Pin,
+  PinOff,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -72,6 +74,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
   const { user } = useAuth();
   const conversations = useConversations();
   const isLoadingConversations = useConversationsLoading();
+  const pinnedSet = usePinned();
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -119,6 +122,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
 
   const deleteConversation = (id: string) => {
     conversationsStore.remove(id);
+    pinnedStore.remove(id);
     setDeleteConfirmId(null);
     setContextMenuId(null);
     supabase.from('conversations').delete().eq('id', id).then(({ error }) => {
@@ -154,7 +158,9 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
   const filteredConversations = conversations.filter(conv =>
     conv.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  const dateGroups = groupByDate(filteredConversations);
+  const pinnedConversations = filteredConversations.filter(c => pinnedSet.has(c.id));
+  const unpinnedConversations = filteredConversations.filter(c => !pinnedSet.has(c.id));
+  const dateGroups = groupByDate(unpinnedConversations);
 
   const isDragging = dragOffset != null;
   // Width of the sidebar in px (must match w-80 = 320px tailwind)
@@ -257,6 +263,31 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
             </div>
           ) : (
             <div className="space-y-4 pt-1">
+              {pinnedConversations.length > 0 && (
+                <div>
+                  <p className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider px-2 mb-1.5">
+                    <Pin className="h-3 w-3" /> Pinned
+                  </p>
+                  <div className="space-y-0.5">
+                    {pinnedConversations.map((conversation) => (
+                      <ConversationItem
+                        key={conversation.id}
+                        conversation={conversation}
+                        editingId={editingId}
+                        editTitle={editTitle}
+                        setEditTitle={setEditTitle}
+                        onSubmitEdit={handleTitleSubmit}
+                        onDelete={(id) => setDeleteConfirmId(id)}
+                        onLongPress={() => setContextMenuId(conversation.id)}
+                        onSelect={() => handleConversationClick(conversation.id)}
+                        isLoading={loadingId === conversation.id}
+                        isPinned
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {dateGroups.map((group) => (
                 <div key={group.label}>
                   <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider px-2 mb-1.5">
@@ -338,12 +369,16 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
           // Soft-hide locally; full archive backend can extend later
           if (contextMenuId) conversationsStore.remove(contextMenuId);
         };
-        const handlePin = () => { setContextMenuId(null); };
+        const isAlreadyPinned = contextMenuId ? pinnedSet.has(contextMenuId) : false;
+        const handlePin = () => {
+          if (contextMenuId) pinnedStore.toggle(contextMenuId);
+          setContextMenuId(null);
+        };
 
         const items = [
           { icon: Pencil, label: 'Rename', onClick: () => { if (conv) { setEditingId(conv.id); setEditTitle(conv.title); } setContextMenuId(null); } },
           { icon: Share2, label: 'Share', onClick: handleShare },
-          { icon: Pin,    label: 'Pin / Unpin', onClick: handlePin },
+          { icon: isAlreadyPinned ? PinOff : Pin, label: isAlreadyPinned ? 'Unpin' : 'Pin', onClick: handlePin },
           { icon: Archive,label: 'Archive', onClick: handleArchive },
           { icon: Trash2, label: 'Delete', onClick: () => { setDeleteConfirmId(contextMenuId); setContextMenuId(null); }, destructive: true },
         ];
@@ -390,6 +425,7 @@ interface ConversationItemProps {
   onLongPress: () => void;
   onSelect: () => void;
   isLoading?: boolean;
+  isPinned?: boolean;
 }
 
 const ConversationItem = ({
@@ -401,6 +437,7 @@ const ConversationItem = ({
   onLongPress,
   onSelect,
   isLoading,
+  isPinned,
 }: ConversationItemProps) => {
   const isEditing = editingId === conversation.id;
   const longPressTimerRef = useRef<number | null>(null);
@@ -476,7 +513,10 @@ const ConversationItem = ({
             autoFocus
           />
         ) : (
-          <p className="text-sm truncate">{conversation.title}</p>
+          <p className="text-sm truncate flex items-center gap-1.5">
+            <span className="truncate">{conversation.title}</span>
+            {isPinned && <Pin className="h-3 w-3 text-primary/70 flex-shrink-0" />}
+          </p>
         )}
       </div>
     </div>
