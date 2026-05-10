@@ -78,7 +78,16 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [contextMenuId, setContextMenuId] = useState<string | null>(null);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Reset loading indicator when sidebar fully closes
+  useEffect(() => {
+    if (!isOpen) {
+      const t = setTimeout(() => setLoadingId(null), 320);
+      return () => clearTimeout(t);
+    }
+  }, [isOpen]);
 
   // Preload + realtime subscribe (independent of sidebar open state)
   useEffect(() => {
@@ -135,8 +144,10 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
 
   const handleConversationClick = (conversationId: string) => {
     if (onConversationSelect) {
+      setLoadingId(conversationId);
+      // Brief delay so the spinner is visible & the close animation feels intentional
       onConversationSelect(conversationId);
-      onClose();
+      setTimeout(() => onClose(), 140);
     }
   };
 
@@ -263,6 +274,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
                         onDelete={(id) => setDeleteConfirmId(id)}
                         onLongPress={() => setContextMenuId(conversation.id)}
                         onSelect={() => handleConversationClick(conversation.id)}
+                        isLoading={loadingId === conversation.id}
                       />
                     ))}
                   </div>
@@ -377,6 +389,7 @@ interface ConversationItemProps {
   onDelete: (id: string) => void;
   onLongPress: () => void;
   onSelect: () => void;
+  isLoading?: boolean;
 }
 
 const ConversationItem = ({
@@ -387,6 +400,7 @@ const ConversationItem = ({
   onSubmitEdit,
   onLongPress,
   onSelect,
+  isLoading,
 }: ConversationItemProps) => {
   const isEditing = editingId === conversation.id;
   const longPressTimerRef = useRef<number | null>(null);
@@ -431,7 +445,7 @@ const ConversationItem = ({
 
   return (
     <div
-      className="relative flex items-center gap-3 p-2.5 rounded-lg cursor-pointer hover:bg-accent/50 transition-colors active:bg-accent/70"
+      className={`relative flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors active:bg-accent/70 ${isLoading ? 'bg-accent/60' : 'hover:bg-accent/50'}`}
       onTouchStart={startLongPress}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -445,7 +459,11 @@ const ConversationItem = ({
         if (!('ontouchstart' in window) && !isEditing) onSelect();
       }}
     >
-      <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+      {isLoading ? (
+        <Loader2 className="h-4 w-4 text-primary flex-shrink-0 animate-spin" />
+      ) : (
+        <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+      )}
       <div className="flex-1 min-w-0">
         {isEditing ? (
           <input

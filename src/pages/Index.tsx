@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { ChatInterface } from '@/components/ChatInterface';
 import { Sidebar } from '@/components/Sidebar';
 import { useChatAppearance } from '@/hooks/useChatAppearance';
@@ -14,6 +15,7 @@ const Index = () => {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState<number | null>(null);
   const [backdropOpacity, setBackdropOpacity] = useState<number | undefined>(undefined);
+  const [chatLoading, setChatLoading] = useState(false);
 
   // Apply chat appearance preferences globally
   useChatAppearance();
@@ -30,9 +32,16 @@ const Index = () => {
   }, []);
 
   const handleConversationSelect = useCallback((conversationId: string) => {
+    if (conversationId === selectedConversationId) {
+      setSidebarOpen(false);
+      return;
+    }
+    setChatLoading(true);
     setSelectedConversationId(conversationId);
     setSidebarOpen(false);
-  }, []);
+    // Cached messages render almost instantly; this overlay smooths the transition
+    window.setTimeout(() => setChatLoading(false), 360);
+  }, [selectedConversationId]);
 
   // ─── Native finger-following drag gesture (swipe-from-anywhere + mouse) ───
   const startXRef = useRef(0);
@@ -153,6 +162,19 @@ const Index = () => {
           onConversationChange={setSelectedConversationId}
         />
       </div>
+
+      {/* Smooth chat-load overlay */}
+      <div
+        className="fixed inset-0 z-[55] flex items-center justify-center bg-background/40 backdrop-blur-md pointer-events-none transition-opacity duration-200"
+        style={{ opacity: chatLoading ? 1 : 0 }}
+        aria-hidden={!chatLoading}
+      >
+        <div className="flex flex-col items-center gap-3 animate-fade-in">
+          <Loader2 className="h-7 w-7 text-primary animate-spin" />
+          <p className="text-xs text-muted-foreground tracking-wide">Loading chat…</p>
+        </div>
+      </div>
+
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}

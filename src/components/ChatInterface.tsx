@@ -17,6 +17,7 @@ import { useStreamChat } from '@/hooks/useStreamChat';
 import { getCachedMessages, cacheMessages, removeCachedConversation } from '@/lib/chatCache';
 import { conversationsStore } from '@/hooks/useConversationsStore';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
+import { loadTempChat, saveTempChat, clearTempChat, purgeIfExpired, type TempMessage } from '@/lib/tempChat';
 import {
   Menu,
   Edit3,
@@ -32,6 +33,7 @@ import {
   Copy,
   X,
   WifiOff,
+  Ghost,
 } from 'lucide-react';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -362,10 +364,25 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const [editingDraft, setEditingDraft] = useState('');
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [offlineUnavailable, setOfflineUnavailable] = useState(false);
+  const [temporaryMode, setTemporaryMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputBarRef = useRef<ChatInputBarHandle>(null);
   const userScrolledRef = useRef(false);
+
+  // Purge expired temp chat on mount
+  useEffect(() => { purgeIfExpired(); }, []);
+
+  // Persist temp messages whenever they change while in temp mode
+  useEffect(() => {
+    if (!temporaryMode) return;
+    if (messages.length === 0) return;
+    const tempMsgs: TempMessage[] = messages.map(m => ({
+      id: m.id, role: m.role, content: m.content, created_at: m.created_at,
+      rating: m.rating, metadata: m.metadata,
+    }));
+    saveTempChat(tempMsgs);
+  }, [messages, temporaryMode]);
 
   useEffect(() => {
     const on = () => setIsOnline(true);
@@ -544,6 +561,33 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     setCurrentConversationId(null);
     setChatTitle('');
     onConversationChange?.(null);
+    if (temporaryMode) {
+      setTemporaryMode(false);
+      clearTempChat();
+    }
+  };
+
+  const toggleTemporaryMode = () => {
+    if (temporaryMode) {
+      // Exit temp mode and discard
+      setTemporaryMode(false);
+      clearTempChat();
+      setMessages([]);
+    } else {
+      // Enter temp mode — clear current view and start fresh
+      setMessages([]);
+      setCurrentConversationId(null);
+      setChatTitle('');
+      onConversationChange?.(null);
+      const existing = loadTempChat();
+      if (existing.length > 0) {
+        setMessages(existing.map(m => ({
+          id: m.id, role: m.role, content: m.content,
+          created_at: m.created_at, rating: m.rating || 0, metadata: m.metadata,
+        })));
+      }
+      setTemporaryMode(true);
+    }
   };
 
   const sendMessage = useCallback(async (messageText: string, isRegeneration = false) => {
@@ -575,14 +619,14 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
     try {
       let convId = currentConversationId;
-      if (!convId) {
+      if (!convId && !temporaryMode) {
         convId = await createNewConversation(messageText);
         if (!convId) throw new Error('Failed to create conversation');
         setCurrentConversationId(convId);
         onConversationChange?.(convId);
       }
 
-      if (!isRegeneration && userMessage) {
+      if (!isRegeneration && userMessage && !temporaryMode && convId) {
         supabase.from('messages').insert([{
           conversation_id: convId,
           role: 'user',
@@ -702,11 +746,13 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           });
         }
 
-        await supabase.from('messages').insert([{
-          conversation_id: convId,
-          role: 'assistant',
-          content: aiResponse,
-        }]);
+        if (!temporaryMode && convId) {
+          await supabase.from('messages').insert([{
+            conversation_id: convId,
+            role: 'assistant',
+            content: aiResponse,
+          }]);
+        }
       }
     } catch (error: any) {
       console.error('Error in sendMessage:', error);
@@ -878,17 +924,32 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
             onClick={() => { if (currentConversationId && chatTitle) setShowTitleModal(true); }}
             className="san-logo-pill-wrapper flex items-center gap-1.5 max-w-[45%]"
           >
+            {temporaryMode && <Ghost size={13} className="text-primary/80" />}
             <span className="san-logo-pill text-sm truncate">
-              {currentConversationId ? (chatTitle || 'SanGPT') : 'SanGPT'}
+              {temporaryMode ? 'Temporary' : currentConversationId ? (chatTitle || 'SanGPT') : 'SanGPT'}
             </span>
           </button>
 
           <div className="flex items-center gap-0.5">
             {user ? (
               <>
-                <button className="san-icon-btn" onClick={handleNewChat}>
-                  <Edit3 size={18} />
-                </button>
+                {/* Ghost toggle — only when no active chat (empty state). Auto-deletes after 24h. */}
+                {!currentConversationId && (
+                  <button
+                    className="san-icon-btn"
+                    onClick={toggleTemporaryMode}
+                    aria-label={temporaryMode ? 'Exit temporary chat' : 'Start temporary chat'}
+                    title={temporaryMode ? 'Temporary chat (auto-deletes in 24h)' : 'Start temporary chat'}
+                    style={temporaryMode ? { color: 'hsl(var(--primary))', background: 'hsl(var(--primary) / 0.12)' } : undefined}
+                  >
+                    <Ghost size={18} />
+                  </button>
+                )}
+                {currentConversationId && (
+                  <button className="san-icon-btn" onClick={handleNewChat}>
+                    <Edit3 size={18} />
+                  </button>
+                )}
                 {currentConversationId && (
                   <div className="relative">
                     <button
