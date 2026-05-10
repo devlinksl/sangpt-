@@ -592,14 +592,14 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
     try {
       let convId = currentConversationId;
-      if (!convId) {
+      if (!convId && !temporaryMode) {
         convId = await createNewConversation(messageText);
         if (!convId) throw new Error('Failed to create conversation');
         setCurrentConversationId(convId);
         onConversationChange?.(convId);
       }
 
-      if (!isRegeneration && userMessage) {
+      if (!isRegeneration && userMessage && !temporaryMode && convId) {
         supabase.from('messages').insert([{
           conversation_id: convId,
           role: 'user',
