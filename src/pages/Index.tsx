@@ -15,6 +15,7 @@ const Index = () => {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState<number | null>(null);
   const [backdropOpacity, setBackdropOpacity] = useState<number | undefined>(undefined);
+  const [chatLoading, setChatLoading] = useState(false);
 
   // Apply chat appearance preferences globally
   useChatAppearance();
@@ -31,9 +32,16 @@ const Index = () => {
   }, []);
 
   const handleConversationSelect = useCallback((conversationId: string) => {
+    if (conversationId === selectedConversationId) {
+      setSidebarOpen(false);
+      return;
+    }
+    setChatLoading(true);
     setSelectedConversationId(conversationId);
     setSidebarOpen(false);
-  }, []);
+    // Cached messages render almost instantly; this overlay smooths the transition
+    window.setTimeout(() => setChatLoading(false), 360);
+  }, [selectedConversationId]);
 
   // ─── Native finger-following drag gesture (swipe-from-anywhere + mouse) ───
   const startXRef = useRef(0);
