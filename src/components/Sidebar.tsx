@@ -78,7 +78,16 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [contextMenuId, setContextMenuId] = useState<string | null>(null);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Reset loading indicator when sidebar fully closes
+  useEffect(() => {
+    if (!isOpen) {
+      const t = setTimeout(() => setLoadingId(null), 320);
+      return () => clearTimeout(t);
+    }
+  }, [isOpen]);
 
   // Preload + realtime subscribe (independent of sidebar open state)
   useEffect(() => {
