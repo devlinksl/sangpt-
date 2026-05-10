@@ -513,7 +513,10 @@ const ConversationItem = ({
             autoFocus
           />
         ) : (
-          <p className="text-sm truncate">{conversation.title}</p>
+          <p className="text-sm truncate flex items-center gap-1.5">
+            <span className="truncate">{conversation.title}</span>
+            {isPinned && <Pin className="h-3 w-3 text-primary/70 flex-shrink-0" />}
+          </p>
         )}
       </div>
     </div>
