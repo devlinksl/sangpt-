@@ -274,6 +274,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
                         onDelete={(id) => setDeleteConfirmId(id)}
                         onLongPress={() => setContextMenuId(conversation.id)}
                         onSelect={() => handleConversationClick(conversation.id)}
+                        isLoading={loadingId === conversation.id}
                       />
                     ))}
                   </div>
