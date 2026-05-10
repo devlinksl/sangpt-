@@ -924,17 +924,32 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
             onClick={() => { if (currentConversationId && chatTitle) setShowTitleModal(true); }}
             className="san-logo-pill-wrapper flex items-center gap-1.5 max-w-[45%]"
           >
+            {temporaryMode && <Ghost size={13} className="text-primary/80" />}
             <span className="san-logo-pill text-sm truncate">
-              {currentConversationId ? (chatTitle || 'SanGPT') : 'SanGPT'}
+              {temporaryMode ? 'Temporary' : currentConversationId ? (chatTitle || 'SanGPT') : 'SanGPT'}
             </span>
           </button>
 
           <div className="flex items-center gap-0.5">
             {user ? (
               <>
-                <button className="san-icon-btn" onClick={handleNewChat}>
-                  <Edit3 size={18} />
-                </button>
+                {/* Ghost toggle — only when no active chat (empty state). Auto-deletes after 24h. */}
+                {!currentConversationId && (
+                  <button
+                    className="san-icon-btn"
+                    onClick={toggleTemporaryMode}
+                    aria-label={temporaryMode ? 'Exit temporary chat' : 'Start temporary chat'}
+                    title={temporaryMode ? 'Temporary chat (auto-deletes in 24h)' : 'Start temporary chat'}
+                    style={temporaryMode ? { color: 'hsl(var(--primary))', background: 'hsl(var(--primary) / 0.12)' } : undefined}
+                  >
+                    <Ghost size={18} />
+                  </button>
+                )}
+                {currentConversationId && (
+                  <button className="san-icon-btn" onClick={handleNewChat}>
+                    <Edit3 size={18} />
+                  </button>
+                )}
                 {currentConversationId && (
                   <div className="relative">
                     <button
