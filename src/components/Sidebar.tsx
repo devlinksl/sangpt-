@@ -389,6 +389,7 @@ interface ConversationItemProps {
   onDelete: (id: string) => void;
   onLongPress: () => void;
   onSelect: () => void;
+  isLoading?: boolean;
 }
 
 const ConversationItem = ({
@@ -399,6 +400,7 @@ const ConversationItem = ({
   onSubmitEdit,
   onLongPress,
   onSelect,
+  isLoading,
 }: ConversationItemProps) => {
   const isEditing = editingId === conversation.id;
   const longPressTimerRef = useRef<number | null>(null);
