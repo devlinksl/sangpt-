@@ -364,10 +364,25 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const [editingDraft, setEditingDraft] = useState('');
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [offlineUnavailable, setOfflineUnavailable] = useState(false);
+  const [temporaryMode, setTemporaryMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputBarRef = useRef<ChatInputBarHandle>(null);
   const userScrolledRef = useRef(false);
+
+  // Purge expired temp chat on mount
+  useEffect(() => { purgeIfExpired(); }, []);
+
+  // Persist temp messages whenever they change while in temp mode
+  useEffect(() => {
+    if (!temporaryMode) return;
+    if (messages.length === 0) return;
+    const tempMsgs: TempMessage[] = messages.map(m => ({
+      id: m.id, role: m.role, content: m.content, created_at: m.created_at,
+      rating: m.rating, metadata: m.metadata,
+    }));
+    saveTempChat(tempMsgs);
+  }, [messages, temporaryMode]);
 
   useEffect(() => {
     const on = () => setIsOnline(true);
