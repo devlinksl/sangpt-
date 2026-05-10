@@ -87,11 +87,16 @@ export function ChatAppearanceSubPage({ onBack }: Props) {
         />
       </SettingsSection>
 
+      <AIStylePreview
+        current={preferences.ai_response_style || 'chatgpt'}
+        onSelect={(key) => updatePreference('ai_response_style', key as any)}
+      />
+
       <SettingsSection title="AI Response Style">
         <SettingsItem
           icon={<Sparkles className="h-[18px] w-[18px]" />}
           label="Rendering Preset"
-          description="How AI responses are formatted"
+          description="Tap a card above for instant preview"
           onClick={() => updatePreference('ai_response_style', cycle(AI_STYLES, (preferences.ai_response_style || 'chatgpt') as any))}
           trailing={AI_LABEL[(preferences.ai_response_style || 'chatgpt') as typeof AI_STYLES[number]]}
           index={0}
