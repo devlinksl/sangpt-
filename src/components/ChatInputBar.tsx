@@ -107,7 +107,6 @@ export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
     const v = e.target.value;
     setText(v);
     if ((v.length > 0) !== hasContent) setHasContent(v.length > 0);
-    // Grows up to 120px then scrolls (scrollbar hidden via CSS)
     e.target.style.height = 'auto';
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
   }, [hasContent]);
@@ -162,7 +161,7 @@ export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
         {/* ── Row: + | pill input | send ── */}
         <div className="flex items-end gap-2.5">
 
-          {/* + button — standalone circle, left of pill */}
+          {/* + button — bg-card matches app surface */}
           <div className="relative flex-shrink-0 self-end" ref={attachMenuRef}>
             <button
               type="button"
@@ -170,8 +169,8 @@ export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
               disabled={isInputDisabled}
               className={cn(
                 'h-11 w-11 rounded-full flex items-center justify-center',
-                'bg-secondary text-secondary-foreground',
-                'hover:bg-secondary/70 active:scale-90 transition-all duration-150',
+                'bg-card text-muted-foreground border border-border',
+                'hover:text-foreground hover:bg-accent active:scale-90 transition-all duration-150',
                 'disabled:opacity-40 disabled:pointer-events-none',
               )}
               aria-label="Attach"
@@ -215,8 +214,8 @@ export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
             </div>
           </div>
 
-          {/* ── Pill input ── uses bg-secondary so it blends with app bg */}
-          <div className="flex-1 flex items-end rounded-[26px] border border-border/60 bg-secondary/40 dark:bg-secondary/20 px-4 py-2.5 gap-2 transition-all duration-150">
+          {/* ── Pill — bg-card is the same token your app uses for surfaces ── */}
+          <div className="flex-1 flex items-end rounded-[26px] border border-border bg-card px-4 py-2.5 gap-2 transition-all duration-150">
 
             {/* Textarea */}
             <textarea
@@ -262,14 +261,14 @@ export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
               type="button"
               onClick={() => { lightTap(); onModelSelect(); }}
               disabled={isInputDisabled}
-              className="flex-shrink-0 self-end flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-border/50 bg-background/50 dark:bg-background/20 text-foreground/65 text-[13px] font-medium hover:bg-background/80 active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:pointer-events-none"
+              className="flex-shrink-0 self-end flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-border text-muted-foreground text-[13px] font-medium hover:text-foreground hover:bg-accent active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:pointer-events-none"
             >
               <Sparkles className="h-3.5 w-3.5 text-primary" />
               <span>SanGPT</span>
             </button>
           </div>
 
-          {/* Send / stop — standalone circle, right of pill */}
+          {/* Send / stop — standalone circle */}
           <div className="flex-shrink-0 self-end">
             <Button
               onClick={handleSendClick}
@@ -281,7 +280,7 @@ export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
                   ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
                   : hasContent
                     ? 'bg-foreground hover:bg-foreground/85 text-background scale-100'
-                    : 'bg-secondary text-muted-foreground/50 scale-95 cursor-not-allowed',
+                    : 'bg-card text-muted-foreground/40 border border-border scale-95 cursor-not-allowed',
               )}
             >
               {isLoading && isStoppable
