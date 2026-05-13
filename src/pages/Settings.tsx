@@ -2,12 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/AuthContext';
 import { useTheme } from '@/components/ThemeProvider';
-import { useAlert } from '@/hooks/useAlert';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { SettingsItem } from '@/components/settings/SettingsItem';
-import { SettingsSection } from '@/components/settings/SettingsSection';
 import { ProfileInfoSubPage } from '@/components/settings/ProfileInfoSubPage';
 import { AboutSubPage } from '@/components/settings/AboutSubPage';
 import { AccountSecuritySubPage } from '@/components/settings/AccountSecuritySubPage';
@@ -38,6 +35,7 @@ import {
   LogOut,
   Database,
   ChevronRight,
+  UserCircle // Using this as the Font Awesome style replacement
 } from 'lucide-react';
 
 type SubPage =
@@ -79,11 +77,17 @@ export default function Settings() {
     updatePreference('typing_speed', next);
   };
 
+  const cycleDataMode = () => {
+    const modes: ("standard" | "low" | "offline")[] = ['standard', 'low', 'offline'];
+    const currentIndex = modes.indexOf(preferences.data_mode);
+    const next = modes[(currentIndex + 1) % modes.length];
+    updatePreference('data_mode', next);
+  };
+
   const themeLabel = theme === 'dark' ? 'Dark' : theme === 'light' ? 'Light' : 'System';
-  
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-  // Sub-page logic (kept identical to your original logic)
+  // Sub-page routing
   if (subPage === 'profile') return <ProfileInfoSubPage onBack={() => setSubPage('main')} />;
   if (subPage === 'about') return <AboutSubPage onBack={() => setSubPage('main')} />;
   if (subPage === 'security') return <AccountSecuritySubPage onBack={() => setSubPage('main')} />;
@@ -96,103 +100,105 @@ export default function Settings() {
   if (subPage === 'data-controls') return <DataControlsSubPage onBack={() => setSubPage('main')} />;
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Dynamic Modern Header */}
+    <div className="min-h-screen bg-background pb-12">
+      {/* Header */}
       <header className="sticky top-0 bg-background/80 backdrop-blur-xl border-b border-border/40 z-20">
-        <div className="max-w-2xl mx-auto flex items-center justify-between p-4">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="hover:bg-accent rounded-full">
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-xl font-bold tracking-tight">Settings</h1>
-          </div>
+        <div className="max-w-2xl mx-auto flex items-center p-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="mr-2 rounded-full">
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl font-bold tracking-tight">Settings</h1>
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto p-4 space-y-8 mt-4">
+      <div className="max-w-2xl mx-auto p-4 space-y-6">
         
-        {/* Profile Section - Enhanced elevation */}
-        <section>
-          <div
-            className="group glass-card rounded-3xl p-6 flex items-center gap-5 cursor-pointer 
-                       hover:bg-accent/5 transition-all duration-300 border border-border/50 shadow-sm active:scale-[0.99]"
-            onClick={() => setSubPage('profile')}
-          >
-            <div className="relative">
-              <Avatar className="h-20 w-20 border-2 border-background shadow-2xl">
-                <AvatarFallback className="bg-gradient-to-br from-primary to-ai-purple text-white text-2xl font-bold">
-                  {user?.user_metadata?.display_name?.charAt(0).toUpperCase() || 'S'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="absolute bottom-0 right-0 h-5 w-5 bg-green-500 border-2 border-background rounded-full" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-bold tracking-tight">
-                {user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'User'}
-              </h2>
-              <p className="text-sm text-muted-foreground opacity-80">
-                {user?.email || 'Sign in to sync data'}
-              </p>
-            </div>
-            <div className="bg-accent/20 p-2 rounded-full group-hover:bg-accent transition-colors">
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </div>
+        {/* User Card - Clean Font Awesome Style */}
+        <section
+          className="glass-card rounded-3xl p-5 flex items-center gap-4 cursor-pointer hover:bg-accent/5 transition-all border border-border/50 active:scale-[0.99]"
+          onClick={() => setSubPage('profile')}
+        >
+          <div className="bg-accent/30 p-3 rounded-2xl">
+            <UserCircle className="h-10 w-10 text-foreground/70" strokeWidth={1.5} />
           </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg font-bold truncate">
+              {user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'User'}
+            </h2>
+            <p className="text-sm text-muted-foreground truncate">
+              {user?.email || 'Guest Account'}
+            </p>
+          </div>
+          <ChevronRight className="h-5 w-5 text-muted-foreground/50" />
         </section>
 
-        {/* Settings Grid Pattern */}
-        <div className="grid grid-cols-1 gap-8">
-          
-          {/* Group 1: Account */}
-          <div className="space-y-3">
-            <h3 className="px-4 text-xs font-bold uppercase tracking-widest text-muted-foreground/60">Account System</h3>
-            <div className="glass-card rounded-[2rem] overflow-hidden border border-border/40 divide-y divide-border/20">
-              <SettingsItem icon={<User className="text-blue-500" />} label="Personal Info" description="Identity and contact" onClick={() => setSubPage('profile')} index={0} />
-              <SettingsItem icon={<Shield className="text-emerald-500" />} label="Security" description="Password and 2FA" onClick={() => setSubPage('security')} index={1} />
-              <SettingsItem icon={<Link2 className="text-orange-500" />} label="Connected Apps" description="Manage Google/Email" onClick={() => setSubPage('linked')} index={2} />
-            </div>
+        {/* 1. Account & Security */}
+        <div className="space-y-2">
+          <h3 className="px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">Account</h3>
+          <div className="glass-card rounded-[2rem] overflow-hidden border border-border/40 divide-y divide-border/10">
+            <SettingsItem icon={<User className="h-5 w-5" />} label="Profile Information" description="Name, photo, and email" onClick={() => setSubPage('profile')} index={0} />
+            <SettingsItem icon={<Shield className="h-5 w-5" />} label="Account Security" description="Password and authentication" onClick={() => setSubPage('security')} index={1} />
+            <SettingsItem icon={<Link2 className="h-5 w-5" />} label="Linked Accounts" description="Social login management" onClick={() => setSubPage('linked')} index={2} />
           </div>
+        </div>
 
-          {/* Group 2: Interaction */}
-          <div className="space-y-3">
-            <h3 className="px-4 text-xs font-bold uppercase tracking-widest text-muted-foreground/60">Intelligence & UI</h3>
-            <div className="glass-card rounded-[2rem] overflow-hidden border border-border/40 divide-y divide-border/20">
-              <SettingsItem icon={<Sun className="text-yellow-500" />} label="Appearance" trailing={<span className="text-primary font-medium">{themeLabel}</span>} onClick={() => {
+        {/* 2. Experience & Interface */}
+        <div className="space-y-2">
+          <h3 className="px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">Experience</h3>
+          <div className="glass-card rounded-[2rem] overflow-hidden border border-border/40 divide-y divide-border/10">
+            <SettingsItem icon={<Sun className="h-5 w-5" />} label="Theme Mode" onClick={() => {
                    const next = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light';
                    setTheme(next);
-              }} index={3} />
-              <SettingsItem icon={<BrainCircuit className="text-purple-500" />} label="Response Style" trailing={<span className="text-primary font-medium">{capitalize(preferences.response_style)}</span>} onClick={cycleResponseStyle} index={4} />
-              <SettingsItem icon={<Gauge className="text-rose-500" />} label="Typing Speed" trailing={capitalize(preferences.typing_speed)} onClick={cycleTypingSpeed} index={5} />
-              <SettingsItem icon={<Sparkles className="text-cyan-500" />} label="Eye Candy" description="UI Animations" toggle toggled={preferences.animations} onToggle={(v) => updatePreference('animations', v)} index={6} />
-            </div>
+            }} trailing={themeLabel} index={3} />
+            <SettingsItem icon={<MessageSquare className="h-5 w-5" />} label="Chat Appearance" description="Bubbles, font size, and density" onClick={() => setSubPage('chat-appearance')} index={4} />
+            <SettingsItem icon={<Sparkles className="h-5 w-5" />} label="Animations" toggle toggled={preferences.animations} onToggle={(v) => updatePreference('animations', v)} index={5} />
           </div>
+        </div>
 
-          {/* Group 3: Privacy & Data */}
-          <div className="space-y-3">
-            <h3 className="px-4 text-xs font-bold uppercase tracking-widest text-muted-foreground/60">Privacy & Storage</h3>
-            <div className="glass-card rounded-[2rem] overflow-hidden border border-border/40 divide-y divide-border/20">
-              <SettingsItem icon={<Database className="text-indigo-500" />} label="Knowledge Base" description="Custom AI instructions" onClick={() => setSubPage('data-controls')} index={7} />
-              <SettingsItem icon={<History className="text-amber-500" />} label="History" description="Auto-delete settings" onClick={() => setSubPage('chat-history')} index={8} />
-              <SettingsItem icon={<Eye className="text-slate-500" />} label="Privacy Mode" description="Analytics & tracking" onClick={() => setSubPage('privacy')} index={9} />
-            </div>
+        {/* 3. AI Behavior */}
+        <div className="space-y-2">
+          <h3 className="px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">AI Behavior</h3>
+          <div className="glass-card rounded-[2rem] overflow-hidden border border-border/40 divide-y divide-border/10">
+            <SettingsItem icon={<BrainCircuit className="h-5 w-5" />} label="Response Style" onClick={cycleResponseStyle} trailing={capitalize(preferences.response_style)} index={6} />
+            <SettingsItem icon={<Gauge className="h-5 w-5" />} label="Typing Speed" onClick={cycleTypingSpeed} trailing={capitalize(preferences.typing_speed)} index={7} />
+            <SettingsItem icon={<MessageCirclePlus className="h-5 w-5" />} label="Auto-Create Chat" toggle toggled={preferences.new_chat_auto} onToggle={(v) => updatePreference('new_chat_auto', v)} index={8} />
           </div>
+        </div>
 
-          {/* Group 4: App Info & Logout */}
-          <div className="space-y-3">
-             <div className="glass-card rounded-[2rem] overflow-hidden border border-border/40 divide-y divide-border/20">
-              <SettingsItem icon={<Info className="text-blue-400" />} label="About SanGPT" description="Version 2.1.0" onClick={() => setSubPage('about')} index={10} />
-              <SettingsItem icon={<LogOut className="text-destructive" />} label="Sign Out" destructive onClick={handleSignOut} index={11} />
-            </div>
+        {/* 4. Communication & Audio */}
+        <div className="space-y-2">
+          <h3 className="px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">Notifications</h3>
+          <div className="glass-card rounded-[2rem] overflow-hidden border border-border/40 divide-y divide-border/10">
+            <SettingsItem icon={<Bell className="h-5 w-5" />} label="Push Notifications" toggle toggled={preferences.notifications} onToggle={(v) => updatePreference('notifications', v)} index={9} />
+            <SettingsItem icon={<Volume2 className="h-5 w-5" />} label="Sounds & Haptics" toggle toggled={preferences.sound_haptics} onToggle={(v) => updatePreference('sound_haptics', v)} index={10} />
           </div>
+        </div>
 
+        {/* 5. Data & Storage */}
+        <div className="space-y-2">
+          <h3 className="px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">Data Management</h3>
+          <div className="glass-card rounded-[2rem] overflow-hidden border border-border/40 divide-y divide-border/10">
+            <SettingsItem icon={<Database className="h-5 w-5" />} label="Custom Instructions" description="Data controls & AI memory" onClick={() => setSubPage('data-controls')} index={11} />
+            <SettingsItem icon={<Wifi className="h-5 w-5" />} label="Data Usage" onClick={cycleDataMode} trailing={capitalize(preferences.data_mode)} index={12} />
+            <SettingsItem icon={<History className="h-5 w-5" />} label="Chat History" description="Management and auto-archive" onClick={() => setSubPage('chat-history')} index={13} />
+          </div>
+        </div>
+
+        {/* 6. Legal & Safety */}
+        <div className="space-y-2">
+          <h3 className="px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">Support & Privacy</h3>
+          <div className="glass-card rounded-[2rem] overflow-hidden border border-border/40 divide-y divide-border/10">
+            <SettingsItem icon={<Eye className="h-5 w-5" />} label="Privacy Controls" onClick={() => setSubPage('privacy')} index={14} />
+            <SettingsItem icon={<Info className="h-5 w-5" />} label="About SanGPT" onClick={() => setSubPage('about')} index={15} />
+            <SettingsItem icon={<LogOut className="h-5 w-5 text-destructive" />} label="Sign Out" onClick={handleSignOut} destructive index={16} />
+          </div>
         </div>
 
         {/* Footer */}
-        <div className="flex flex-col items-center gap-1 opacity-50 pt-4">
-          <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-muted-foreground">
-            SanGPT AI Framework
+        <div className="text-center py-6">
+          <p className="text-xs text-muted-foreground/50 tracking-widest font-medium uppercase">
+            SanGPT v2.1.0 • Dev-Link
           </p>
-          <p className="text-xs">Crafted by Dev-Link</p>
         </div>
       </div>
     </div>
