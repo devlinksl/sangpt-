@@ -1,134 +1,152 @@
 import { useState } from 'react';
-import { Check, Copy, Code2 } from 'lucide-react';
+import { Check, Copy } from 'lucide-react';
 import { useAlert } from '@/hooks/useAlert';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = `
+  /* ── Root ── */
   .san-cb-root {
     position: relative;
-    margin: 16px 0;
-    border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: #0d1117;
+    margin: 12px 0;
+    border-radius: 12px;
     overflow: hidden;
     width: 100%;
-    box-shadow:
-      0 0 0 1px rgba(255,255,255,0.04),
-      0 4px 24px rgba(0, 0, 0, 0.4);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    font-family: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
 
-  .san-cb-root:hover {
-    border-color: rgba(255,255,255,0.13);
-    box-shadow:
-      0 0 0 1px rgba(255,255,255,0.06),
-      0 6px 32px rgba(0, 0, 0, 0.5);
+  /* DARK MODE */
+  .san-cb-root {
+    background: #1c1c1e;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
   }
 
-  /* Header bar */
+  /* LIGHT MODE */
+  @media (prefers-color-scheme: light) {
+    .san-cb-root {
+      background: #f5f5f5;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    }
+  }
+
+  /* Tailwind dark class override */
+  :root[class~="dark"] .san-cb-root,
+  .dark .san-cb-root {
+    background: #1c1c1e;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
+  }
+
+  :root:not([class~="dark"]) .san-cb-root,
+  .light .san-cb-root {
+    background: #f5f5f5;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  }
+
+  /* ── Header ── */
   .san-cb-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 14px;
-    background: rgba(255,255,255,0.03);
-    border-bottom: 1px solid rgba(255,255,255,0.07);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    padding: 10px 14px 10px 16px;
     user-select: none;
   }
 
-  .san-cb-lang-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  .san-cb-root .san-cb-header {
+    background: rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   }
 
-  /* Language dot */
-  .san-cb-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: hsl(var(--primary) / 0.8);
-    box-shadow: 0 0 6px hsl(var(--primary) / 0.5);
-    flex-shrink: 0;
+  :root:not([class~="dark"]) .san-cb-root .san-cb-header,
+  .light .san-cb-root .san-cb-header {
+    background: rgba(0, 0, 0, 0.04);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   }
 
+  /* ── Language label ── */
   .san-cb-lang {
-    font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
-    font-size: 11px;
-    font-weight: 500;
-    color: rgba(255,255,255,0.45);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
   }
 
-  .san-cb-line-count {
-    font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
-    font-size: 10px;
-    color: rgba(255,255,255,0.2);
-    padding: 2px 7px;
-    background: rgba(255,255,255,0.05);
-    border-radius: 20px;
-    border: 1px solid rgba(255,255,255,0.07);
+  .san-cb-root .san-cb-lang {
+    color: rgba(255, 255, 255, 0.55);
   }
 
-  /* Copy button */
+  :root:not([class~="dark"]) .san-cb-root .san-cb-lang,
+  .light .san-cb-root .san-cb-lang {
+    color: rgba(0, 0, 0, 0.45);
+  }
+
+  /* ── Copy button ── */
   .san-cb-copy-btn {
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
+    justify-content: center;
+    padding: 5px;
     border-radius: 7px;
-    border: 1px solid rgba(255,255,255,0.08);
-    background: rgba(255,255,255,0.05);
-    color: rgba(255,255,255,0.45);
-    font-size: 11px;
-    font-weight: 500;
-    font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+    border: none;
+    background: transparent;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
     line-height: 1;
   }
 
-  .san-cb-copy-btn:hover {
-    background: rgba(255,255,255,0.1);
-    border-color: rgba(255,255,255,0.15);
-    color: rgba(255,255,255,0.75);
+  .san-cb-root .san-cb-copy-btn {
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  .san-cb-root .san-cb-copy-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  :root:not([class~="dark"]) .san-cb-root .san-cb-copy-btn,
+  .light .san-cb-root .san-cb-copy-btn {
+    color: rgba(0, 0, 0, 0.35);
+  }
+
+  :root:not([class~="dark"]) .san-cb-root .san-cb-copy-btn:hover,
+  .light .san-cb-root .san-cb-copy-btn:hover {
+    background: rgba(0, 0, 0, 0.07);
+    color: rgba(0, 0, 0, 0.7);
   }
 
   .san-cb-copy-btn:active {
-    transform: scale(0.95);
+    transform: scale(0.9);
   }
 
   .san-cb-copy-btn.copied {
-    background: rgba(74, 222, 128, 0.1);
-    border-color: rgba(74, 222, 128, 0.25);
-    color: #4ade80;
+    color: #4ade80 !important;
+    background: rgba(74, 222, 128, 0.1) !important;
   }
 
-  /* Copy icon animation */
-  .san-cb-copy-icon {
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.15s ease;
-  }
-
-  .san-cb-copy-btn.copied .san-cb-copy-icon {
-    transform: scale(1.15);
-  }
-
-  /* Scroll container */
+  /* ── Scroll / Code area ── */
+  /* No max-height cap — block grows naturally with content.
+     Horizontal scroll for wide lines instead of wrapping. */
   .san-cb-scroll {
-    position: relative;
-    max-height: 500px;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: auto;
+    overflow-y: visible;
     scrollbar-width: thin;
-    scrollbar-color: rgba(255,255,255,0.08) transparent;
+  }
+
+  .san-cb-root .san-cb-scroll {
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  }
+
+  :root:not([class~="dark"]) .san-cb-root .san-cb-scroll,
+  .light .san-cb-root .san-cb-scroll {
+    scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
   }
 
   .san-cb-scroll::-webkit-scrollbar {
+    height: 4px;
     width: 4px;
   }
 
@@ -136,17 +154,52 @@ const styles = `
     background: transparent;
   }
 
-  .san-cb-scroll::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.1);
+  .san-cb-root .san-cb-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 4px;
   }
 
-  .san-cb-scroll::-webkit-scrollbar-thumb:hover {
-    background: rgba(255,255,255,0.18);
+  :root:not([class~="dark"]) .san-cb-root .san-cb-scroll::-webkit-scrollbar-thumb,
+  .light .san-cb-root .san-cb-scroll::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.12);
+    border-radius: 4px;
+  }
+
+  /* Override SyntaxHighlighter backgrounds */
+  .san-cb-root pre,
+  .san-cb-root code {
+    background: transparent !important;
   }
 `;
 
-// ─── Language color map (dot accent) ─────────────────────────────────────────
+// ─── Light-mode syntax theme (hand-tuned) ─────────────────────────────────────
+const lightTheme: { [key: string]: React.CSSProperties } = {
+  'code[class*="language-"]': {
+    color: '#24292e',
+    background: 'transparent',
+    fontFamily: "'SF Mono', ui-monospace, Menlo, Consolas, monospace",
+    fontSize: '0.8125rem',
+    lineHeight: '1.75',
+  },
+  'pre[class*="language-"]': {
+    color: '#24292e',
+    background: 'transparent',
+  },
+  comment: { color: '#6a737d', fontStyle: 'italic' },
+  punctuation: { color: '#24292e' },
+  keyword: { color: '#d73a49' },
+  string: { color: '#032f62' },
+  number: { color: '#005cc5' },
+  boolean: { color: '#005cc5' },
+  function: { color: '#6f42c1' },
+  'class-name': { color: '#6f42c1' },
+  operator: { color: '#d73a49' },
+  tag: { color: '#22863a' },
+  'attr-name': { color: '#6f42c1' },
+  'attr-value': { color: '#032f62' },
+};
+
+// ─── Language color map ───────────────────────────────────────────────────────
 const LANG_COLORS: Record<string, string> = {
   javascript: '#f7df1e',
   typescript: '#3178c6',
@@ -181,25 +234,22 @@ export const CodeBlock = ({ code, language = 'text' }: CodeBlockProps) => {
   const [copied, setCopied] = useState(false);
   const { alert } = useAlert();
 
-  const lineCount = code.split('\n').length;
-  const dotColor = LANG_COLORS[language.toLowerCase()] ?? 'hsl(var(--primary) / 0.8)';
+  // Detect dark mode via Tailwind class on <html>
+  const isDark =
+    typeof document !== 'undefined'
+      ? document.documentElement.classList.contains('dark')
+      : true;
+
+  const dotColor = LANG_COLORS[language.toLowerCase()] ?? '#888';
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(code);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-      alert({
-        title: 'Copied',
-        description: 'Code copied to clipboard',
-        variant: 'success',
-      });
+      alert({ title: 'Copied', description: 'Code copied to clipboard', variant: 'success' });
     } catch {
-      alert({
-        title: 'Copy failed',
-        description: 'Could not copy to clipboard',
-        variant: 'destructive',
-      });
+      alert({ title: 'Copy failed', description: 'Could not copy to clipboard', variant: 'destructive' });
     }
   };
 
@@ -208,52 +258,45 @@ export const CodeBlock = ({ code, language = 'text' }: CodeBlockProps) => {
       <style>{styles}</style>
       <div className="san-cb-root">
 
-        {/* ─── Header ─── */}
+        {/* ── Header ── */}
         <div className="san-cb-header">
-          <div className="san-cb-lang-group">
-            <span
-              className="san-cb-dot"
-              style={{ background: dotColor, boxShadow: `0 0 7px ${dotColor}80` }}
-            />
-            <span className="san-cb-lang">{language}</span>
-            <span className="san-cb-line-count">
-              {lineCount} {lineCount === 1 ? 'line' : 'lines'}
-            </span>
-          </div>
+          <span className="san-cb-lang" style={{ color: dotColor }}>
+            {language.toUpperCase()}
+          </span>
 
           <button
             className={`san-cb-copy-btn ${copied ? 'copied' : ''}`}
             onClick={handleCopy}
+            aria-label={copied ? 'Copied' : 'Copy code'}
           >
-            <span className="san-cb-copy-icon">
-              {copied
-                ? <Check size={11} strokeWidth={2.5} />
-                : <Copy size={11} strokeWidth={2} />
-              }
-            </span>
-            {copied ? 'Copied!' : 'Copy'}
+            {copied
+              ? <Check size={15} strokeWidth={2.5} />
+              : <Copy size={15} strokeWidth={2} />
+            }
           </button>
         </div>
 
-        {/* ─── Code Area ─── */}
+        {/* ── Code ── */}
         <div className="san-cb-scroll">
           <SyntaxHighlighter
             language={language}
-            style={vscDarkPlus}
-            wrapLongLines={true}
+            style={isDark ? vscDarkPlus : lightTheme}
+            wrapLongLines={false}
             customStyle={{
               margin: 0,
-              padding: '14px 18px',
+              padding: '14px 18px 18px',
               background: 'transparent',
               fontSize: '0.8125rem',
               lineHeight: 1.75,
               fontFamily: "'SF Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+              minWidth: '100%',
+              width: 'max-content',
             }}
             codeTagProps={{
               style: {
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                overflowWrap: 'break-word',
+                whiteSpace: 'pre',
+                wordBreak: 'normal',
+                overflowWrap: 'normal',
               },
             }}
           >
