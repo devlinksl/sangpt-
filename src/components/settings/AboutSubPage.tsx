@@ -25,7 +25,7 @@ export function AboutSubPage({ onBack }: AboutSubPageProps) {
         </div>
         <div className="p-4">
           <p className="text-sm font-medium">Built with</p>
-          <p className="text-sm text-muted-foreground mt-0.5">React • Lovable Cloud • Gemini AI</p>
+          <p className="text-sm text-muted-foreground mt-0.5">React Framework• Google Cloud • Google Gemini</p>
         </div>
       </div>
 
