@@ -45,6 +45,10 @@ const inputStyles = `
   }
 `;
 
+// Detect touch/mobile device — on mobile, Enter should always be a newline
+const isMobile = typeof navigator !== 'undefined' &&
+  /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
 export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
   initialValue = '',
   onSend,
@@ -126,6 +130,9 @@ export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
   }, [onSend, text, mediumTap]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // On mobile/Android: Enter always inserts a newline — never sends
+    if (isMobile) return;
+    // On desktop: Enter sends, Shift+Enter inserts newline
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       performSend();
@@ -291,9 +298,9 @@ export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
           </div>
         </div>
 
-        {/* Hint */}
+        {/* Hint — updated to reflect mobile behaviour */}
         <p className="text-center text-[11px] text-muted-foreground/30 mt-2 select-none">
-          Enter to send · Shift + Enter for new line
+          {isMobile ? 'Tap send button to send' : 'Enter to send · Shift + Enter for new line'}
         </p>
       </div>
     </>
