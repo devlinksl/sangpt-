@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://via.placeholder.com/300x100?text=SANGPT" alt="SANGPT Logo" width="300"/>
+  <img src="https://i.imghippo.com/files/Izcy5198pFM.png" alt="SANGPT Logo" width="300"/>
 </p>
 
 <h1 align="center">SANGPT – Sierra Leone’s First Enterprise AI</h1>
