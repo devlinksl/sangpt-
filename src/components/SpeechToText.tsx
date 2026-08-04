@@ -65,6 +65,9 @@ const styles = `
     position: relative;
     width: 100%;
     max-width: 560px;
+    max-height: 92vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     margin: 0 auto;
     background: hsl(var(--background) / 0.92);
     backdrop-filter: blur(28px) saturate(1.4);
@@ -82,6 +85,7 @@ const styles = `
     transform: translateY(100%);
     animation: stt-slide-up 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     touch-action: none;
+    cursor: grab;
   }
   .stt-sheet.stt-closing {
     animation: stt-slide-down 0.24s cubic-bezier(0.4, 0, 1, 1) forwards;
@@ -89,6 +93,7 @@ const styles = `
   .stt-sheet.stt-dragging {
     animation: none;
     transition: none;
+    cursor: grabbing;
   }
   @keyframes stt-slide-up {
     from { transform: translateY(100%); }
@@ -108,9 +113,9 @@ const styles = `
   }
 
   @media (orientation: landscape) and (max-height: 480px) {
-    .stt-sheet { padding-top: 6px; }
+    .stt-sheet { padding-top: 6px; max-height: 96vh; }
     .stt-header { margin-bottom: 4px !important; }
-    .stt-mic-stage { transform: scale(0.72); margin: -14px 0 !important; }
+    .stt-mic-stage { width: 96px !important; height: 96px !important; margin: 4px 0 !important; }
     .stt-wave-row { margin-top: 2px !important; }
   }
 
@@ -130,14 +135,14 @@ const styles = `
     margin-bottom: 18px;
   }
   .stt-title {
-    font-size: 15px;
+    font-size: clamp(14px, 4vw, 15px);
     font-weight: 600;
     letter-spacing: -0.01em;
     color: hsl(var(--foreground));
     margin: 0 0 3px 0;
   }
   .stt-subtitle {
-    font-size: 12.5px;
+    font-size: clamp(11.5px, 3.2vw, 12.5px);
     color: hsl(var(--muted-foreground));
     margin: 0;
   }
@@ -145,12 +150,13 @@ const styles = `
   /* Mic stage — circular control with pulsing rings */
   .stt-mic-stage {
     position: relative;
-    width: 148px;
-    height: 148px;
+    width: clamp(112px, 34vw, 148px);
+    height: clamp(112px, 34vw, 148px);
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 2px 0 16px 0;
+    transition: transform 0.05s linear;
   }
   .stt-ring {
     position: absolute;
@@ -168,29 +174,32 @@ const styles = `
     0%   { transform: scale(0.6); opacity: 0.55; }
     100% { transform: scale(1.25); opacity: 0; }
   }
+  /* Extra amplitude-reactive ring, scaled live from mic volume in JS */
+  .stt-ring-live {
+    width: 100%;
+    height: 100%;
+    border: 1.5px solid rgba(248,113,113,0.5);
+    opacity: 0;
+    will-change: transform, opacity;
+  }
 
   .stt-mic-glow {
     position: absolute;
-    width: 92px;
-    height: 92px;
+    width: 62%;
+    height: 62%;
     border-radius: 50%;
     background: radial-gradient(circle, rgba(248,113,113,0.45) 0%, rgba(248,113,113,0) 70%);
     opacity: 0;
+    /* transform/opacity are driven live from mic amplitude in JS while
+       listening, so only transition the non-amplitude-driven fallback. */
     transition: opacity 0.3s ease;
-  }
-  .stt-mic-stage.stt-listening .stt-mic-glow {
-    opacity: 1;
-    animation: stt-glow-breathe 1.8s ease-in-out infinite;
-  }
-  @keyframes stt-glow-breathe {
-    0%, 100% { transform: scale(1); }
-    50%      { transform: scale(1.12); }
+    will-change: transform, opacity;
   }
 
   .stt-mic-circle {
     position: relative;
-    width: 84px;
-    height: 84px;
+    width: 57%;
+    height: 57%;
     border-radius: 50%;
     border: none;
     display: flex;
@@ -202,7 +211,9 @@ const styles = `
     box-shadow:
       0 6px 20px rgba(0,0,0,0.18),
       0 0 0 1px hsl(var(--border) / 0.4) inset;
-    transition: background 0.25s ease, transform 0.15s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease;
+    transition: background 0.25s ease, box-shadow 0.25s ease;
+    /* transform is driven live from mic amplitude in JS while listening */
+    will-change: transform;
   }
   .stt-mic-circle:active { transform: scale(0.94); }
   .stt-mic-circle.stt-error-state {
@@ -212,7 +223,6 @@ const styles = `
   .stt-mic-stage.stt-listening .stt-mic-circle {
     background: linear-gradient(150deg, #f87171, #ef4444);
     color: #fff;
-    transform: scale(1.04);
     box-shadow:
       0 8px 28px rgba(239,68,68,0.45),
       0 0 0 1px rgba(255,255,255,0.15) inset;
@@ -228,34 +238,38 @@ const styles = `
 
   /* Status text */
   .stt-status {
-    font-size: 14.5px;
+    font-size: clamp(13.5px, 3.8vw, 14.5px);
     font-weight: 600;
     color: hsl(var(--foreground));
     margin: 0 0 3px 0;
     min-height: 19px;
     text-align: center;
+    transition: color 0.2s ease;
   }
   .stt-status-error { color: #f87171; }
   .stt-hint {
-    font-size: 12px;
+    font-size: clamp(11px, 3vw, 12px);
     color: hsl(var(--muted-foreground));
     margin: 0 0 4px 0;
     text-align: center;
     max-width: 320px;
   }
 
-  /* Transcript preview */
+  /* Transcript preview — grows with content, auto-scrolls to newest words */
   .stt-transcript {
     width: 100%;
-    max-height: 64px;
+    max-height: min(30vh, 110px);
     overflow-y: auto;
+    overscroll-behavior: contain;
     text-align: center;
-    font-size: 13.5px;
+    font-size: clamp(13px, 3.6vw, 13.5px);
     line-height: 1.5;
     color: hsl(var(--foreground) / 0.85);
     padding: 0 8px;
     margin-bottom: 8px;
     word-break: break-word;
+    scroll-behavior: smooth;
+    touch-action: pan-y;
   }
   .stt-transcript-interim {
     color: hsl(var(--muted-foreground));
@@ -353,7 +367,26 @@ const BAR_GAP   = 3;
 const BAR_R     = 1.5;
 const BAR_MIN   = 3;
 const BAR_MAX   = 30;
-const DRAG_CLOSE_THRESHOLD = 110;
+// Real finger travel (px) that counts as an intentional "swipe to dismiss",
+// independent of how much rubber-band resistance visually damped it.
+const DRAG_CLOSE_THRESHOLD = 100;
+// Below this, the sheet follows the finger 1:1. Beyond it, resistance
+// ramps up so the drag feels like stretching rubber instead of a rigid rail.
+const RUBBER_FULL_TRAVEL   = 70;
+const RUBBER_FACTOR        = 0.42;
+// Dragging upward can't reveal anything above the sheet, so resist hard.
+const RUBBER_UP_FACTOR     = 0.22;
+// Two-finger / trackpad scroll-down over the sheet also dismisses it.
+const WHEEL_CLOSE_THRESHOLD = 70;
+
+/** Applies rubber-band resistance to a raw drag distance. */
+function rubberBand(delta: number) {
+  if (delta >= 0) {
+    if (delta <= RUBBER_FULL_TRAVEL) return delta;
+    return RUBBER_FULL_TRAVEL + (delta - RUBBER_FULL_TRAVEL) * RUBBER_FACTOR;
+  }
+  return delta * RUBBER_UP_FACTOR;
+}
 
 type UIState = 'idle' | 'listening' | 'processing' | 'error';
 
@@ -393,11 +426,22 @@ export const SpeechToText = ({
   const streamRef       = useRef<MediaStream | null>(null);
   const rafRef          = useRef<number>(0);
   const barHistoryRef   = useRef<number[]>(Array(BAR_COUNT).fill(BAR_MIN));
+  const smoothedVolRef  = useRef(0);
 
-  // Drag-to-dismiss
+  // Live amplitude-reactive elements — updated directly via refs each frame
+  // (not React state) so the mic visibly reacts to real noise with no lag.
+  const micGlowRef  = useRef<HTMLDivElement>(null);
+  const micCircleRef = useRef<HTMLButtonElement>(null);
+  const liveRingRef  = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll the live transcript to the newest words
+  const transcriptRef = useRef<HTMLDivElement>(null);
+
+  // Drag-to-dismiss (rubber-band, whole sheet is grabbable)
   const sheetRef       = useRef<HTMLDivElement>(null);
   const dragStartYRef  = useRef<number | null>(null);
-  const dragDeltaRef   = useRef(0);
+  const dragRawRef     = useRef(0);
+  const wheelAccumRef  = useRef(0);
   const [dragging, setDragging] = useState(false);
 
   const isSupported =
@@ -430,6 +474,26 @@ export const SpeechToText = ({
       const data = new Uint8Array(analyser.frequencyBinCount);
       analyser.getByteFrequencyData(data);
       volume = data.reduce((a, b) => a + b, 0) / data.length / 255;
+    }
+
+    // ── Live mic reactivity — the circle/glow/extra ring scale directly
+    // with real input level (smoothed so it breathes instead of jittering).
+    // This runs every frame regardless of UI state; it's a no-op visually
+    // unless the "listening" class is active, but keeping it frame-accurate
+    // means there's zero lag between blowing into the mic and seeing it.
+    smoothedVolRef.current += (volume - smoothedVolRef.current) * 0.35;
+    const v = Math.min(1, smoothedVolRef.current * 1.6); // headroom so normal speech visibly moves it
+
+    if (micCircleRef.current) {
+      micCircleRef.current.style.transform = `scale(${1 + v * 0.16})`;
+    }
+    if (micGlowRef.current) {
+      micGlowRef.current.style.opacity = `${0.35 + v * 0.65}`;
+      micGlowRef.current.style.transform = `scale(${1 + v * 0.45})`;
+    }
+    if (liveRingRef.current) {
+      liveRingRef.current.style.opacity = `${v * 0.6}`;
+      liveRingRef.current.style.transform = `scale(${1 + v * 0.3})`;
     }
 
     const jitter = 0.7 + Math.random() * 0.3;
@@ -492,6 +556,12 @@ export const SpeechToText = ({
     audioCtxRef.current   = null;
     streamRef.current     = null;
     barHistoryRef.current = Array(BAR_COUNT).fill(BAR_MIN);
+    smoothedVolRef.current = 0;
+    // Hand the amplitude-driven elements back to CSS (idle/error/processing
+    // states) so they don't get stuck mid-pulse.
+    if (micCircleRef.current) micCircleRef.current.style.transform = '';
+    if (micGlowRef.current) { micGlowRef.current.style.opacity = ''; micGlowRef.current.style.transform = ''; }
+    if (liveRingRef.current) { liveRingRef.current.style.opacity = ''; liveRingRef.current.style.transform = ''; }
   }, []);
 
   // ── Core stop recognition ─────────────────────────────────────────────────
@@ -679,30 +749,73 @@ export const SpeechToText = ({
     // Cancel / Done control the session, matching the reference UX.
   };
 
-  // ── Drag-to-dismiss gesture ───────────────────────────────────────────────
+  // ── Dismiss animations shared by drag, wheel, and button paths ───────────
+  // dismissViaGesture: sheet is already offset by a live drag/scroll, so we
+  // continue its motion smoothly to fully closed instead of snapping back
+  // to 0 first (which is what the button-triggered CSS keyframe assumes).
+  const dismissViaGesture = useCallback(() => {
+    isSendingRef.current = false;
+    finalTextRef.current = '';
+    setFinalText('');
+    setInterimText('');
+    if (recognitionRef.current) stopRecognition();
+    setClosing(true);
+    if (sheetRef.current) {
+      sheetRef.current.style.transition = 'transform 0.22s cubic-bezier(0.4,0,1,1)';
+      sheetRef.current.style.transform = 'translateY(100%)';
+    }
+    window.setTimeout(() => {
+      if (sheetRef.current) {
+        sheetRef.current.style.transition = '';
+        sheetRef.current.style.transform = '';
+      }
+      finishClose();
+    }, 220);
+  }, [stopRecognition, finishClose]);
+
+  const springBack = () => {
+    if (!sheetRef.current) return;
+    sheetRef.current.style.transition = 'transform 0.42s cubic-bezier(0.34,1.56,0.64,1)';
+    sheetRef.current.style.transform = 'translateY(0px)';
+    window.setTimeout(() => {
+      if (sheetRef.current) {
+        sheetRef.current.style.transition = '';
+        sheetRef.current.style.transform = '';
+      }
+    }, 430);
+  };
+
+  // ── Drag-to-dismiss gesture — grabbable from anywhere on the sheet, with
+  // rubber-band resistance so it feels elastic rather than rigidly clamped.
   const onDragStart = (clientY: number) => {
     dragStartYRef.current = clientY;
-    dragDeltaRef.current = 0;
+    dragRawRef.current = 0;
     setDragging(true);
   };
   const onDragMove = (clientY: number) => {
     if (dragStartYRef.current === null || !sheetRef.current) return;
-    const delta = Math.max(0, clientY - dragStartYRef.current);
-    dragDeltaRef.current = delta;
-    sheetRef.current.style.transform = `translateY(${delta}px)`;
+    const raw = clientY - dragStartYRef.current;
+    dragRawRef.current = raw;
+    sheetRef.current.style.transform = `translateY(${rubberBand(raw)}px)`;
   };
   const onDragEnd = () => {
     setDragging(false);
-    if (dragDeltaRef.current > DRAG_CLOSE_THRESHOLD) {
-      handleCancel();
-    } else if (sheetRef.current) {
-      sheetRef.current.style.transform = '';
-    }
+    const raw = dragRawRef.current;
     dragStartYRef.current = null;
-    dragDeltaRef.current = 0;
+    dragRawRef.current = 0;
+    if (raw > DRAG_CLOSE_THRESHOLD) {
+      dismissViaGesture();
+    } else {
+      springBack();
+    }
   };
 
+  const isInteractiveTarget = (target: EventTarget | null) =>
+    target instanceof Element &&
+    !!target.closest('button, .stt-transcript, a, input, textarea');
+
   const handlePointerDown = (e: React.PointerEvent) => {
+    if (isInteractiveTarget(e.target)) return;
     (e.target as Element).setPointerCapture?.(e.pointerId);
     onDragStart(e.clientY);
   };
@@ -711,6 +824,35 @@ export const SpeechToText = ({
   };
   const handlePointerUp = () => {
     if (dragStartYRef.current !== null) onDragEnd();
+  };
+
+  // ── Scroll-to-dismiss — a trackpad/mouse-wheel scroll downward over the
+  // sheet closes it too, mirroring the drag gesture for non-touch input.
+  const handleWheel = (e: React.WheelEvent) => {
+    if (dragStartYRef.current !== null) return; // mid-drag takes priority
+
+    const sheet = sheetRef.current;
+    if (sheet && sheet.scrollHeight > sheet.clientHeight) {
+      const atBottom = sheet.scrollTop + sheet.clientHeight >= sheet.scrollHeight - 1;
+      if (!atBottom || e.deltaY < 0) { wheelAccumRef.current = 0; return; }
+    }
+    if (isInteractiveTarget(e.target) && e.target instanceof Element) {
+      const transcript = e.target.closest('.stt-transcript') as HTMLElement | null;
+      if (transcript) {
+        const atBottom = transcript.scrollTop + transcript.clientHeight >= transcript.scrollHeight - 1;
+        if (!atBottom || e.deltaY < 0) { wheelAccumRef.current = 0; return; }
+      }
+    }
+
+    if (e.deltaY > 0) {
+      wheelAccumRef.current += e.deltaY;
+      if (wheelAccumRef.current > WHEEL_CLOSE_THRESHOLD) {
+        wheelAccumRef.current = 0;
+        dismissViaGesture();
+      }
+    } else {
+      wheelAccumRef.current = 0;
+    }
   };
 
   // ── Cleanup on unmount ─────────────────────────────────────────────────────
@@ -728,6 +870,12 @@ export const SpeechToText = ({
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prevOverflow; };
   }, [drawerOpen]);
+
+  // Keep the live transcript scrolled to the newest words as they arrive
+  useEffect(() => {
+    const el = transcriptRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [finalText, interimText]);
 
   const displayText = finalText + (interimText ? (finalText ? ' ' : '') + interimText : '');
   const hasSpeech    = displayText.trim().length > 0;
@@ -765,15 +913,14 @@ export const SpeechToText = ({
             ref={sheetRef}
             className={`stt-sheet ${closing ? 'stt-closing' : ''} ${dragging ? 'stt-dragging' : ''}`}
             onClick={(e) => e.stopPropagation()}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            onWheel={handleWheel}
           >
-            {/* Drag handle */}
-            <div
-              className="stt-handle-grip"
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-            />
+            {/* Drag handle — grabbable, but the whole sheet responds too */}
+            <div className="stt-handle-grip" />
 
             {/* Header */}
             <div className="stt-header">
@@ -781,15 +928,19 @@ export const SpeechToText = ({
               <p className="stt-subtitle">Speak and I'll convert your voice to text</p>
             </div>
 
-            {/* Mic stage */}
+            {/* Mic stage — outer rings pulse ambiently, the glow/ring-live/
+                circle scale live with real mic amplitude (see drawFrame) */}
             <div className={`stt-mic-stage stt-${uiState}`}>
               <div className="stt-ring stt-ring-1" />
               <div className="stt-ring stt-ring-2" />
               <div className="stt-ring stt-ring-3" />
-              <div className="stt-mic-glow" />
+              <div ref={liveRingRef} className="stt-ring-live" />
+              <div ref={micGlowRef} className="stt-mic-glow" />
               <button
+                ref={micCircleRef}
                 className={`stt-mic-circle ${uiState === 'error' ? 'stt-error-state' : ''}`}
                 onClick={handleMicTap}
+                onPointerDown={(e) => e.stopPropagation()}
                 title={uiState === 'error' ? 'Retry' : 'Microphone'}
               >
                 {uiState === 'error' ? (
@@ -818,7 +969,7 @@ export const SpeechToText = ({
 
             {/* Live transcript preview */}
             {(uiState === 'listening' || uiState === 'processing') && hasSpeech && (
-              <div className="stt-transcript">
+              <div ref={transcriptRef} className="stt-transcript" onPointerDown={(e) => e.stopPropagation()}>
                 {finalText}
                 {interimText && (
                   <span className="stt-transcript-interim">
