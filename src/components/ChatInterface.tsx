@@ -79,11 +79,11 @@ const styles = `
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 10px;
+    padding: 2px 10px 6px;
   }
 
   .san-offline-banner + .san-top-controls {
-    padding-top: 4px;
+    padding-top: 0px;
   }
 
   /* Only the buttons themselves capture taps, never the fade */
