@@ -95,6 +95,20 @@ const styles = `
     max-height: 100dvh;
   }
 
+  /* Actually enforce the lock the JS applies via classList.add('san-shell-locked').
+     Without this rule, focusing the input falls back to the browser's default
+     "scroll focused element into view" behavior, which scrolls the real
+     document/body and drags the fixed header off-screen. */
+  html.san-shell-locked,
+  body.san-shell-locked {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
   /* Floating top controls — no header bar, conversation scrolls underneath.
      Absolute inside the non-scrolling shell is effectively fixed, but without
      position:fixed's dependence on the (keyboard-shrunk) visual viewport,
