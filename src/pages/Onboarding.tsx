@@ -574,14 +574,14 @@ const styles = `
     background: hsl(var(--muted) / 0.35);
     transition: background 0.3s ease;
   }
-  .ob-pwd-bar.weak   { background: #f87171; }
-  .ob-pwd-bar.medium { background: #fb923c; }
-  .ob-pwd-bar.strong { background: #4ade80; }
+  .ob-pwd-bar.weak   { background: hsl(var(--muted-foreground)); }
+  .ob-pwd-bar.medium { background: hsl(var(--muted-foreground)); }
+  .ob-pwd-bar.strong { background: hsl(var(--foreground)); }
 
   .ob-match-row {
     display: flex; align-items: center; gap: 6px;
     font-size: 12px; margin-top: 7px;
-    color: #4ade80; font-weight: 500;
+    color: hsl(var(--foreground)); font-weight: 500;
   }
 
   .ob-link-btn {
@@ -600,12 +600,12 @@ const styles = `
     display: flex; align-items: center; gap: 5px;
     transition: color 0.2s ease;
   }
-  .ob-username-hint.valid   { color: #4ade80; }
+  .ob-username-hint.valid   { color: hsl(var(--foreground)); }
   .ob-username-hint.invalid { color: hsl(var(--muted-foreground) / 0.5); }
   .ob-hint-dot {
     width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0;
   }
-  .ob-hint-dot.valid   { background: #4ade80; }
+  .ob-hint-dot.valid   { background: hsl(var(--foreground)); }
   .ob-hint-dot.invalid { background: hsl(var(--muted-foreground) / 0.35); }
 
   /* Bottom CTA */
@@ -1207,7 +1207,7 @@ export const Onboarding = () => {
                             value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
                           />
                           {confirmPassword && password === confirmPassword && (
-                            <span className="ob-input-action" style={{ color: '#4ade80', cursor: 'default' }}>
+                            <span className="ob-input-action" style={{ color: 'hsl(var(--foreground))', cursor: 'default' }}>
                               <Check size={16} strokeWidth={2.5} />
                             </span>
                           )}

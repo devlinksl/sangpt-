@@ -17,114 +17,117 @@
 
 @layer base {
   :root {
-    --background: 228 100% 98%;
-    --foreground: 222 47% 11%;
+    /* Pure white base with black accents */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 6%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 0 0% 6%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 0 0% 6%;
 
-    --primary: 222 47% 11%;
+    --primary: 0 0% 8%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 228 100% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 10%;
 
-    --muted: 228 100% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 42%;
 
-    --accent: 228 100% 96%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 0 0% 94%;
+    --accent-foreground: 0 0% 10%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 0% 25%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 228 30% 91%;
-    --input: 228 30% 91%;
-    --ring: 222 47% 11%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 20%;
 
     --radius: 1rem;
 
-    /* AI Chat App Specific Colors */
-    --ai-blue: 208 100% 84%;
-    --ai-purple: 295 76% 87%;
-    --ai-light-blue: 208 100% 95%;
+    /* Neutral accents (monochrome only) */
+    --ai-blue: 0 0% 20%;
+    --ai-purple: 0 0% 35%;
+    --ai-light-blue: 0 0% 97%;
     --ai-white: 0 0% 100%;
-    
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--ai-blue)), hsl(var(--ai-purple)));
-    --gradient-chat: linear-gradient(180deg, hsl(var(--ai-light-blue)), hsl(var(--ai-white)));
-    --gradient-hero: linear-gradient(135deg, hsl(var(--ai-light-blue)), hsl(var(--ai-blue)));
-    
-    /* Chat specific colors */
-    --chat-user: 208 100% 84%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(0 0% 12%), hsl(0 0% 32%));
+    --gradient-chat: linear-gradient(180deg, hsl(0 0% 100%), hsl(0 0% 100%));
+    --gradient-hero: linear-gradient(135deg, hsl(0 0% 97%), hsl(0 0% 90%));
+
+    /* Chat surfaces — identical background across chat + input */
+    --chat-user: 0 0% 94%;
     --chat-assistant: 0 0% 100%;
     --chat-input: 0 0% 100%;
-    --chat-sidebar: 228 100% 98%;
+    --chat-sidebar: 0 0% 100%;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 20%;
+    --sidebar-primary: 0 0% 8%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 95%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 0 0% 91%;
+    --sidebar-ring: 0 0% 20%;
   }
 
   .dark {
-    --background: 222 47% 7%;
-    --foreground: 210 40% 98%;
+    /* Pure black base with gray accents */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 96%;
 
-    --card: 222 47% 9%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 0%;
+    --card-foreground: 0 0% 96%;
 
-    --popover: 222 47% 9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 96%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222 47% 11%;
+    --primary: 0 0% 96%;
+    --primary-foreground: 0 0% 6%;
 
-    --secondary: 217 33% 18%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 96%;
 
-    --muted: 217 33% 18%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 62%;
 
-    --accent: 217 33% 18%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 96%;
 
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 0% 75%;
+    --destructive-foreground: 0 0% 6%;
 
-    --border: 217 33% 18%;
-    --input: 217 33% 18%;
-    --ring: 213 27% 84%;
+    --border: 0 0% 16%;
+    --input: 0 0% 16%;
+    --ring: 0 0% 70%;
 
-    --ai-blue: 208 80% 40%;
-    --ai-purple: 295 60% 40%;
-    --ai-light-blue: 208 40% 15%;
-    --ai-white: 222 47% 9%;
-    
-    --gradient-primary: linear-gradient(135deg, hsl(var(--ai-blue)), hsl(var(--ai-purple)));
-    --gradient-chat: linear-gradient(180deg, hsl(var(--ai-light-blue)), hsl(var(--ai-white)));
-    --gradient-hero: linear-gradient(135deg, hsl(var(--ai-light-blue)), hsl(var(--ai-blue)));
-    
-    --chat-user: 208 80% 40%;
-    --chat-assistant: 222 47% 9%;
-    --chat-input: 217 33% 18%;
-    --chat-sidebar: 222 47% 7%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --ai-blue: 0 0% 70%;
+    --ai-purple: 0 0% 50%;
+    --ai-light-blue: 0 0% 10%;
+    --ai-white: 0 0% 0%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(0 0% 92%), hsl(0 0% 65%));
+    --gradient-chat: linear-gradient(180deg, hsl(0 0% 0%), hsl(0 0% 0%));
+    --gradient-hero: linear-gradient(135deg, hsl(0 0% 10%), hsl(0 0% 18%));
+
+    --chat-user: 0 0% 16%;
+    --chat-assistant: 0 0% 0%;
+    --chat-input: 0 0% 0%;
+    --chat-sidebar: 0 0% 0%;
+
+    --sidebar-background: 0 0% 0%;
+    --sidebar-foreground: 0 0% 92%;
+    --sidebar-primary: 0 0% 96%;
+    --sidebar-primary-foreground: 0 0% 6%;
+    --sidebar-accent: 0 0% 13%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 0 0% 16%;
+    --sidebar-ring: 0 0% 70%;
   }
+
 }
 
 code, pre {
@@ -143,7 +146,9 @@ code, pre {
   overflow-x: hidden;
   overflow-y: auto;
   border-radius: 12px;
-  background: rgba(20, 20, 20, 0.9);
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
   padding: 1rem;
   box-sizing: border-box;
 }
@@ -256,7 +261,7 @@ body, html {
     border-radius: 50%;
     transform: scale(0);
     animation: ripple-animation 0.6s linear;
-    background-color: rgba(59, 130, 246, 0.5);
+    background-color: hsl(var(--foreground) / 0.12);
     pointer-events: none;
   }
 
@@ -442,3 +447,59 @@ html[data-ai-style="creative"] .ai-response h2 {
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 
+
+
+/* ─── Native-feel scrolling & markdown polish ─── */
+.smooth-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  scrollbar-width: thin;
+}
+
+.ai-response { letter-spacing: -0.011em; }
+.ai-response > *:first-child { margin-top: 0 !important; }
+.ai-response > *:last-child { margin-bottom: 0 !important; }
+.ai-response h1, .ai-response h2, .ai-response h3 { letter-spacing: -0.02em; }
+.ai-response h2 + p, .ai-response h3 + p { margin-top: 0.25rem; }
+.ai-response ul { list-style: disc; padding-left: 1.25rem; }
+.ai-response ol { list-style: decimal; padding-left: 1.35rem; }
+.ai-response li { line-height: 1.7; padding-left: 0.1rem; }
+.ai-response li > ul, .ai-response li > ol { margin: 0.35rem 0 0.35rem 0; }
+.ai-response blockquote {
+  border-left: 2px solid hsl(var(--border));
+  padding: 0.15rem 0 0.15rem 0.9rem;
+  color: hsl(var(--muted-foreground));
+  margin: 1rem 0;
+}
+.ai-response hr { border-color: hsl(var(--border)); margin: 1.5rem 0; }
+.ai-response a { text-decoration: underline; text-underline-offset: 2px; }
+.ai-response :not(pre) > code {
+  background: hsl(var(--muted));
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  padding: 0.1em 0.35em;
+  font-size: 0.88em;
+  display: inline;
+}
+.ai-response table {
+  width: 100%;
+  display: table;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  overflow: hidden;
+  font-size: 0.92em;
+  margin: 1rem 0;
+}
+.ai-response thead th {
+  background: hsl(var(--muted));
+  font-weight: 600;
+  text-align: left;
+}
+.ai-response th, .ai-response td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid hsl(var(--border));
+}
+.ai-response tbody tr:last-child td { border-bottom: none; }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }

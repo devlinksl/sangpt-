@@ -8,6 +8,7 @@ import { AuthProvider } from "@/components/AuthContext";
 import { AuthGate } from "@/components/AuthGate";
 import { ThemeProvider } from "@/components/ThemeProvider";
  import { AlertProvider } from "@/hooks/useAlert";
+import { SpeechPlayerProvider } from "@/components/SpeechPlayer";
 import Index from "./pages/Index";
 import ResetPassword from "./pages/ResetPassword";
 import Settings from "./pages/Settings";
@@ -45,11 +46,13 @@ const App = () => (
     <ThemeProvider defaultTheme="system">
       <AuthProvider>
          <AlertProvider>
+           <SpeechPlayerProvider>
            <TooltipProvider>
              <ConnectivityBanner />
              <Toaster />
              <Sonner />
              <BrowserRouter>
+
                <Routes>
                  <Route path="/reset-password" element={<ResetPassword />} />
                  <Route path="/*" element={<AuthGate>
@@ -87,6 +90,7 @@ const App = () => (
                </Routes>
              </BrowserRouter>
            </TooltipProvider>
+           </SpeechPlayerProvider>
          </AlertProvider>
       </AuthProvider>
     </ThemeProvider>
