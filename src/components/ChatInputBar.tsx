@@ -291,7 +291,7 @@ export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
             disabled={isInputDisabled}
             rows={1}
             style={{ height: MIN_HEIGHT, lineHeight: `${LINE_HEIGHT}px`, maxHeight: MAX_HEIGHT }}
-            className="flex-1 min-w-0 self-end bg-transparent text-foreground placeholder:text-muted-foreground/50 text-[15px] resize-none outline-none overflow-y-auto py-1.5 px-2 transition-[height] duration-100 ease-out"
+            className="flex-1 min-w-0 self-end bg-transparent text-foreground placeholder:text-muted-foreground/50 text-[15px] resize-none outline-none overflow-y-auto py-1.5 px-2 transition-[height] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]"
           />
 
           {/* Speech to text */}
