@@ -35,6 +35,12 @@ interface SidebarProps {
   dragOffset?: number | null;
   /** Backdrop opacity 0..1 during drag. */
   backdropOpacity?: number;
+  /**
+   * Ignore pointer input while the panel animates in. Stops the click that
+   * follows the toggle's pointerdown from activating whatever lands under the
+   * finger (notably the search button, which shares the toggle's coordinates).
+   */
+  inert?: boolean;
 }
 
 interface Conversation {
@@ -69,7 +75,7 @@ function groupByDate(conversations: Conversation[]): { label: string; items: Con
   return groups.filter(g => g.items.length > 0);
 }
 
-export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, dragOffset, backdropOpacity }: SidebarProps) => {
+export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, dragOffset, backdropOpacity, inert = false }: SidebarProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const conversations = useConversations();
@@ -84,10 +90,15 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Reset loading indicator when sidebar fully closes
+  // Reset transient UI once the sidebar has fully closed, so reopening always
+  // starts on the conversation list rather than in expanded-search mode.
   useEffect(() => {
     if (!isOpen) {
-      const t = setTimeout(() => setLoadingId(null), 320);
+      const t = setTimeout(() => {
+        setLoadingId(null);
+        setIsSearchExpanded(false);
+        setContextMenuId(null);
+      }, 320);
       return () => clearTimeout(t);
     }
   }, [isOpen]);
@@ -115,9 +126,15 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
     return () => { supabase.removeChannel(channel); };
   }, [user?.id]);
 
+  // Focus the search field once its row has painted. 300ms was long enough to
+  // feel unresponsive; the row fades in well inside 120ms.
   useEffect(() => {
-    if (isSearchExpanded) setTimeout(() => searchInputRef.current?.focus(), 300);
-    else setSearchTerm('');
+    if (!isSearchExpanded) {
+      setSearchTerm('');
+      return;
+    }
+    const t = setTimeout(() => searchInputRef.current?.focus(), 120);
+    return () => clearTimeout(t);
   }, [isSearchExpanded]);
 
   const deleteConversation = (id: string) => {
@@ -185,7 +202,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
         className="fixed inset-0 bg-black/25 backdrop-blur-sm z-40"
         style={{
           opacity: computedBackdropOpacity,
-          pointerEvents: visibility ? 'auto' : 'none',
+          pointerEvents: visibility && !inert ? 'auto' : 'none',
           transition: isDragging ? 'none' : 'opacity 0.19s ease-out',
         }}
         onClick={onClose}
@@ -203,6 +220,8 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
             // Snappier than the previous 0.28s so tapping the toggle feels instant.
             : 'transform 0.19s cubic-bezier(0.22, 1, 0.36, 1)',
           willChange: 'transform',
+          // Inert while sliding in — see the `inert` prop.
+          pointerEvents: inert ? 'none' : undefined,
           width: isSearchExpanded ? undefined : W,
           WebkitUserSelect: 'none',
           userSelect: 'none',

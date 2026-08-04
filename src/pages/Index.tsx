@@ -24,6 +24,43 @@ const Index = () => {
     }
   }, [location.state]);
 
+  // ─── Opening the sidebar without a click-through ───
+  // The toggle button (x 6–44, y 2–40) sits almost exactly on top of the
+  // sidebar's "Search conversations..." button (x 16–304, y 16–56). Because the
+  // toggle fires on pointerdown for instant response, the *click* that follows
+  // the same press used to land on the freshly-mounted panel and expand search
+  // (which autofocuses its input, popping the keyboard open).
+  //
+  // Fix: while the panel slides in, mark it inert and swallow that one trailing
+  // click. This also stops accidental taps on a target that's still moving,
+  // which is how native sheet presentation behaves.
+  const [sidebarInert, setSidebarInert] = useState(false);
+
+  const handleOpenSidebar = useCallback(() => {
+    setSidebarOpen(true);
+    setSidebarInert(true);
+  }, []);
+
+  useEffect(() => {
+    if (!sidebarInert) return;
+
+    // Capture phase + stopPropagation so the click dies before reaching any
+    // handler, however the browser retargets it after the panel mounts.
+    const swallowClick = (e: MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+    };
+    window.addEventListener('click', swallowClick, { capture: true, once: true });
+
+    // Release once the 0.19s slide-in has settled.
+    const timer = window.setTimeout(() => setSidebarInert(false), 220);
+
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('click', swallowClick, { capture: true });
+    };
+  }, [sidebarInert]);
+
   const handleNewChat = useCallback(() => {
     setSelectedConversationId(null);
     setSidebarOpen(false);
@@ -158,7 +195,7 @@ const Index = () => {
         }}
       >
         <ChatInterface
-          onOpenSidebar={() => setSidebarOpen(true)}
+          onOpenSidebar={handleOpenSidebar}
           conversationId={selectedConversationId}
           onConversationChange={setSelectedConversationId}
         />
@@ -171,6 +208,7 @@ const Index = () => {
         onConversationSelect={handleConversationSelect}
         dragOffset={dragOffset}
         backdropOpacity={backdropOpacity}
+        inert={sidebarInert}
       />
     </div>
   );
