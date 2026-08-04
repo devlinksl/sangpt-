@@ -45,11 +45,13 @@ const App = () => (
     <ThemeProvider defaultTheme="system">
       <AuthProvider>
          <AlertProvider>
+           <SpeechPlayerProvider>
            <TooltipProvider>
              <ConnectivityBanner />
              <Toaster />
              <Sonner />
              <BrowserRouter>
+
                <Routes>
                  <Route path="/reset-password" element={<ResetPassword />} />
                  <Route path="/*" element={<AuthGate>
