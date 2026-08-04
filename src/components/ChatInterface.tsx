@@ -45,50 +45,45 @@ const styles = `
   }
 
   .san-header {
-    background: hsl(var(--background) / 0.7);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid hsl(var(--border) / 0.2);
+    background: hsl(var(--background));
+    border-bottom: 1px solid hsl(var(--border) / 0.6);
   }
 
   .san-logo-pill {
     font-family: 'Sora', sans-serif;
     font-weight: 700;
     letter-spacing: -0.02em;
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.6));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: hsl(var(--foreground));
   }
 
   .san-logo-pill-wrapper {
-    background: hsl(var(--primary) / 0.08);
-    border: 1px solid hsl(var(--primary) / 0.2);
+    background: transparent;
+    border: 1px solid hsl(var(--border));
     border-radius: 999px;
     padding: 6px 16px;
     transition: all 0.2s ease;
   }
 
   .san-logo-pill-wrapper:hover {
-    background: hsl(var(--primary) / 0.14);
-    border-color: hsl(var(--primary) / 0.35);
+    background: hsl(var(--accent));
+    border-color: hsl(var(--border));
   }
 
   /* User message bubble */
   .san-bubble-user {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8));
-    color: hsl(var(--primary-foreground));
-    border-radius: 18px 18px 4px 18px;
-    padding: 12px 16px;
-    max-width: 80%;
-    box-shadow: 0 4px 20px hsl(var(--primary) / 0.25);
+    background: hsl(var(--chat-user));
+    color: hsl(var(--foreground));
+    border-radius: 20px 20px 6px 20px;
+    padding: 11px 15px;
+    max-width: 82%;
+    box-shadow: none;
     position: relative;
     user-select: none;
     transition: box-shadow 0.2s ease;
   }
 
   .san-bubble-user:active {
-    box-shadow: 0 2px 10px hsl(var(--primary) / 0.3);
+    background: hsl(var(--accent));
   }
 
   /* AI message area */
@@ -110,13 +105,13 @@ const styles = `
     width: 42px;
     height: 42px;
     border-radius: 50%;
-    background: hsl(var(--primary));
-    color: hsl(var(--primary-foreground));
-    border: none;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    border: 1px solid hsl(var(--border));
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 24px hsl(var(--primary) / 0.4);
+    box-shadow: 0 6px 20px hsl(0 0% 0% / 0.12);
     cursor: pointer;
     z-index: 50;
     animation: san-bounce-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -125,7 +120,7 @@ const styles = `
 
   .san-scroll-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 28px hsl(var(--primary) / 0.5);
+    box-shadow: 0 10px 26px hsl(0 0% 0% / 0.18);
   }
 
   @keyframes san-bounce-in {
@@ -135,9 +130,9 @@ const styles = `
 
   /* Offline banner */
   .san-offline-banner {
-    background: hsl(var(--destructive) / 0.1);
-    border-bottom: 1px solid hsl(var(--destructive) / 0.25);
-    color: hsl(var(--destructive));
+    background: hsl(var(--muted));
+    border-bottom: 1px solid hsl(var(--border));
+    color: hsl(var(--muted-foreground));
     font-size: 12px;
     font-weight: 500;
     display: flex;
@@ -236,9 +231,7 @@ const styles = `
 
   /* Input area gradient */
   .san-input-area {
-    background: linear-gradient(to top, hsl(var(--background)) 60%, hsl(var(--background) / 0));
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: hsl(var(--background));
   }
 
   /* Offline empty state icon */
@@ -279,7 +272,7 @@ const styles = `
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(255,255,255,0.12);
+    background: hsl(var(--background) / 0.6);
     padding: 8px 12px;
     border-radius: 10px;
     font-size: 13px;
@@ -900,7 +893,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     <>
       <style>{styles}</style>
 
-      <div className="san-root flex flex-col h-screen bg-background">
+      <div className="san-root flex flex-col h-[100dvh] bg-background">
 
         {/* ─── Offline Banner ─── */}
         {!isOnline && (
@@ -911,7 +904,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         )}
 
         {/* ─── Header ─── */}
-        <header className="san-header flex items-center justify-between px-3 py-2 sticky top-0 z-10">
+        <header className="san-header flex items-center justify-between px-3 py-2 sticky top-0 z-20 shrink-0">
           <button
             className="san-icon-btn"
             onClick={onOpenSidebar}
@@ -997,7 +990,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         {/* ─── Messages ─── */}
         <div
           ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto relative overscroll-contain"
+          className="flex-1 overflow-y-auto relative overscroll-contain smooth-scroll"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           {offlineUnavailable ? (
@@ -1067,7 +1060,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         </div>
 
         {/* ─── Input Area ─── */}
-        <div className="san-input-area sticky bottom-0 pb-4 pt-2">
+        <div className="san-input-area sticky bottom-0 pb-4 pt-2 shrink-0">
           {isRecording && (
             <div className="mb-3 flex items-center justify-center">
               <WaveformAnimation />

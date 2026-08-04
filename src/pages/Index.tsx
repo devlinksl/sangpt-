@@ -163,7 +163,8 @@ const Index = () => {
         />
       </div>
 
-      {/* Smooth chat-load overlay */}
+      {/* chat loads instantly; no blocking overlay */}
+      {false && (
       <div
         className="fixed inset-0 z-[55] flex items-center justify-center bg-background/40 backdrop-blur-md pointer-events-none transition-opacity duration-200"
         style={{ opacity: chatLoading ? 1 : 0 }}
