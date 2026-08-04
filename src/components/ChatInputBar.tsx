@@ -5,7 +5,6 @@ import {
   Camera,
   FileText,
   Send,
-  Sparkles,
   Square,
   Plus,
   X,
@@ -36,7 +35,8 @@ interface ChatInputBarProps {
   initialValue?: string;
   onSend: (text: string) => void;
   onAttachment: (type: 'image' | 'camera' | 'file') => void;
-  onModelSelect: () => void;
+  /** Optional and currently unused — the model-selector button was removed from the UI. Kept so existing callers that still pass it don't break. */
+  onModelSelect?: () => void;
   onRecordingChange: (isRecording: boolean) => void;
   onTranscription: (text: string) => void;
   isLoading: boolean;
@@ -69,7 +69,6 @@ export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
   initialValue = '',
   onSend,
   onAttachment,
-  onModelSelect,
   onRecordingChange,
   onTranscription,
   isLoading,
@@ -222,7 +221,7 @@ export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
         <div
           ref={pillRef}
           className={cn(
-            'flex items-end gap-1 rounded-[26px] p-1',
+            'flex items-end gap-1.5 rounded-[26px] p-1',
             'bg-card/90 dark:bg-card/80 backdrop-blur-xl border transition-[border-color,box-shadow] duration-200 ease-out',
             'shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.45)] gpu-accelerated',
             isFocused
@@ -231,7 +230,7 @@ export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
           )}
         >
           {/* Attachment menu */}
-          <div className="relative shrink-0" ref={attachMenuRef}>
+          <div className="relative shrink-0 self-end" ref={attachMenuRef}>
             <button
               type="button"
               onClick={() => { lightTap(); setAttachMenuOpen(prev => !prev); }}
@@ -280,7 +279,7 @@ export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
             </div>
           </div>
 
-          {/* Textarea — single line until it needs more, matches the 36px icon-button row height when collapsed */}
+          {/* Textarea — takes all the freed-up width now that the model selector is gone */}
           <textarea
             ref={textareaRef}
             defaultValue={initialValue}
@@ -295,20 +294,8 @@ export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
             className="flex-1 min-w-0 self-end bg-transparent text-foreground placeholder:text-muted-foreground/50 text-[15px] resize-none outline-none overflow-y-auto py-1.5 px-2 transition-[height] duration-100 ease-out"
           />
 
-          {/* Model selector */}
-          <button
-            type="button"
-            onClick={() => { lightTap(); onModelSelect(); }}
-            disabled={isInputDisabled}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors hover:bg-primary/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
-            aria-label="Change model — SanGPT"
-            title="SanGPT · Change model"
-          >
-            <Sparkles className="h-4 w-4" />
-          </button>
-
           {/* Speech to text */}
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center self-end">
             <SpeechToText
               onTranscription={(t) => {
                 onTranscription(t);
@@ -331,7 +318,7 @@ export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
             disabled={isSendDisabled}
             size="icon"
             className={cn(
-              'h-9 w-9 shrink-0 rounded-full shadow-md transition-all duration-200',
+              'h-9 w-9 shrink-0 self-end rounded-full shadow-md transition-all duration-200',
               isLoading && isStoppable
                 ? 'bg-destructive hover:bg-destructive/90 scale-100'
                 : hasContent
