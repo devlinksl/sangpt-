@@ -52,8 +52,12 @@ export const HomeScreen = ({ user }: HomeScreenProps) => {
         alignItems: 'center',
         justifyContent: 'center',
         height: '100%',
+        minHeight: 0,
         width: '100%',
-        padding: 24,
+        padding: '24px 24px 0',
+        // Optical centering: the composer sits below this area, so a purely
+        // geometric centre reads as sitting too low. Lift the block slightly.
+        paddingBottom: 'clamp(24px, 9vh, 96px)',
         boxSizing: 'border-box',
         textAlign: 'center',
       }}
@@ -103,19 +107,22 @@ export const HomeScreen = ({ user }: HomeScreenProps) => {
         height={112}
         className="home-logo"
         style={{
-          width: 112,
-          height: 112,
+          width: 104,
+          height: 104,
           objectFit: 'contain',
-          marginBottom: 24,
+          marginBottom: 18,
         }}
       />
 
       <h1
         className="home-greeting"
         style={{
-          fontSize: 'clamp(1.8rem, 4vw, 2.5rem)',
+          fontSize: 'clamp(1.6rem, 7vw, 2.25rem)',
           fontWeight: 800,
+          letterSpacing: '-0.02em',
+          lineHeight: 1.15,
           margin: 0,
+          textWrap: 'balance',
           color: 'hsl(var(--foreground))',
         }}
       >
@@ -125,10 +132,9 @@ export const HomeScreen = ({ user }: HomeScreenProps) => {
       <p
         className="home-subline"
         style={{
-          marginTop: 12,
-          fontSize: '1.05rem',
+          margin: '10px 0 0',
+          fontSize: '1rem',
           color: 'hsl(var(--muted-foreground))',
-          margin: 0,
         }}
       >
         {subline}

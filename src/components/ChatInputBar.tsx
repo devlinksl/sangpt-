@@ -50,12 +50,13 @@ interface ChatInputBarProps {
  * Floating message composer.
  *
  * Layout / positioning notes:
- * - This component renders as a `fixed` overlay pinned to the bottom of the
- *   viewport, so it floats above the system navigation bar and the keyboard
- *   instead of being laid out inline in a flex column with them.
- * - It respects Android/iOS safe-area insets via `env(safe-area-inset-bottom)`
- *   (works out of the box in Capacitor edge-to-edge apps, and gracefully
- *   falls back to a fixed gap on devices/browsers that don't report one).
+ * - This component renders in-flow and expects its parent to be the element
+ *   that floats it (see `.san-input-area` in ChatInterface). The parent is
+ *   absolutely positioned inside the chat root and offset by the measured
+ *   on-screen keyboard inset, which keeps the pill above the keyboard while
+ *   typing. Making this component `fixed` would escape that wrapper and pin it
+ *   to the layout viewport — which sits *behind* the keyboard on mobile.
+ * - Safe-area / nav-bar spacing is likewise owned by the parent wrapper.
  * - It writes its own rendered height to a `--chat-composer-height` CSS
  *   custom property on the document root every time it resizes. The
  *   scrolling chat/message list should add this as bottom padding so the
@@ -208,14 +209,13 @@ export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
   ];
 
   return (
-    // Fixed overlay: floats above the keyboard/nav bar rather than being
-    // laid out inline with them. `pointer-events-none` on the wrapper keeps
-    // the transparent margins from swallowing taps on the chat behind it;
-    // `pointer-events-auto` is re-enabled on the pill itself below.
-    <div
-      className="fixed inset-x-0 bottom-0 z-40 flex justify-center pointer-events-none"
-      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
-    >
+    // In-flow inside the parent's floating composer wrapper (`.san-input-area`),
+    // which is what actually offsets the pill above the on-screen keyboard using
+    // the measured keyboard inset. Using `fixed` here would escape that wrapper
+    // and pin the pill to the layout viewport — i.e. behind the keyboard.
+    // `pointer-events-none` keeps the transparent margins from swallowing taps
+    // on the chat behind it; it's re-enabled on the pill itself below.
+    <div className="relative z-40 flex w-full justify-center pointer-events-none">
       <div className="w-full max-w-3xl px-3 pointer-events-auto">
         {/* Compact single-line pill — grows vertically only as lines are added */}
         <div

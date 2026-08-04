@@ -44,6 +44,21 @@ const styles = `
 
   .san-root {
     font-family: 'Inter', sans-serif;
+
+    /* Top inset for the floating controls.
+       Android (Chrome PWA / WebView) already lays the page out below the status
+       bar, yet still reports a non-zero safe-area-inset-top — adding it there
+       double-counts the status bar and leaves a visible dead band above the
+       icons. So cap it to a hairline everywhere by default. */
+    --san-top-inset: min(env(safe-area-inset-top, 0px), 2px);
+  }
+
+  /* iOS is the one platform that genuinely draws under the notch / status bar,
+     so give it the real inset back. (-webkit-touch-callout is iOS-only.) */
+  @supports (-webkit-touch-callout: none) {
+    .san-root {
+      --san-top-inset: env(safe-area-inset-top, 0px);
+    }
   }
 
   /* Hide every scrollbar inside the chat UI (messages list, growing textarea,
@@ -93,7 +108,7 @@ const styles = `
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0px 10px 4px;
+    padding: 0 6px 2px;
   }
 
   .san-offline-banner + .san-top-controls {
@@ -356,8 +371,9 @@ const styles = `
 
   /* Icon button */
   .san-icon-btn {
-    width: 40px;
-    height: 40px;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -654,6 +670,9 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     setMessages([]);
     setCurrentConversationId(null);
     setChatTitle('');
+    // The overflow button is unmounted outside a chat — don't let a stale open
+    // state pop the menu back up when the next conversation starts.
+    setShowOverflowMenu(false);
     onConversationChange?.(null);
     if (temporaryMode) {
       setTemporaryMode(false);
@@ -999,7 +1018,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
       <div
         className="san-root relative flex flex-col h-[100dvh] bg-background overflow-hidden"
         style={{
-          '--san-top-inset': 'env(safe-area-inset-top, 0px)',
+          // --san-top-inset is set in the stylesheet (platform-aware), not here.
           '--san-top-h': `${topOverlayHeight}px`,
           '--san-kb': `${keyboardInset}px`,
           '--san-composer-h': `${composerHeight}px`,
@@ -1055,20 +1074,20 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                   <Edit3 size={18} />
                 </button>
 
+                {/* Overflow menu — only exists once there's an actual chat to act on */}
+                {currentConversationId && (
                 <div className="relative">
                   <button
                     className="san-icon-btn"
                     onClick={() => setShowOverflowMenu(!showOverflowMenu)}
-                    disabled={!currentConversationId}
                     aria-label="More options"
                     aria-haspopup="menu"
                     aria-expanded={showOverflowMenu}
-                    style={!currentConversationId ? { opacity: 0.35, pointerEvents: 'none' } : undefined}
                   >
                     <MoreVertical size={18} />
                   </button>
 
-                  {showOverflowMenu && currentConversationId && (
+                  {showOverflowMenu && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setShowOverflowMenu(false)} />
                       <div className="san-overflow-dropdown" role="menu">
@@ -1089,6 +1108,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                     </>
                   )}
                 </div>
+                )}
               </div>
             ) : (
               <Button
