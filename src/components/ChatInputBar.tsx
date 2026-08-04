@@ -14,10 +14,17 @@ import { SpeechToText } from '@/components/SpeechToText';
 import { cn } from '@/lib/utils';
 import { useHaptics } from '@/hooks/useHaptics';
 
-/** One text line, in px — keeps the collapsed composer exactly single-line. */
+/**
+ * Text line-height, in px — the visual height of one line of typed text.
+ * Kept separate from MIN_HEIGHT so padding math stays explicit.
+ */
 const LINE_HEIGHT = 24;
-/** Roughly 5 lines before the textarea starts scrolling internally. */
-const MAX_HEIGHT = 132;
+/** Vertical padding (top + bottom, each) inside the textarea, in px. */
+const PADDING_Y = 6;
+/** Collapsed, single-line height of the textarea — matches the 36px (h-9) icon buttons so everything lines up on one row without any icon looking off-center. */
+const MIN_HEIGHT = LINE_HEIGHT + PADDING_Y * 2; // 36
+/** ~5 lines before the textarea starts scrolling internally. */
+const MAX_HEIGHT = LINE_HEIGHT * 5 + PADDING_Y * 2; // 132
 
 export interface ChatInputBarHandle {
   setText: (text: string) => void;
@@ -39,6 +46,25 @@ interface ChatInputBarProps {
   disabled?: boolean;
 }
 
+/**
+ * Floating message composer.
+ *
+ * Layout / positioning notes:
+ * - This component renders as a `fixed` overlay pinned to the bottom of the
+ *   viewport, so it floats above the system navigation bar and the keyboard
+ *   instead of being laid out inline in a flex column with them.
+ * - It respects Android/iOS safe-area insets via `env(safe-area-inset-bottom)`
+ *   (works out of the box in Capacitor edge-to-edge apps, and gracefully
+ *   falls back to a fixed gap on devices/browsers that don't report one).
+ * - It writes its own rendered height to a `--chat-composer-height` CSS
+ *   custom property on the document root every time it resizes. The
+ *   scrolling chat/message list should add this as bottom padding so the
+ *   last message is never hidden behind the floating pill, e.g.:
+ *
+ *     .chat-scroll-area {
+ *       padding-bottom: calc(var(--chat-composer-height, 64px) + env(safe-area-inset-bottom, 0px) + 24px);
+ *     }
+ */
 export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
   initialValue = '',
   onSend,
@@ -57,6 +83,7 @@ export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
   const [hasContent, setHasContent] = useState(initialValue.length > 0);
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const pillRef = useRef<HTMLDivElement>(null);
   const sendLockRef = useRef(false);
   const attachMenuRef = useRef<HTMLDivElement>(null);
   const { lightTap, mediumTap } = useHaptics();
@@ -66,7 +93,7 @@ export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
     if (!el) return;
     // Collapse first so shrinking (e.g. deleting lines) is measured correctly.
     el.style.height = 'auto';
-    el.style.height = `${Math.min(Math.max(el.scrollHeight, LINE_HEIGHT), MAX_HEIGHT)}px`;
+    el.style.height = `${Math.min(Math.max(el.scrollHeight, MIN_HEIGHT), MAX_HEIGHT)}px`;
   }, []);
 
   // ─── Auto-focus on mount ───────────────────────────────────────────────────
@@ -89,6 +116,25 @@ export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
     }
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [attachMenuOpen]);
+
+  // ─── Publish the composer's rendered height as a CSS var ──────────────────
+  // Lets the chat/message list add exactly enough bottom padding to stay
+  // visible beneath the floating pill, even as it grows/shrinks with content
+  // or the keyboard/safe-area changes.
+  useEffect(() => {
+    const el = pillRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const publishHeight = () => {
+      document.documentElement.style.setProperty(
+        '--chat-composer-height',
+        `${el.offsetHeight}px`,
+      );
+    };
+    publishHeight();
+    const ro = new ResizeObserver(publishHeight);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   useImperativeHandle(ref, () => ({
     setText: (t: string) => {
@@ -123,8 +169,8 @@ export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
     setHasContent(false);
     if (textareaRef.current) {
       textareaRef.current.value = '';
-      // Back to a single line.
-      textareaRef.current.style.height = `${LINE_HEIGHT}px`;
+      // Smoothly collapse back to a single line.
+      textareaRef.current.style.height = `${MIN_HEIGHT}px`;
     }
   }, [onSend, text, mediumTap]);
 
@@ -163,134 +209,144 @@ export const ChatInputBar = forwardRef<ChatInputBarHandle, ChatInputBarProps>(({
   ];
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-3">
-      {/* Compact single-line pill — grows vertically only as lines are added */}
-      <div
-        className={cn(
-          'flex items-end gap-0.5 rounded-[26px] px-1.5 py-1.5',
-          'bg-card/85 dark:bg-card/70 backdrop-blur-xl border transition-[border-color,box-shadow] duration-200 ease-out',
-          'shadow-lg shadow-black/10 dark:shadow-black/30 gpu-accelerated',
-          isFocused
-            ? 'border-primary/40 shadow-primary/10 dark:shadow-primary/10'
-            : 'border-border/50',
-        )}
-      >
-        {/* Attachment menu */}
-        <div className="relative shrink-0" ref={attachMenuRef}>
+    // Fixed overlay: floats above the keyboard/nav bar rather than being
+    // laid out inline with them. `pointer-events-none` on the wrapper keeps
+    // the transparent margins from swallowing taps on the chat behind it;
+    // `pointer-events-auto` is re-enabled on the pill itself below.
+    <div
+      className="fixed inset-x-0 bottom-0 z-40 flex justify-center pointer-events-none"
+      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
+    >
+      <div className="w-full max-w-3xl px-3 pointer-events-auto">
+        {/* Compact single-line pill — grows vertically only as lines are added */}
+        <div
+          ref={pillRef}
+          className={cn(
+            'flex items-end gap-1 rounded-[26px] p-1',
+            'bg-card/90 dark:bg-card/80 backdrop-blur-xl border transition-[border-color,box-shadow] duration-200 ease-out',
+            'shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.45)] gpu-accelerated',
+            isFocused
+              ? 'border-primary/40 shadow-primary/10 dark:shadow-primary/10'
+              : 'border-border/50',
+          )}
+        >
+          {/* Attachment menu */}
+          <div className="relative shrink-0" ref={attachMenuRef}>
+            <button
+              type="button"
+              onClick={() => { lightTap(); setAttachMenuOpen(prev => !prev); }}
+              disabled={isInputDisabled}
+              className={cn(
+                'flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none',
+                attachMenuOpen
+                  ? 'bg-primary/15 text-primary rotate-45'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50',
+              )}
+              aria-label="Attach file"
+            >
+              {attachMenuOpen
+                ? <X className="h-5 w-5 transition-transform duration-200" />
+                : <Plus className="h-5 w-5 transition-transform duration-200" />
+              }
+            </button>
+
+            {/* Popover attach menu */}
+            <div
+              className={cn(
+                'absolute bottom-full left-0 mb-2 flex flex-col gap-1 p-1.5 rounded-2xl bg-popover border border-border/60 shadow-xl shadow-black/10 dark:shadow-black/30 backdrop-blur-xl transition-all duration-200 origin-bottom-left z-50',
+                attachMenuOpen
+                  ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto'
+                  : 'opacity-0 scale-95 translate-y-1 pointer-events-none',
+              )}
+            >
+              {attachOptions.map(({ type, icon: Icon, label }, i) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => handleAttachOption(type)}
+                  disabled={isInputDisabled}
+                  style={{ transitionDelay: attachMenuOpen ? `${i * 40}ms` : '0ms' }}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-accent/60 active:scale-95 transition-all duration-150 min-w-[120px] disabled:opacity-50 disabled:pointer-events-none',
+                    attachMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1',
+                  )}
+                >
+                  <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-primary/10 text-primary">
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Textarea — single line until it needs more, matches the 36px icon-button row height when collapsed */}
+          <textarea
+            ref={textareaRef}
+            defaultValue={initialValue}
+            onChange={handleChange}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setTimeout(() => setIsFocused(false), 150)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask anything…"
+            disabled={isInputDisabled}
+            rows={1}
+            style={{ height: MIN_HEIGHT, lineHeight: `${LINE_HEIGHT}px`, maxHeight: MAX_HEIGHT }}
+            className="flex-1 min-w-0 self-end bg-transparent text-foreground placeholder:text-muted-foreground/50 text-[15px] resize-none outline-none overflow-y-auto py-1.5 px-2 transition-[height] duration-100 ease-out"
+          />
+
+          {/* Model selector */}
           <button
             type="button"
-            onClick={() => { lightTap(); setAttachMenuOpen(prev => !prev); }}
+            onClick={() => { lightTap(); onModelSelect(); }}
             disabled={isInputDisabled}
-            className={cn(
-              'flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none',
-              attachMenuOpen
-                ? 'bg-primary/15 text-primary rotate-45'
-                : 'text-muted-foreground hover:text-foreground hover:bg-accent/50',
-            )}
-            aria-label="Attach file"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors hover:bg-primary/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+            aria-label="Change model — SanGPT"
+            title="SanGPT · Change model"
           >
-            {attachMenuOpen
-              ? <X className="h-5 w-5 transition-transform duration-200" />
-              : <Plus className="h-5 w-5 transition-transform duration-200" />
-            }
+            <Sparkles className="h-4 w-4" />
           </button>
 
-          {/* Popover attach menu */}
-          <div
-            className={cn(
-              'absolute bottom-full left-0 mb-2 flex flex-col gap-1 p-1.5 rounded-2xl bg-popover border border-border/60 shadow-xl shadow-black/10 dark:shadow-black/30 backdrop-blur-xl transition-all duration-200 origin-bottom-left z-50',
-              attachMenuOpen
-                ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto'
-                : 'opacity-0 scale-95 translate-y-1 pointer-events-none',
-            )}
-          >
-            {attachOptions.map(({ type, icon: Icon, label }, i) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => handleAttachOption(type)}
-                disabled={isInputDisabled}
-                style={{ transitionDelay: attachMenuOpen ? `${i * 40}ms` : '0ms' }}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-accent/60 active:scale-95 transition-all duration-150 min-w-[120px] disabled:opacity-50 disabled:pointer-events-none',
-                  attachMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1',
-                )}
-              >
-                <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-primary/10 text-primary">
-                  <Icon className="h-4 w-4" />
-                </span>
-                {label}
-              </button>
-            ))}
+          {/* Speech to text */}
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center">
+            <SpeechToText
+              onTranscription={(t) => {
+                onTranscription(t);
+                if (textareaRef.current) {
+                  textareaRef.current.value = t;
+                  setText(t);
+                  setHasContent(t.length > 0);
+                  resize(textareaRef.current);
+                }
+                onRecordingChange(false);
+              }}
+              disabled={isInputDisabled}
+              onRecordingChange={onRecordingChange}
+            />
           </div>
+
+          {/* Send / stop */}
+          <Button
+            onClick={handleSendClick}
+            disabled={isSendDisabled}
+            size="icon"
+            className={cn(
+              'h-9 w-9 shrink-0 rounded-full shadow-md transition-all duration-200',
+              isLoading && isStoppable
+                ? 'bg-destructive hover:bg-destructive/90 scale-100'
+                : hasContent
+                  ? 'bg-primary hover:bg-primary/90 scale-100 shadow-primary/25'
+                  : 'bg-muted text-muted-foreground scale-90 opacity-50 cursor-not-allowed',
+            )}
+            aria-label={isLoading && isStoppable ? 'Stop generating' : 'Send message'}
+          >
+            {isLoading && isStoppable ? (
+              <Square className="h-3.5 w-3.5 text-destructive-foreground fill-current" />
+            ) : (
+              <Send className="h-4 w-4 text-primary-foreground" />
+            )}
+          </Button>
         </div>
-
-        {/* Textarea — single line until it needs more */}
-        <textarea
-          ref={textareaRef}
-          defaultValue={initialValue}
-          onChange={handleChange}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setTimeout(() => setIsFocused(false), 150)}
-          onKeyDown={handleKeyDown}
-          placeholder="Ask anything…"
-          disabled={isInputDisabled}
-          rows={1}
-          style={{ height: LINE_HEIGHT, lineHeight: `${LINE_HEIGHT}px`, maxHeight: MAX_HEIGHT }}
-          className="flex-1 min-w-0 self-end bg-transparent text-foreground placeholder:text-muted-foreground/50 text-base resize-none outline-none overflow-y-auto py-[7px] px-1"
-        />
-
-        {/* Model selector */}
-        <button
-          type="button"
-          onClick={() => { lightTap(); onModelSelect(); }}
-          disabled={isInputDisabled}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors hover:bg-primary/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
-          aria-label="Change model — SanGPT"
-          title="SanGPT · Change model"
-        >
-          <Sparkles className="h-4 w-4" />
-        </button>
-
-        {/* Speech to text */}
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center">
-          <SpeechToText
-            onTranscription={(t) => {
-              onTranscription(t);
-              if (textareaRef.current) {
-                textareaRef.current.value = t;
-                setText(t);
-                setHasContent(t.length > 0);
-                resize(textareaRef.current);
-              }
-              onRecordingChange(false);
-            }}
-            disabled={isInputDisabled}
-            onRecordingChange={onRecordingChange}
-          />
-        </div>
-
-        {/* Send / stop */}
-        <Button
-          onClick={handleSendClick}
-          disabled={isSendDisabled}
-          size="icon"
-          className={cn(
-            'h-9 w-9 shrink-0 rounded-full shadow-md transition-all duration-200',
-            isLoading && isStoppable
-              ? 'bg-destructive hover:bg-destructive/90 scale-100'
-              : hasContent
-                ? 'bg-primary hover:bg-primary/90 scale-100 shadow-primary/25'
-                : 'bg-muted text-muted-foreground scale-90 opacity-50 cursor-not-allowed',
-          )}
-          aria-label={isLoading && isStoppable ? 'Stop generating' : 'Send message'}
-        >
-          {isLoading && isStoppable ? (
-            <Square className="h-3.5 w-3.5 text-destructive-foreground fill-current" />
-          ) : (
-            <Send className="h-4 w-4 text-primary-foreground" />
-          )}
-        </Button>
       </div>
     </div>
   );
