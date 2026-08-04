@@ -75,7 +75,30 @@ const styles = `
     height: 0;
   }
 
-  /* Floating top controls — no header bar, conversation scrolls underneath */
+  /* The shell itself never scrolls and never resizes with the keyboard, so the
+     top controls and the composer stay put no matter what the keyboard does.
+     Only .san-messages-scroll (below) scrolls. */
+  .san-root {
+    position: relative;
+    overflow: hidden;
+    overscroll-behavior: none;
+    /* touch-action on the shell stops iOS from rubber-banding the whole page */
+    touch-action: pan-y;
+
+    /* Height comes from the *layout* viewport, which does NOT shrink when the
+       keyboard opens (interactive-widget defaults to resizes-visual). So the
+       shell — and therefore the top controls — never move. The keyboard is
+       accounted for by --san-kb, which only lifts the composer and pads the
+       message scroller. 100svh is the pre-dvh fallback. */
+    height: 100svh;
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+
+  /* Floating top controls — no header bar, conversation scrolls underneath.
+     Absolute inside the non-scrolling shell is effectively fixed, but without
+     position:fixed's dependence on the (keyboard-shrunk) visual viewport,
+     which is what previously let it ride up past the status bar. */
   .san-top-overlay {
     position: absolute;
     top: 0;
@@ -84,6 +107,9 @@ const styles = `
     z-index: 30;
     pointer-events: none;
     padding-top: var(--san-top-inset);
+    /* Never participates in keyboard-driven layout shifts */
+    transform: translateZ(0);
+    will-change: auto;
   }
 
   /* Theme-aware fade: solid at the very top, fully transparent at the bottom */
@@ -146,6 +172,19 @@ const styles = `
   /* Message stack spacing */
   .san-messages-stack > * + * {
     margin-top: 20px;
+  }
+
+  /* The ONLY scrollable region in the chat shell. Keyboard-driven resizing is
+     absorbed here (via the padding-bottom that tracks --san-kb) instead of by
+     the document, so the top controls can never be pushed off-screen. */
+  .san-messages-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* Scroll button */
@@ -500,12 +539,20 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
   }, []);
 
+  // Scrolls ONLY the messages container. `scrollIntoView` is deliberately
+  // avoided: it walks up the ancestor chain and will happily scroll the
+  // document/app shell too, which is what dragged the header off-screen.
   const scrollToBottom = useCallback((smooth = true) => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
-      userScrolledRef.current = false;
-      setShowScrollButton(false);
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const top = container.scrollHeight;
+    if (smooth && typeof container.scrollTo === 'function') {
+      container.scrollTo({ top, behavior: 'smooth' });
+    } else {
+      container.scrollTop = top;
     }
+    userScrolledRef.current = false;
+    setShowScrollButton(false);
   }, []);
 
   useEffect(() => {
@@ -518,6 +565,46 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     const id = requestAnimationFrame(() => scrollToBottom(false));
     return () => cancelAnimationFrame(id);
   }, [keyboardInset, composerHeight, scrollToBottom]);
+
+  // ─── Opening an existing chat lands on the newest message ───
+  // Jump (not smooth) to the bottom once the messages for a freshly opened
+  // conversation have actually painted, so the user never starts at the top.
+  const pendingBottomJumpRef = useRef(false);
+
+  useEffect(() => {
+    if (!pendingBottomJumpRef.current) return;
+    if (messages.length === 0) return;
+
+    pendingBottomJumpRef.current = false;
+    userScrolledRef.current = false;
+
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    // Two passes: once after this paint, once more after async content
+    // (markdown/code blocks) settles and changes scrollHeight.
+    const jump = () => { container.scrollTop = container.scrollHeight; };
+    jump();
+    const raf = requestAnimationFrame(() => {
+      jump();
+      requestAnimationFrame(jump);
+    });
+    const timer = window.setTimeout(jump, 180);
+
+    return () => { cancelAnimationFrame(raf); window.clearTimeout(timer); };
+  }, [messages]);
+
+  // ─── Lock the document while the chat shell is mounted ───
+  // Prevents the browser from scrolling the page to reveal the focused input.
+  useEffect(() => {
+    const html = document.documentElement;
+    html.classList.add('san-shell-locked');
+    document.body.classList.add('san-shell-locked');
+    return () => {
+      html.classList.remove('san-shell-locked');
+      document.body.classList.remove('san-shell-locked');
+    };
+  }, []);
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -541,6 +628,9 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const loadConversation = async (id: string) => {
     try {
       setOfflineUnavailable(false);
+      // Opening a chat must land on the most recent message, not the top.
+      pendingBottomJumpRef.current = true;
+      userScrolledRef.current = false;
       const cached = await getCachedMessages(id);
       if (cached.length > 0) {
         setMessages(cached.map(msg => ({
@@ -578,6 +668,9 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           metadata: msg.metadata,
           edited_at: (msg as any).edited_at ?? null,
         }));
+        // Server data replaces the cached render, so re-arm the bottom jump
+        // unless the user has already scrolled away themselves.
+        if (!userScrolledRef.current) pendingBottomJumpRef.current = true;
         setMessages(serverMessages);
         cacheMessages(msgData.map(msg => ({
           id: msg.id, conversation_id: msg.conversation_id, role: msg.role,
@@ -1021,7 +1114,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
       <style>{styles}</style>
 
       <div
-        className="san-root relative flex flex-col h-[100dvh] bg-background overflow-hidden"
+        className="san-root relative flex flex-col bg-background overflow-hidden"
         style={{
           // --san-top-inset is set in the stylesheet (platform-aware), not here.
           '--san-top-h': `${topOverlayHeight}px`,
@@ -1141,7 +1234,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         {/* ─── Messages ─── */}
         <div
           ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto relative overscroll-contain smooth-scroll"
+          className="san-messages-scroll smooth-scroll"
           style={{
             WebkitOverflowScrolling: 'touch',
             // Content clears the floating controls at rest but still scrolls beneath them

@@ -140,9 +140,15 @@ const Index = () => {
   const mainRadius = progress * 18;
 
   return (
-    <div className="min-h-screen bg-background chat-surface overflow-hidden">
+    // Fixed to the layout viewport: the shell must not grow, scroll, or be
+    // displaced when the on-screen keyboard opens.
+    <div
+      className="bg-background chat-surface overflow-hidden"
+      style={{ position: 'fixed', inset: 0, height: '100dvh' }}
+    >
       <div
         style={{
+          height: '100%',
           transform: `translateX(${mainTranslate}px) scale(${mainScale})`,
           transformOrigin: 'left center',
           borderRadius: mainRadius ? `${mainRadius}px` : undefined,
