@@ -394,15 +394,10 @@ const MemoizedMarkdownBlock = memo(
     return (
       <MarkdownRenderer
         content={block.raw}
-        block={block}
         isStreaming={isStreaming}
-        onLinkClick={onLinkClick}
-        showLineNumbers={showLineNumbers}
-        collapsibleCode={collapsibleCode}
-        sortableTables={sortableTables}
-        autoNumberHeadings={autoNumberHeadings}
       />
     );
+
   },
   (prev, next) => {
     /**

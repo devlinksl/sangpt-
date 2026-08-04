@@ -65,21 +65,21 @@ export default function Settings() {
 
   const cycleResponseStyle = () => {
     const styles: ("concise" | "balanced" | "detailed")[] = ['concise', 'balanced', 'detailed'];
-    const currentIndex = styles.indexOf(preferences.response_style);
+    const currentIndex = styles.indexOf(preferences.response_style as typeof styles[number]);
     const next = styles[(currentIndex + 1) % styles.length];
     updatePreference('response_style', next);
   };
 
   const cycleTypingSpeed = () => {
     const speeds: ("slow" | "normal" | "fast")[] = ['slow', 'normal', 'fast'];
-    const currentIndex = speeds.indexOf(preferences.typing_speed);
+    const currentIndex = speeds.indexOf(preferences.typing_speed as typeof speeds[number]);
     const next = speeds[(currentIndex + 1) % speeds.length];
     updatePreference('typing_speed', next);
   };
 
   const cycleDataMode = () => {
     const modes: ("standard" | "low" | "offline")[] = ['standard', 'low', 'offline'];
-    const currentIndex = modes.indexOf(preferences.data_mode);
+    const currentIndex = modes.indexOf(preferences.data_mode as typeof modes[number]);
     const next = modes[(currentIndex + 1) % modes.length];
     updatePreference('data_mode', next);
   };
