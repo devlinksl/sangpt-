@@ -46,6 +46,20 @@ const styles = `
     font-family: 'Inter', sans-serif;
   }
 
+  /* Hide every scrollbar inside the chat UI (messages list, growing textarea,
+     any scrollable menu/sheet) without disabling scrolling itself. */
+  .san-root,
+  .san-root * {
+    scrollbar-width: none;        /* Firefox */
+    -ms-overflow-style: none;     /* old Edge / IE */
+  }
+  .san-root::-webkit-scrollbar,
+  .san-root *::-webkit-scrollbar {
+    display: none;                /* Chrome, Safari, new Edge */
+    width: 0;
+    height: 0;
+  }
+
   /* Floating top controls — no header bar, conversation scrolls underneath */
   .san-top-overlay {
     position: absolute;
@@ -79,7 +93,7 @@ const styles = `
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 2px 10px 6px;
+    padding: 0px 10px 4px;
   }
 
   .san-offline-banner + .san-top-controls {
