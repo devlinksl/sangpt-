@@ -17,6 +17,7 @@ import { useStreamChat } from '@/hooks/useStreamChat';
 import { getCachedMessages, cacheMessages, removeCachedConversation } from '@/lib/chatCache';
 import { conversationsStore } from '@/hooks/useConversationsStore';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 import { loadTempChat, saveTempChat, clearTempChat, purgeIfExpired, type TempMessage } from '@/lib/tempChat';
 import {
   Menu,
@@ -34,6 +35,7 @@ import {
   X,
   WifiOff,
   Ghost,
+  Info,
 } from 'lucide-react';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -44,29 +46,49 @@ const styles = `
     font-family: 'Inter', sans-serif;
   }
 
-  .san-header {
-    background: hsl(var(--background));
-    border-bottom: 1px solid hsl(var(--border) / 0.6);
+  /* Floating top controls — no header bar, conversation scrolls underneath */
+  .san-top-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    pointer-events: none;
+    padding-top: var(--san-top-inset);
   }
 
-  .san-logo-pill {
-    font-family: 'Sora', sans-serif;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    color: hsl(var(--foreground));
+  /* Theme-aware fade: solid at the very top, fully transparent at the bottom */
+  .san-top-fade {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: calc(var(--san-top-inset) + 84px);
+    background: linear-gradient(
+      to bottom,
+      hsl(var(--background)) 0%,
+      hsl(var(--background) / 0.94) 34%,
+      hsl(var(--background) / 0.72) 58%,
+      hsl(var(--background) / 0.32) 80%,
+      hsl(var(--background) / 0) 100%
+    );
   }
 
-  .san-logo-pill-wrapper {
-    background: transparent;
-    border: 1px solid hsl(var(--border));
-    border-radius: 999px;
-    padding: 6px 16px;
-    transition: all 0.2s ease;
+  .san-top-controls {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
   }
 
-  .san-logo-pill-wrapper:hover {
-    background: hsl(var(--accent));
-    border-color: hsl(var(--border));
+  .san-offline-banner + .san-top-controls {
+    padding-top: 4px;
+  }
+
+  /* Only the buttons themselves capture taps, never the fade */
+  .san-top-controls > * {
+    pointer-events: auto;
   }
 
   /* User message bubble */
@@ -99,9 +121,10 @@ const styles = `
 
   /* Scroll button */
   .san-scroll-btn {
-    position: fixed;
-    bottom: 96px;
+    position: absolute;
+    bottom: calc(var(--san-kb) + var(--san-composer-gap) + var(--san-composer-h) + 12px);
     right: 20px;
+    transition: bottom 0.22s cubic-bezier(0.22, 1, 0.36, 1);
     width: 42px;
     height: 42px;
     border-radius: 50%;
@@ -130,6 +153,7 @@ const styles = `
 
   /* Offline banner */
   .san-offline-banner {
+    position: relative;
     background: hsl(var(--muted));
     border-bottom: 1px solid hsl(var(--border));
     color: hsl(var(--muted-foreground));
@@ -229,9 +253,36 @@ const styles = `
     transform-origin: top right;
   }
 
-  /* Input area gradient */
+  /* Floating composer — hovers above the keyboard / nav bar with a small gap */
   .san-input-area {
-    background: hsl(var(--background));
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--san-kb) + var(--san-composer-gap));
+    z-index: 30;
+    padding-top: 8px;
+    transition: bottom 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+  }
+
+  .san-input-area > * {
+    pointer-events: auto;
+  }
+
+  /* Soft fade so messages dissolve behind the floating composer */
+  .san-input-area > .san-input-fade {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(-1 * var(--san-composer-gap));
+    top: -36px;
+    pointer-events: none;
+    background: linear-gradient(
+      to top,
+      hsl(var(--background)) 0%,
+      hsl(var(--background) / 0.72) 45%,
+      hsl(var(--background) / 0) 100%
+    );
   }
 
   /* Offline empty state icon */
@@ -362,6 +413,35 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputBarRef = useRef<ChatInputBarHandle>(null);
   const userScrolledRef = useRef(false);
+  const composerRef = useRef<HTMLDivElement>(null);
+  const topOverlayRef = useRef<HTMLDivElement>(null);
+
+  // Overlay metrics — drive the scroll area's padding so nothing is ever hidden
+  const [composerHeight, setComposerHeight] = useState(64);
+  const [topOverlayHeight, setTopOverlayHeight] = useState(56);
+  const keyboardInset = useKeyboardInset();
+
+  // Measure the floating overlays as they grow (composer expands, banner appears)
+  useEffect(() => {
+    if (typeof ResizeObserver === 'undefined') return;
+
+    const observed: Array<[HTMLElement, (h: number) => void]> = [];
+    if (composerRef.current) observed.push([composerRef.current, setComposerHeight]);
+    if (topOverlayRef.current) observed.push([topOverlayRef.current, setTopOverlayHeight]);
+
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const pair = observed.find(([el]) => el === entry.target);
+        if (pair) pair[1](Math.round((entry.target as HTMLElement).offsetHeight));
+      }
+    });
+
+    for (const [el, set] of observed) {
+      set(Math.round(el.offsetHeight));
+      ro.observe(el);
+    }
+    return () => ro.disconnect();
+  }, [isOnline, user]);
 
   // Purge expired temp chat on mount
   useEffect(() => { purgeIfExpired(); }, []);
@@ -396,6 +476,13 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   useEffect(() => {
     if (!userScrolledRef.current) scrollToBottom();
   }, [messages, isTyping, isLoading, scrollToBottom]);
+
+  // Keep the latest message in view when the keyboard opens or the composer grows
+  useEffect(() => {
+    if (userScrolledRef.current) return;
+    const id = requestAnimationFrame(() => scrollToBottom(false));
+    return () => cancelAnimationFrame(id);
+  }, [keyboardInset, composerHeight, scrollToBottom]);
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -880,6 +967,8 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   };
 
   const overflowMenuItems = [
+    // Replaces the removed header title, which used to open this modal on tap
+    { icon: Info,    label: 'Chat Details',       action: () => { setShowOverflowMenu(false); setShowTitleModal(true); } },
     { icon: Pencil,  label: 'Rename',            action: handleRename },
     { icon: Share2,  label: 'Share',              action: handleShareChat },
     { icon: Copy,    label: 'Copy Conversation',  action: handleCopyConversation },
@@ -893,40 +982,44 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     <>
       <style>{styles}</style>
 
-      <div className="san-root flex flex-col h-[100dvh] bg-background">
+      <div
+        className="san-root relative flex flex-col h-[100dvh] bg-background overflow-hidden"
+        style={{
+          '--san-top-inset': 'env(safe-area-inset-top, 0px)',
+          '--san-top-h': `${topOverlayHeight}px`,
+          '--san-kb': `${keyboardInset}px`,
+          '--san-composer-h': `${composerHeight}px`,
+          // Small breathing room above the keyboard, or above the nav bar when closed
+          '--san-composer-gap': keyboardInset > 0
+            ? '10px'
+            : 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
+        } as React.CSSProperties}
+      >
 
-        {/* ─── Offline Banner ─── */}
-        {!isOnline && (
-          <div className="san-offline-banner">
-            <WifiOff size={13} />
-            <span>You're offline — messages may not be sent</span>
-          </div>
-        )}
+        {/* ─── Floating top controls (no header bar) ─── */}
+        <div ref={topOverlayRef} className="san-top-overlay">
+          <div className="san-top-fade" aria-hidden="true" />
 
-        {/* ─── Header ─── */}
-        <header className="san-header flex items-center justify-between px-3 py-2 sticky top-0 z-20 shrink-0">
-          <button
-            className="san-icon-btn"
-            onClick={onOpenSidebar}
-          >
-            <Menu size={20} />
-          </button>
+          {/* ─── Offline Banner ─── */}
+          {!isOnline && (
+            <div className="san-offline-banner">
+              <WifiOff size={13} />
+              <span>You&apos;re offline — messages may not be sent</span>
+            </div>
+          )}
 
-          {/* Logo / Title pill */}
-          <button
-            onClick={() => { if (currentConversationId && chatTitle) setShowTitleModal(true); }}
-            className="san-logo-pill-wrapper flex items-center gap-1.5 max-w-[45%]"
-          >
-            {temporaryMode && <Ghost size={13} className="text-primary/80" />}
-            <span className="san-logo-pill text-sm truncate">
-              {temporaryMode ? 'Temporary' : currentConversationId ? (chatTitle || 'SanGPT') : 'SanGPT'}
-            </span>
-          </button>
+          <div className="san-top-controls">
+            <button
+              className="san-icon-btn"
+              onClick={onOpenSidebar}
+              aria-label="Open menu"
+            >
+              <Menu size={20} />
+            </button>
 
-          <div className="flex items-center gap-0.5">
             {user ? (
-              <>
-                {/* Ghost toggle — only when no active chat (empty state). Auto-deletes after 24h. */}
+              <div className="flex items-center gap-0.5">
+                {/* Ghost toggle — only when no active chat. Auto-deletes after 24h. */}
                 {!currentConversationId && (
                   <button
                     className="san-icon-btn"
@@ -938,42 +1031,51 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                     <Ghost size={18} />
                   </button>
                 )}
-                {currentConversationId && (
-                  <button className="san-icon-btn" onClick={handleNewChat}>
-                    <Edit3 size={18} />
-                  </button>
-                )}
-                {currentConversationId && (
-                  <div className="relative">
-                    <button
-                      className="san-icon-btn"
-                      onClick={() => setShowOverflowMenu(!showOverflowMenu)}
-                    >
-                      <MoreVertical size={18} />
-                    </button>
 
-                    {showOverflowMenu && (
-                      <>
-                        <div className="fixed inset-0 z-40" onClick={() => setShowOverflowMenu(false)} />
-                        <div className="san-overflow-dropdown">
-                          {overflowMenuItems.map((item) => (
-                            <button
-                              key={item.label}
-                              onClick={item.action}
-                              className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-accent/50 ${
-                                item.destructive ? 'text-destructive' : 'text-foreground'
-                              }`}
-                            >
-                              <item.icon size={15} />
-                              {item.label}
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-              </>
+                <button
+                  className="san-icon-btn"
+                  onClick={handleNewChat}
+                  aria-label="New chat"
+                  title="New chat"
+                >
+                  <Edit3 size={18} />
+                </button>
+
+                <div className="relative">
+                  <button
+                    className="san-icon-btn"
+                    onClick={() => setShowOverflowMenu(!showOverflowMenu)}
+                    disabled={!currentConversationId}
+                    aria-label="More options"
+                    aria-haspopup="menu"
+                    aria-expanded={showOverflowMenu}
+                    style={!currentConversationId ? { opacity: 0.35, pointerEvents: 'none' } : undefined}
+                  >
+                    <MoreVertical size={18} />
+                  </button>
+
+                  {showOverflowMenu && currentConversationId && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowOverflowMenu(false)} />
+                      <div className="san-overflow-dropdown" role="menu">
+                        {overflowMenuItems.map((item) => (
+                          <button
+                            key={item.label}
+                            onClick={item.action}
+                            role="menuitem"
+                            className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-accent/50 ${
+                              item.destructive ? 'text-destructive' : 'text-foreground'
+                            }`}
+                          >
+                            <item.icon size={15} />
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
             ) : (
               <Button
                 variant="ghost"
@@ -985,13 +1087,18 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
               </Button>
             )}
           </div>
-        </header>
+        </div>
 
         {/* ─── Messages ─── */}
         <div
           ref={messagesContainerRef}
           className="flex-1 overflow-y-auto relative overscroll-contain smooth-scroll"
-          style={{ WebkitOverflowScrolling: 'touch' }}
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            // Content clears the floating controls at rest but still scrolls beneath them
+            paddingTop: 'calc(var(--san-top-h) + 4px)',
+            paddingBottom: 'calc(var(--san-kb) + var(--san-composer-gap) + var(--san-composer-h) + 16px)',
+          }}
         >
           {offlineUnavailable ? (
             <div className="h-full flex flex-col items-center justify-center px-6 text-center">
@@ -1050,17 +1157,23 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
               <div ref={messagesEndRef} />
             </div>
           )}
-
-          {/* Scroll-to-bottom button */}
-          {showScrollButton && (
-            <button className="san-scroll-btn" onClick={() => scrollToBottom()}>
-              <ArrowDown size={18} />
-            </button>
-          )}
         </div>
 
-        {/* ─── Input Area ─── */}
-        <div className="san-input-area sticky bottom-0 pb-4 pt-2 shrink-0">
+        {/* Scroll-to-bottom button — anchored above the floating composer */}
+        {showScrollButton && (
+          <button
+            className="san-scroll-btn"
+            onClick={() => scrollToBottom()}
+            aria-label="Scroll to latest message"
+          >
+            <ArrowDown size={18} />
+          </button>
+        )}
+
+        {/* ─── Floating Input Area ─── */}
+        <div ref={composerRef} className="san-input-area">
+          <div className="san-input-fade" aria-hidden="true" />
+
           {isRecording && (
             <div className="mb-3 flex items-center justify-center">
               <WaveformAnimation />
