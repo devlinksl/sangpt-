@@ -407,6 +407,11 @@ interface ChatInterfaceProps {
   onConversationChange?: (id: string | null) => void;
 }
 
+// ─── Sidebar toggle icon ──────────────────────────────────────────────────────
+// Rendered inside the floating top-left control that opens the conversation
+// panel. Sized to match the other 18px icons in the same row.
+const SidebarToggleIcon = () => <Menu size={20} strokeWidth={2} />;
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationChange }: ChatInterfaceProps) => {
   const { user } = useAuth();
