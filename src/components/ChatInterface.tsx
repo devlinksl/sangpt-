@@ -1042,12 +1042,18 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           )}
 
           <div className="san-top-controls">
+            {/* Opens on pointerdown rather than click so the panel starts moving
+                on touch-down instead of after the ~click delay. data-no-swipe
+                keeps the global drag gesture from also claiming this press. */}
             <button
-              className="san-icon-btn"
-              onClick={onOpenSidebar}
-              aria-label="Open menu"
+              className="san-icon-btn san-menu-btn"
+              data-no-swipe="true"
+              onPointerDown={(e) => { e.preventDefault(); onOpenSidebar(); }}
+              onClick={(e) => e.preventDefault()}
+              aria-label="Open sidebar"
+              title="Open sidebar"
             >
-              <Menu size={20} />
+              <SidebarToggleIcon />
             </button>
 
             {user ? (
@@ -1065,14 +1071,18 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                   </button>
                 )}
 
-                <button
-                  className="san-icon-btn"
-                  onClick={handleNewChat}
-                  aria-label="New chat"
-                  title="New chat"
-                >
-                  <Edit3 size={18} />
-                </button>
+                {/* New chat — pointless on an already-empty new chat screen, so
+                    it only appears once a conversation is in progress. */}
+                {currentConversationId && (
+                  <button
+                    className="san-icon-btn"
+                    onClick={handleNewChat}
+                    aria-label="New chat"
+                    title="New chat"
+                  >
+                    <Edit3 size={18} />
+                  </button>
+                )}
 
                 {/* Overflow menu — only exists once there's an actual chat to act on */}
                 {currentConversationId && (

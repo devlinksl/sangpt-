@@ -186,7 +186,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
         style={{
           opacity: computedBackdropOpacity,
           pointerEvents: visibility ? 'auto' : 'none',
-          transition: isDragging ? 'none' : 'opacity 0.25s ease-out',
+          transition: isDragging ? 'none' : 'opacity 0.19s ease-out',
         }}
         onClick={onClose}
       />
@@ -200,7 +200,8 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
           transform: `translateX(${translateX}px)`,
           transition: isDragging
             ? 'none'
-            : 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)',
+            // Snappier than the previous 0.28s so tapping the toggle feels instant.
+            : 'transform 0.19s cubic-bezier(0.22, 1, 0.36, 1)',
           willChange: 'transform',
           width: isSearchExpanded ? undefined : W,
           WebkitUserSelect: 'none',
@@ -249,7 +250,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
         </div>
 
         {/* ─── MIDDLE: Conversations list ─── */}
-        <div className="flex-1 overflow-y-auto px-3 pb-4">
+        <div className="flex-1 overflow-y-auto overscroll-contain scrollbar-none px-3 pb-4">
           {isLoadingConversations && conversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
@@ -496,10 +497,10 @@ const ConversationItem = ({
         if (!('ontouchstart' in window) && !isEditing) onSelect();
       }}
     >
-      {isLoading ? (
+      {/* No leading icon per row — the title alone keeps the list clean. The
+          spinner still appears while a conversation is being opened. */}
+      {isLoading && (
         <Loader2 className="h-4 w-4 text-primary flex-shrink-0 animate-spin" />
-      ) : (
-        <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
       )}
       <div className="flex-1 min-w-0">
         {isEditing ? (

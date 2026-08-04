@@ -256,6 +256,19 @@ body, html {
 }
 
 @layer utilities {
+  /* Hide the scrollbar while keeping the element scrollable. Used by the
+     sidebar chat list and horizontal card strips. (Tailwind has no built-in
+     utility for this without the scrollbar plugin.) */
+  .scrollbar-none {
+    scrollbar-width: none;        /* Firefox */
+    -ms-overflow-style: none;     /* old Edge / IE */
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;                /* Chrome, Safari, new Edge */
+    width: 0;
+    height: 0;
+  }
+
   .ripple {
     position: absolute;
     border-radius: 50%;
