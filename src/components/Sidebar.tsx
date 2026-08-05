@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -84,21 +84,13 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // The panel must always come in as the plain conversation list: collapse the
-  // search field synchronously *before* paint when opening (no width jump, no
-  // input focus, no search-like transition), and after the slide-out finishes
-  // when closing (so it doesn't snap from full-width mid-animation).
-  useLayoutEffect(() => {
-    if (isOpen) {
-      setIsSearchExpanded(false);
-      setSearchTerm('');
-      return;
+  // Reset loading indicator when sidebar fully closes
+  useEffect(() => {
+    if (!isOpen) {
+      const t = setTimeout(() => setLoadingId(null), 320);
+      return () => clearTimeout(t);
     }
-    const t = setTimeout(() => { setLoadingId(null); setIsSearchExpanded(false); }, 320);
-    return () => clearTimeout(t);
   }, [isOpen]);
-
-
 
   // Preload + realtime subscribe (independent of sidebar open state)
   useEffect(() => {
@@ -124,12 +116,9 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
   }, [user?.id]);
 
   useEffect(() => {
-    // Only ever focus the search field when the panel is actually on screen —
-    // focusing while closed would pop the keyboard open behind the sidebar.
-    if (isSearchExpanded && isOpen) setTimeout(() => searchInputRef.current?.focus(), 300);
-    if (!isSearchExpanded) setSearchTerm('');
-  }, [isSearchExpanded, isOpen]);
-
+    if (isSearchExpanded) setTimeout(() => searchInputRef.current?.focus(), 300);
+    else setSearchTerm('');
+  }, [isSearchExpanded]);
 
   const deleteConversation = (id: string) => {
     conversationsStore.remove(id);
@@ -186,9 +175,6 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
     translateX = isOpen ? 0 : -W;
   }
   const visibility = isOpen || isDragging ? 1 : 0;
-  // The full-width search layout only applies while the panel is on screen, so
-  // an opening sidebar always starts from the plain 320px list state.
-  const searchExpanded = isSearchExpanded && isOpen;
   const computedBackdropOpacity =
     backdropOpacity != null ? backdropOpacity : visibility;
 
@@ -200,26 +186,23 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
         style={{
           opacity: computedBackdropOpacity,
           pointerEvents: visibility ? 'auto' : 'none',
-          transition: isDragging ? 'none' : 'opacity 0.19s ease-out',
+          transition: isDragging ? 'none' : 'opacity 0.25s ease-out',
         }}
         onClick={onClose}
       />
 
       {/* Sidebar */}
       <div
-        className={`fixed left-0 top-0 bg-background/95 backdrop-blur-2xl border-r border-border/30 z-50 shadow-2xl flex flex-col select-none ${
-          searchExpanded ? 'w-full' : 'w-80'
+        className={`fixed left-0 top-0 h-full bg-background/95 backdrop-blur-2xl border-r border-border/30 z-50 shadow-2xl flex flex-col select-none ${
+          isSearchExpanded ? 'w-full' : 'w-80'
         }`}
         style={{
-          height: 'var(--san-shell-h, 100dvh)',
           transform: `translateX(${translateX}px)`,
           transition: isDragging
             ? 'none'
-            // Snappier than the previous 0.28s so tapping the toggle feels instant.
-            : 'transform 0.19s cubic-bezier(0.22, 1, 0.36, 1)',
+            : 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)',
           willChange: 'transform',
-          width: searchExpanded ? undefined : W,
-
+          width: isSearchExpanded ? undefined : W,
           WebkitUserSelect: 'none',
           userSelect: 'none',
           WebkitTapHighlightColor: 'transparent',
@@ -228,7 +211,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
         {/* ─── Sticky Header: Search ─── */}
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-2xl px-4 pt-4 pb-2 border-b border-border/10">
 
-          {searchExpanded ? (
+          {isSearchExpanded ? (
             <div className="flex items-center gap-2 animate-fade-in">
               <Button
                 variant="ghost"
@@ -266,7 +249,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
         </div>
 
         {/* ─── MIDDLE: Conversations list ─── */}
-        <div className="flex-1 overflow-y-auto overscroll-contain scrollbar-none px-3 pb-4">
+        <div className="flex-1 overflow-y-auto px-3 pb-4">
           {isLoadingConversations && conversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
@@ -333,7 +316,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
         </div>
 
         {/* ─── BOTTOM: Account card ─── */}
-        {!searchExpanded && user && (
+        {!isSearchExpanded && user && (
           <div className="p-3 border-t border-border/20">
             <button
               onClick={() => { navigate('/settings'); onClose(); }}
@@ -513,10 +496,10 @@ const ConversationItem = ({
         if (!('ontouchstart' in window) && !isEditing) onSelect();
       }}
     >
-      {/* No leading icon per row — the title alone keeps the list clean. The
-          spinner still appears while a conversation is being opened. */}
-      {isLoading && (
+      {isLoading ? (
         <Loader2 className="h-4 w-4 text-primary flex-shrink-0 animate-spin" />
+      ) : (
+        <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
       )}
       <div className="flex-1 min-w-0">
         {isEditing ? (
