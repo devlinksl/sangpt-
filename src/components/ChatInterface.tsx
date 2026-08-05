@@ -90,9 +90,14 @@ const styles = `
        shell — and therefore the top controls — never move. The keyboard is
        accounted for by --san-kb, which only lifts the composer and pads the
        message scroller. 100svh is the pre-dvh fallback. */
-    height: 100svh;
+    /* Frozen full-screen height written by useKeyboardInset. It never shrinks
+       when the keyboard opens (not even under a Capacitor adjustResize
+       WebView), so the header / welcome screen / message list never reflow.
+       100dvh is only the pre-measure fallback. */
     height: 100dvh;
-    max-height: 100dvh;
+    height: var(--san-shell-h, 100dvh);
+    max-height: var(--san-shell-h, 100dvh);
+    min-height: var(--san-shell-h, 100dvh);
   }
 
   /* Actually enforce the lock the JS applies via classList.add('san-shell-locked').

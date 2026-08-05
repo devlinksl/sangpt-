@@ -203,10 +203,11 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
 
       {/* Sidebar */}
       <div
-        className={`fixed left-0 top-0 h-full bg-background/95 backdrop-blur-2xl border-r border-border/30 z-50 shadow-2xl flex flex-col select-none ${
+        className={`fixed left-0 top-0 bg-background/95 backdrop-blur-2xl border-r border-border/30 z-50 shadow-2xl flex flex-col select-none ${
           searchExpanded ? 'w-full' : 'w-80'
         }`}
         style={{
+          height: 'var(--san-shell-h, 100dvh)',
           transform: `translateX(${translateX}px)`,
           transition: isDragging
             ? 'none'
