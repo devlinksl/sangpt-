@@ -84,16 +84,20 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Reset loading indicator + collapse the search field when the sidebar fully
-  // closes. Collapsing is delayed until after the slide-out finishes so the
-  // panel never visibly snaps from full-width back to 320px mid-animation
-  // (that width jump is what made opening look like the search was tapped).
-  useEffect(() => {
-    if (!isOpen) {
-      const t = setTimeout(() => { setLoadingId(null); setIsSearchExpanded(false); }, 320);
-      return () => clearTimeout(t);
+  // The panel must always come in as the plain conversation list: collapse the
+  // search field synchronously *before* paint when opening (no width jump, no
+  // input focus, no search-like transition), and after the slide-out finishes
+  // when closing (so it doesn't snap from full-width mid-animation).
+  useLayoutEffect(() => {
+    if (isOpen) {
+      setIsSearchExpanded(false);
+      setSearchTerm('');
+      return;
     }
+    const t = setTimeout(() => { setLoadingId(null); setIsSearchExpanded(false); }, 320);
+    return () => clearTimeout(t);
   }, [isOpen]);
+
 
 
   // Preload + realtime subscribe (independent of sidebar open state)
