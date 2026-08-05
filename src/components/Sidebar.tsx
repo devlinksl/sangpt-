@@ -182,6 +182,9 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
     translateX = isOpen ? 0 : -W;
   }
   const visibility = isOpen || isDragging ? 1 : 0;
+  // The full-width search layout only applies while the panel is on screen, so
+  // an opening sidebar always starts from the plain 320px list state.
+  const searchExpanded = isSearchExpanded && isOpen;
   const computedBackdropOpacity =
     backdropOpacity != null ? backdropOpacity : visibility;
 
@@ -201,7 +204,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
       {/* Sidebar */}
       <div
         className={`fixed left-0 top-0 h-full bg-background/95 backdrop-blur-2xl border-r border-border/30 z-50 shadow-2xl flex flex-col select-none ${
-          isSearchExpanded ? 'w-full' : 'w-80'
+          searchExpanded ? 'w-full' : 'w-80'
         }`}
         style={{
           transform: `translateX(${translateX}px)`,
@@ -210,7 +213,8 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
             // Snappier than the previous 0.28s so tapping the toggle feels instant.
             : 'transform 0.19s cubic-bezier(0.22, 1, 0.36, 1)',
           willChange: 'transform',
-          width: isSearchExpanded ? undefined : W,
+          width: searchExpanded ? undefined : W,
+
           WebkitUserSelect: 'none',
           userSelect: 'none',
           WebkitTapHighlightColor: 'transparent',
