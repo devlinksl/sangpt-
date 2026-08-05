@@ -1,20 +1,20 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Tracks how many pixels of the layout viewport are currently covered by the
- * on-screen keyboard.
+ * Locks the chat shell to a *frozen* full-screen height and reports how many
+ * pixels of that frozen area the on-screen keyboard currently covers.
  *
- * The app's viewport meta has no `interactive-widget` override, so mobile
- * browsers use the default `resizes-visual` behaviour: the layout viewport
- * (and therefore `100dvh`) stays the same size while the keyboard is open and
- * only `visualViewport` shrinks. That means absolutely positioned bottom
- * elements would sit *behind* the keyboard unless we offset them ourselves.
- *
- * It also means the browser will happily scroll/offset the page to reveal the
- * focused field, which drags the app chrome (header, sidebar toggle) above the
- * status bar. So we also snap the document back to 0 whenever that happens —
- * the shell must never move, only the composer, which we lift with the
- * returned inset.
+ * Why a frozen height instead of `100dvh`:
+ *   - In Chrome/Android `100dvh` follows the *layout* viewport, which normally
+ *     does not shrink for the keyboard — but in a Capacitor Android WebView
+ *     (`adjustResize`, the default) the whole window is resized, so `dvh`
+ *     *does* shrink and the entire page reflows upward. Same for `h-full` on
+ *     fixed elements.
+ *   - By measuring the tallest viewport height we've ever seen (per
+ *     orientation) once, writing it to `--san-shell-h`, and never lowering it
+ *     for a keyboard-sized shrink, the shell keeps its full-screen height. The
+ *     keyboard then simply overlays it, and only the floating composer moves,
+ *     driven by the returned inset.
  *
  * Returns 0 when no keyboard is present.
  */
@@ -22,13 +22,52 @@ export function useKeyboardInset(): number {
   const [inset, setInset] = useState(0);
 
   useEffect(() => {
+    const root = document.documentElement;
     const vv = window.visualViewport;
+
+    // The tallest height seen for the current orientation = "no keyboard" height.
+    let baseline = Math.max(window.innerHeight, vv?.height ?? 0);
+    let baselineIsPortrait = window.innerHeight >= window.innerWidth;
+
+    const applyBaseline = () => {
+      root.style.setProperty('--san-shell-h', `${Math.round(baseline)}px`);
+    };
+    applyBaseline();
 
     // Undo any browser-initiated scroll of the app shell.
     const resetShellScroll = () => {
       if (window.scrollY !== 0 || window.scrollX !== 0) window.scrollTo(0, 0);
-      if (document.documentElement.scrollTop !== 0) document.documentElement.scrollTop = 0;
+      if (root.scrollTop !== 0) root.scrollTop = 0;
       if (document.body.scrollTop !== 0) document.body.scrollTop = 0;
+    };
+
+    const measure = () => {
+      const isPortrait = window.innerHeight >= window.innerWidth;
+      const current = vv ? vv.height : window.innerHeight;
+
+      // Orientation flip → start a fresh baseline from the current geometry.
+      if (isPortrait !== baselineIsPortrait) {
+        baselineIsPortrait = isPortrait;
+        baseline = Math.max(window.innerHeight, current);
+        applyBaseline();
+      } else if (current > baseline || window.innerHeight > baseline) {
+        // Viewport genuinely grew (keyboard closed, chrome collapsed, resize).
+        baseline = Math.max(window.innerHeight, current);
+        applyBaseline();
+      }
+
+      // Keyboard height = frozen shell height minus the currently visible area.
+      // offsetTop is the browser shifting the visual viewport (page
+      // displacement), so it is subtracted out rather than added.
+      const overlap = baseline - current - (vv?.offsetTop ?? 0);
+      resetShellScroll();
+      setInset(overlap > 60 ? Math.round(overlap) : 0);
+    };
+
+    let frame = 0;
+    const schedule = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(measure);
     };
 
     // Browsers scroll the page on focus *after* the focus event fires, so keep
@@ -38,49 +77,32 @@ export function useKeyboardInset(): number {
       if (!t) return;
       const tag = t.tagName;
       if (tag !== 'INPUT' && tag !== 'TEXTAREA' && !t.isContentEditable) return;
-      resetShellScroll();
       let ticks = 0;
       const snap = () => {
         resetShellScroll();
         if (++ticks < 14) requestAnimationFrame(snap);
       };
-      requestAnimationFrame(snap);
+      snap();
     };
 
     window.addEventListener('focusin', onFocusIn);
     window.addEventListener('scroll', resetShellScroll, { passive: true });
+    window.addEventListener('resize', schedule);
+    window.addEventListener('orientationchange', schedule);
+    vv?.addEventListener('resize', schedule);
+    vv?.addEventListener('scroll', schedule);
 
-    const removeShellListeners = () => {
-      window.removeEventListener('focusin', onFocusIn);
-      window.removeEventListener('scroll', resetShellScroll);
-    };
-
-    if (!vv) return removeShellListeners;
-
-    let frame = 0;
-
-    const update = () => {
-      resetShellScroll();
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        // offsetTop is the browser shifting the visual viewport inside the
-        // layout viewport — that is page displacement, not keyboard height, so
-        // it must not add to the inset.
-        const overlap = window.innerHeight - vv.height - vv.offsetTop;
-        // Ignore small deltas caused by collapsing browser chrome / rounding.
-        setInset(overlap > 60 ? Math.round(overlap) : 0);
-      });
-    };
-
-    update();
-    vv.addEventListener('resize', update);
-    vv.addEventListener('scroll', update);
+    measure();
 
     return () => {
       cancelAnimationFrame(frame);
-      vv.removeEventListener('resize', update);
-      vv.removeEventListener('scroll', update);
-      removeShellListeners();
+      window.removeEventListener('focusin', onFocusIn);
+      window.removeEventListener('scroll', resetShellScroll);
+      window.removeEventListener('resize', schedule);
+      window.removeEventListener('orientationchange', schedule);
+      vv?.removeEventListener('resize', schedule);
+      vv?.removeEventListener('scroll', schedule);
+      root.style.removeProperty('--san-shell-h');
     };
   }, []);
 
