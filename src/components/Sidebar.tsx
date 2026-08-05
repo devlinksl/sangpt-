@@ -84,13 +84,17 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Reset loading indicator when sidebar fully closes
+  // Reset loading indicator + collapse the search field when the sidebar fully
+  // closes. Collapsing is delayed until after the slide-out finishes so the
+  // panel never visibly snaps from full-width back to 320px mid-animation
+  // (that width jump is what made opening look like the search was tapped).
   useEffect(() => {
     if (!isOpen) {
-      const t = setTimeout(() => setLoadingId(null), 320);
+      const t = setTimeout(() => { setLoadingId(null); setIsSearchExpanded(false); }, 320);
       return () => clearTimeout(t);
     }
   }, [isOpen]);
+
 
   // Preload + realtime subscribe (independent of sidebar open state)
   useEffect(() => {
@@ -116,9 +120,12 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
   }, [user?.id]);
 
   useEffect(() => {
-    if (isSearchExpanded) setTimeout(() => searchInputRef.current?.focus(), 300);
-    else setSearchTerm('');
-  }, [isSearchExpanded]);
+    // Only ever focus the search field when the panel is actually on screen —
+    // focusing while closed would pop the keyboard open behind the sidebar.
+    if (isSearchExpanded && isOpen) setTimeout(() => searchInputRef.current?.focus(), 300);
+    if (!isSearchExpanded) setSearchTerm('');
+  }, [isSearchExpanded, isOpen]);
+
 
   const deleteConversation = (id: string) => {
     conversationsStore.remove(id);
@@ -175,6 +182,9 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
     translateX = isOpen ? 0 : -W;
   }
   const visibility = isOpen || isDragging ? 1 : 0;
+  // The full-width search layout only applies while the panel is on screen, so
+  // an opening sidebar always starts from the plain 320px list state.
+  const searchExpanded = isSearchExpanded && isOpen;
   const computedBackdropOpacity =
     backdropOpacity != null ? backdropOpacity : visibility;
 
@@ -194,7 +204,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
       {/* Sidebar */}
       <div
         className={`fixed left-0 top-0 h-full bg-background/95 backdrop-blur-2xl border-r border-border/30 z-50 shadow-2xl flex flex-col select-none ${
-          isSearchExpanded ? 'w-full' : 'w-80'
+          searchExpanded ? 'w-full' : 'w-80'
         }`}
         style={{
           transform: `translateX(${translateX}px)`,
@@ -203,7 +213,8 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
             // Snappier than the previous 0.28s so tapping the toggle feels instant.
             : 'transform 0.19s cubic-bezier(0.22, 1, 0.36, 1)',
           willChange: 'transform',
-          width: isSearchExpanded ? undefined : W,
+          width: searchExpanded ? undefined : W,
+
           WebkitUserSelect: 'none',
           userSelect: 'none',
           WebkitTapHighlightColor: 'transparent',
@@ -212,7 +223,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
         {/* ─── Sticky Header: Search ─── */}
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-2xl px-4 pt-4 pb-2 border-b border-border/10">
 
-          {isSearchExpanded ? (
+          {searchExpanded ? (
             <div className="flex items-center gap-2 animate-fade-in">
               <Button
                 variant="ghost"
@@ -317,7 +328,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
         </div>
 
         {/* ─── BOTTOM: Account card ─── */}
-        {!isSearchExpanded && user && (
+        {!searchExpanded && user && (
           <div className="p-3 border-t border-border/20">
             <button
               onClick={() => { navigate('/settings'); onClose(); }}
