@@ -120,9 +120,12 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
   }, [user?.id]);
 
   useEffect(() => {
-    if (isSearchExpanded) setTimeout(() => searchInputRef.current?.focus(), 300);
-    else setSearchTerm('');
-  }, [isSearchExpanded]);
+    // Only ever focus the search field when the panel is actually on screen —
+    // focusing while closed would pop the keyboard open behind the sidebar.
+    if (isSearchExpanded && isOpen) setTimeout(() => searchInputRef.current?.focus(), 300);
+    if (!isSearchExpanded) setSearchTerm('');
+  }, [isSearchExpanded, isOpen]);
+
 
   const deleteConversation = (id: string) => {
     conversationsStore.remove(id);
