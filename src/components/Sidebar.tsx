@@ -223,7 +223,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
         {/* ─── Sticky Header: Search ─── */}
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-2xl px-4 pt-4 pb-2 border-b border-border/10">
 
-          {isSearchExpanded ? (
+          {searchExpanded ? (
             <div className="flex items-center gap-2 animate-fade-in">
               <Button
                 variant="ghost"
@@ -328,7 +328,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
         </div>
 
         {/* ─── BOTTOM: Account card ─── */}
-        {!isSearchExpanded && user && (
+        {!searchExpanded && user && (
           <div className="p-3 border-t border-border/20">
             <button
               onClick={() => { navigate('/settings'); onClose(); }}
