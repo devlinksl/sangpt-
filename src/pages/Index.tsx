@@ -144,7 +144,7 @@ const Index = () => {
     // displaced when the on-screen keyboard opens.
     <div
       className="bg-background chat-surface overflow-hidden"
-      style={{ position: 'fixed', inset: 0, height: '100dvh' }}
+      style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 'var(--san-shell-h, 100dvh)' }}
     >
       <div
         style={{

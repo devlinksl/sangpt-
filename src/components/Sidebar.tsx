@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -84,16 +84,20 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Reset loading indicator + collapse the search field when the sidebar fully
-  // closes. Collapsing is delayed until after the slide-out finishes so the
-  // panel never visibly snaps from full-width back to 320px mid-animation
-  // (that width jump is what made opening look like the search was tapped).
-  useEffect(() => {
-    if (!isOpen) {
-      const t = setTimeout(() => { setLoadingId(null); setIsSearchExpanded(false); }, 320);
-      return () => clearTimeout(t);
+  // The panel must always come in as the plain conversation list: collapse the
+  // search field synchronously *before* paint when opening (no width jump, no
+  // input focus, no search-like transition), and after the slide-out finishes
+  // when closing (so it doesn't snap from full-width mid-animation).
+  useLayoutEffect(() => {
+    if (isOpen) {
+      setIsSearchExpanded(false);
+      setSearchTerm('');
+      return;
     }
+    const t = setTimeout(() => { setLoadingId(null); setIsSearchExpanded(false); }, 320);
+    return () => clearTimeout(t);
   }, [isOpen]);
+
 
 
   // Preload + realtime subscribe (independent of sidebar open state)
@@ -203,10 +207,11 @@ export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect, drag
 
       {/* Sidebar */}
       <div
-        className={`fixed left-0 top-0 h-full bg-background/95 backdrop-blur-2xl border-r border-border/30 z-50 shadow-2xl flex flex-col select-none ${
+        className={`fixed left-0 top-0 bg-background/95 backdrop-blur-2xl border-r border-border/30 z-50 shadow-2xl flex flex-col select-none ${
           searchExpanded ? 'w-full' : 'w-80'
         }`}
         style={{
+          height: 'var(--san-shell-h, 100dvh)',
           transform: `translateX(${translateX}px)`,
           transition: isDragging
             ? 'none'
