@@ -1156,12 +1156,21 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           <div className="san-top-controls">
             {/* Opens on pointerdown rather than click so the panel starts moving
                 on touch-down instead of after the ~click delay. data-no-swipe
-                keeps the global drag gesture from also claiming this press. */}
+                keeps the global drag gesture from also claiming this press.
+                The composer is blurred *before* the panel opens so the keyboard
+                dismissal doesn't overlap the slide-in animation (which is what
+                made the press look like it hit the input first). */}
             <button
               className="san-icon-btn san-menu-btn"
               data-no-swipe="true"
-              onPointerDown={(e) => { e.preventDefault(); onOpenSidebar(); }}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                const active = document.activeElement as HTMLElement | null;
+                if (active && (active.tagName === 'TEXTAREA' || active.tagName === 'INPUT')) active.blur();
+                onOpenSidebar();
+              }}
               onClick={(e) => e.preventDefault()}
+
               aria-label="Open sidebar"
               title="Open sidebar"
             >
